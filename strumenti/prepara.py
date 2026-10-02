@@ -19,6 +19,7 @@ Uso:
   python strumenti/prepara.py --prova          # dice cosa farebbe, senza scaricare
   python strumenti/prepara.py --max 5          # procura al massimo 5 brani (per provare)
   python strumenti/prepara.py --solo-pc        # scarica ma non copia sul telefono
+  python strumenti/prepara.py --solo-invio     # copia sul telefono i file già pronti, senza scaricare
   python strumenti/prepara.py --reinvia        # ricopia sul telefono anche i già inviati
   python strumenti/prepara.py --pulisci        # svuota Download/Jukebox sul telefono
 
@@ -225,13 +226,19 @@ def procura(brano: dict, abbinamenti: dict, ytm_fn) -> str:
         orig = MUSICA / fonti["lo"]
         shutil.copy2(orig, AUDIO / f"{brano['id']}{orig.suffix.lower()}")
         return "file locale"
-    if "yt" in fonti:
-        scarica_yt_dlp(f"https://www.youtube.com/watch?v={fonti['yt']}", brano["id"])
-        return "YouTube"
-    if "sc" in fonti:
-        scarica_yt_dlp(fonti["sc"], brano["id"])
-        return "SoundCloud"
-    # Solo Spotify: lo cerco su YouTube Music.
+    # YouTube e SoundCloud: il link del catalogo. Se il video è sparito o vietato
+    # ai minori, si ripiega sulla ricerca su YouTube Music come per Spotify.
+    errore = None
+    for cod, url, nome in (("yt", f"https://www.youtube.com/watch?v={fonti.get('yt')}", "YouTube"), ("sc", fonti.get("sc"), "SoundCloud")):
+        if cod in fonti:
+            try:
+                scarica_yt_dlp(url, brano["id"])
+                return nome
+            except Exception as e:
+                errore = e
+    if errore and not re.search(r"unavailable|confirm your age|removed|private|not available", str(errore), re.I):
+        raise errore
+    # Solo Spotify (o link sparito): lo cerco su YouTube Music.
     ab = abbinamenti.get(brano["id"])
     if ab is None or (ab.get("videoId") is None and ab.get("riprova")):
         ab = cerca_su_youtube_music(brano, ytm_fn()) or {"videoId": None, "cercato": str(date.today())}
@@ -253,6 +260,7 @@ def main() -> int:
     ap.add_argument("--prova", action="store_true", help="dice cosa farebbe, senza scaricare")
     ap.add_argument("--max", type=int, default=0, help="procura al massimo N brani in questo giro")
     ap.add_argument("--solo-pc", action="store_true", help="non copia sul telefono")
+    ap.add_argument("--solo-invio", action="store_true", help="copia sul telefono i file già pronti, senza scaricare")
     ap.add_argument("--reinvia", action="store_true", help="ricopia sul telefono anche i file già inviati")
     ap.add_argument("--pulisci", action="store_true", help="svuota Download/Jukebox sul telefono e basta")
     a = ap.parse_args()
@@ -298,6 +306,8 @@ def main() -> int:
         return 0
     if a.max:
         mancanti = mancanti[:a.max]
+    if a.solo_invio:
+        mancanti = []
 
     abbinamenti = leggi_json(ABBINAMENTI, {})
     if mancanti:
