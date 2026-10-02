@@ -5,7 +5,7 @@
 // per conto proprio (Cache Storage "jukebox-dati", localStorage per le playlist).
 // Qui si mette in cache solo lo "shell" statico dell'app.
 
-const CACHE = "jukebox-v6"; // bump a ogni deploy per invalidare lo shell
+const CACHE = "jukebox-v7"; // bump a ogni deploy per invalidare lo shell
 
 const SHELL = [
   "./",
@@ -19,6 +19,9 @@ const SHELL = [
   "js/dati.js",
   "js/cerca.js",
   "js/generi.js",
+  "js/comandi.js",
+  "js/file.js",
+  "js/lettore.js",
   "js/regole.js",
   "js/dj.js",
   "js/motori.js",
@@ -26,6 +29,8 @@ const SHELL = [
   "js/coda.js",
   "js/playlist.js",
   "icons/icon.svg",
+  "icons/icon-192.png",
+  "icons/icon-512.png",
   "fonts/yellowtail-400.woff2",
   "fonts/oswald-400-600.woff2",
   "fonts/courier-prime-400.woff2",

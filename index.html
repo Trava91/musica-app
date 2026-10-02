@@ -125,6 +125,13 @@
 
           <div id="riproduzione-corrente"></div>
 
+          <div id="rip-avanzamento" class="avanzamento" hidden>
+            <label for="rip-posizione" class="solo-lettori">Posizione nel brano</label>
+            <input id="rip-posizione" type="range" min="0" max="100" step="1" value="0">
+            <div class="avanzamento-tempi"><span id="rip-tempo">0:00</span><span id="rip-durata">0:00</span></div>
+          </div>
+          <button id="rip-in-corso" class="in-corso" type="button" hidden></button>
+
           <div class="comandi">
             <button id="rip-casuale" class="tasto-tondo" type="button" aria-label="Ordine casuale" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg></button>
             <button id="rip-indietro" class="tasto-cromo" type="button" aria-label="Brano precedente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 20L9 12l10-8z" fill="currentColor"/><path d="M5 19V5"/></svg></button>
@@ -152,6 +159,17 @@
         </div>
 
         <div class="riquadro">
+          <h3>Musica sul telefono</h3>
+          <div id="imp-file-info" class="muted small"></div>
+          <p class="muted small">I file li prepara il PC nella cartella <b>Download/Jukebox</b> del telefono.
+            Tocca "Aggiungi", apri quella cartella, tieni premuto il primo file e scegli <b>Seleziona tutto</b>.</p>
+          <input id="imp-file-input" type="file" multiple accept="audio/*,.m4a,.mp3,.webm,.opus,.ogg" hidden>
+          <button id="imp-file-aggiungi" class="btn-secondary">Aggiungi file dal telefono</button>
+          <button id="imp-file-svuota" class="btn-secondary">Togli tutta la musica</button>
+          <div id="imp-file-avanzamento" class="muted small" role="status"></div>
+        </div>
+
+        <div class="riquadro">
           <h3>Riproduzione</h3>
           <label class="switch"><input id="imp-newpipe" type="checkbox" checked> Usa NewPipe per YouTube e SoundCloud</label>
           <p class="muted small">Ordine con cui il Jukebox sceglie chi suona un brano (tocca ↑/↓ per cambiarlo).</p>
@@ -170,11 +188,13 @@
 
     </main>
 
-    <button id="mini-lettore" class="mini-lettore" type="button" hidden>
-      <span class="mini-disco" aria-hidden="true"></span>
-      <span class="mini-testo"><span class="mini-titolo" id="mini-titolo"></span><span class="mini-sotto" id="mini-sotto"></span></span>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
-    </button>
+    <div id="mini-lettore" class="mini-lettore" hidden>
+      <button id="mini-apri" class="mini-apri" type="button">
+        <span id="mini-disco" class="mini-disco" aria-hidden="true"></span>
+        <span class="mini-testo"><span class="mini-titolo" id="mini-titolo"></span><span class="mini-sotto" id="mini-sotto"></span></span>
+      </button>
+      <button id="mini-pausa" class="mini-pausa" type="button" aria-label="Pausa" hidden></button>
+    </div>
 
     <nav class="tabbar" aria-label="Sezioni">
       <button class="tab" data-tab="cerca" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Cerca</button>

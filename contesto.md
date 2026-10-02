@@ -81,11 +81,18 @@ revisione risulta chiusa.
 - **Verificato:** anteprima sul PC (`?dati=../app-dati/catalogo.json`) provata
   da Nicolò e con un browser automatico (Playwright + Edge, viewport telefono)
   su tutte le schermate, senza errori in console.
-- **Da fare (azione di Nicolò):** creare il PAT, installare la PWA sul
-  telefono, installare NewPipe (APK F-Droid già scaricato, serve il telefono in
-  USB col debug attivo). Poi le tappe M2-M7 del piano, ciascuna con i suoi gate
-  (file locali, OAuth Google per M3, esempi veri di Shazam per M4, Spotify
-  Premium per M5).
+- **Online e installata (02/10/2026):** PWA sul telefono di Nicolò (Oppo, Android
+  11) col token; NewPipe 0.29.1 installato via adb.
+- **M2 (02/10/2026), strada A scelta da Nicolò:** dalla prova della M1 è emerso
+  che con NewPipe/Spotify la coda non va avanti da sola (Android non avvisa il
+  Jukebox a fine brano). Ora il Jukebox suona da sé i file: `strumenti/prepara.py`
+  li procura sul PC (yt-dlp, YouTube Music per i solo-Spotify) e li copia in
+  `Download/Jukebox`; l'app li importa (`file.js`) e li suona (`lettore.js`,
+  Media Session) con avanzamento automatico, pausa e schermo spento. Il tasto
+  grande agisce sul brano che si vede, ⏮ ⏭ spostano solo la selezione
+  (`comandi.js`). Provato sul PC con un browser automatico e file veri.
+- **Da fare:** prova sul telefono a schermo spento con "Hip Rap USA ITA
+  (youtube)"; poi le tappe M3-M7 del piano (M3 probabilmente non serve più).
 
 ## Limiti noti (per onestà)
 

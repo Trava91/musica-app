@@ -7,6 +7,7 @@ import {
 import { GitHubApi, ApiError } from "./api.js";
 import * as dati from "./dati.js";
 import * as playlist from "./playlist.js";
+import * as file from "./file.js";
 import { UI, showToast } from "./ui.js";
 
 const $ = (s) => document.querySelector(s);
@@ -72,6 +73,7 @@ async function bootApp() {
     ui.ctx.usaNewPipe = leggiPreferenzaNewPipe();
     const catalogo = await dati.carica();
     ui.setCatalogo(catalogo);
+    ui.ctx.fileIds = await file.verifica().catch(() => file.ids());
     const elencoPlaylist = await playlist.carica();
     ui.setPlaylists(elencoPlaylist);
     ui.aggiornaPillMotore();

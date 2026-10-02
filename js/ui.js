@@ -7,6 +7,9 @@ import * as motori from "./motori.js";
 import * as link from "./link.js";
 import { Coda } from "./coda.js";
 import * as generi from "./generi.js";
+import * as file from "./file.js";
+import * as comandi from "./comandi.js";
+import { Lettore } from "./lettore.js";
 import * as playlist from "./playlist.js";
 import { salvaPreferenzaMotori } from "./config.js";
 
@@ -26,6 +29,8 @@ const SIGLA_PIATT = { sp: "SP", yt: "YT", sc: "SC", lo: "FILE" };
 const NOMI_ORDINE_CERCA = { artista: "artista", recenti: "recenti", bpm: "BPM" };
 const NOMI_ORDINE_PL = { artista: "per artista", casuale: "casuale", "bpm-su": "BPM crescente", "bpm-giu": "BPM decrescente", armonico: "percorso armonico", recenti: "recenti" };
 const SVG_PLAY = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg>`;
+const SVG_PAUSA = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>`;
+const ICONA_PNG = new URL("icons/icon-512.png", document.baseURI).href;
 
 // Codice di selezione come sui jukebox (A1…A9, B1…): solo decorativo, dipende
 // dalla posizione nella lista mostrata.
@@ -108,6 +113,12 @@ export class UI {
     this.coda = null;
     this.playlistAttiva = null;
     this.pianoAttuale = null;
+    this.motoreCoda = null; // il motore con cui suona la coda attuale ("file" = lettore interno)
+    this.lettore = new Lettore({
+      onFine: (b) => this.fineBrano(b),
+      onStato: () => this.aggiornaStatoLettore(),
+      onComando: (c) => this.comandoBlocco(c),
+    });
   }
 
   init() {
@@ -124,9 +135,28 @@ export class UI {
     });
     $("#pl-nuova-intelligente").addEventListener("click", () => this.apriCostruttore(null));
     $("#pl-nuova-manuale").addEventListener("click", () => this.creaManualeVuota());
-    $("#rip-avanti").addEventListener("click", () => this.avantiCoda());
-    $("#rip-indietro").addEventListener("click", () => this.indietroCoda());
-    $("#rip-principale").addEventListener("click", () => this.azionePrincipale?.());
+    // ⏮ ⏭ spostano solo la selezione: il brano scelto parte col tasto grande o a fine brano.
+    $("#rip-avanti").addEventListener("click", () => { if (this.coda) { comandi.spostaSelezione(this.coda, 1); this.renderRiproduzione(); } });
+    $("#rip-indietro").addEventListener("click", () => { if (this.coda) { comandi.spostaSelezione(this.coda, -1); this.renderRiproduzione(); } });
+    $("#rip-principale").addEventListener("click", () => this.premiTastoGrande());
+    $("#rip-in-corso").addEventListener("click", () => {
+      if (this.coda && this.lettore.brano) { this.coda.salta(this.lettore.brano.id); this.renderRiproduzione(); }
+    });
+    $("#rip-posizione").addEventListener("input", (e) => { this.trascinando = true; $("#rip-tempo").textContent = durataFmt(Number(e.target.value)); });
+    $("#rip-posizione").addEventListener("change", (e) => { this.trascinando = false; this.lettore.cerca(Number(e.target.value)); });
+    $("#mini-pausa").addEventListener("click", () => {
+      if (this.lettore.stato === "suona") this.lettore.pausa(); else this.lettore.riprendi();
+    });
+    $("#imp-file-aggiungi").addEventListener("click", () => $("#imp-file-input").click());
+    $("#imp-file-input").addEventListener("change", (e) => this.importaFile(e.target));
+    $("#imp-file-svuota").addEventListener("click", async () => {
+      if (!window.confirm("Togliere dal telefono tutta la musica del Jukebox? Per riaverla andrà reimportata.")) return;
+      this.lettore.ferma();
+      await file.svuota();
+      this.ctx.fileIds = file.ids();
+      this.renderFileInfo();
+      showToast("Musica tolta dal telefono.", "ok");
+    });
     $("#rip-casuale").addEventListener("click", () => {
       if (!this.coda) return;
       this.coda.impostaCasuale(!this.coda.casuale);
@@ -138,7 +168,7 @@ export class UI {
       this.coda.ripeti = giro[(giro.indexOf(this.coda.ripeti) + 1) % giro.length];
       this.renderRiproduzione();
     });
-    $("#mini-lettore").addEventListener("click", () => this.switchTab("riproduzione"));
+    $("#mini-apri").addEventListener("click", () => this.switchTab("riproduzione"));
     $$(".overlay").forEach((ov) => ov.addEventListener("click", (e) => { if (e.target === ov) ov.hidden = true; }));
   }
 
@@ -154,16 +184,23 @@ export class UI {
   }
 
   // Barra "sta suonando" sopra i tasti: visibile se c'è una coda, tranne nella
-  // schermata In riproduzione (dove sarebbe un doppione).
+  // schermata In riproduzione (dove sarebbe un doppione). Mostra quello che si
+  // SENTE (il lettore interno), altrimenti il brano selezionato della coda.
   aggiornaMiniLettore() {
     const mini = $("#mini-lettore");
-    const corrente = this.coda?.corrente;
-    mini.hidden = !corrente || this.tab === "riproduzione";
+    const brano = this.lettore.brano || this.coda?.corrente;
+    mini.hidden = !brano || this.tab === "riproduzione";
     if (mini.hidden) return;
-    const { motore } = motori.motoreBrano(corrente, this.ctx);
-    $("#mini-titolo").textContent = titoloCompleto(corrente);
-    $("#mini-sotto").textContent = [corrente.a, motore ? NOMI_MOTORE[motore] : ""].filter(Boolean).join(" · ");
-    mini.setAttribute("aria-label", `In riproduzione: ${titoloCompleto(corrente)}. Apri`);
+    const interno = !!this.lettore.brano;
+    const motore = interno ? "file" : motori.motoreBrano(brano, this.ctx).motore;
+    $("#mini-titolo").textContent = titoloCompleto(brano);
+    $("#mini-sotto").textContent = [brano.a, motore ? NOMI_MOTORE[motore] : ""].filter(Boolean).join(" · ");
+    $("#mini-apri").setAttribute("aria-label", `${titoloCompleto(brano)}: apri la schermata Suona`);
+    $("#mini-disco").classList.toggle("gira", this.lettore.stato === "suona");
+    const pausa = $("#mini-pausa");
+    pausa.hidden = !interno;
+    pausa.innerHTML = this.lettore.stato === "suona" ? SVG_PAUSA : SVG_PLAY;
+    pausa.setAttribute("aria-label", this.lettore.stato === "suona" ? "Pausa" : "Riprendi");
   }
 
   setCatalogo(catalogo) {
@@ -346,12 +383,19 @@ export class UI {
   suonaUnBrano(b) {
     const { motore, fonte } = motori.motoreBrano(b, this.ctx);
     if (!motore) { showToast("Nessuna fonte disponibile per questo brano.", "err"); return; }
+    if (motore === "file") {
+      // Il brano ha il file: lo suona il Jukebox, come una coda di un solo brano.
+      $("#foglio-overlay").hidden = true;
+      this.avviaPlaylist({ id: "brano-singolo", nome: "Brano singolo" }, [b], motori.pianoRiproduzione([b], this.ctx));
+      return;
+    }
     this.apriConMotore(motore, fonte);
   }
 
   apriConMotore(motore, fonte) {
     if (motore === "file") {
-      showToast("I file si suonano dal Jukebox dalla prossima versione (M2).", "");
+      const b = this.trovaBranoId(fonte[1]);
+      if (b) this.suonaUnBrano(b);
       return;
     }
     apriLink(link.linkApertura(motore, fonte, { android: ANDROID }));
@@ -423,7 +467,7 @@ export class UI {
         </button>
         ${etichette ? `<div class="cartellino-regole">${etichette}</div>` : ""}
         <div class="cartellino-piede">
-          <span>${elenco.length ? `${elenco.length.toLocaleString("it-IT")} dischi · ${esc(consigliato)}` : "Vuota · aggiungi dischi dalla ricerca"}</span>
+          <span>${elenco.length ? `${elenco.length.toLocaleString("it-IT")} dischi · ${esc(consigliato)}${p.telefono ? ` · ${elenco.filter((b) => this.ctx.fileIds.has(b.id)).length} sul telefono` : ""}` : "Vuota · aggiungi dischi dalla ricerca"}</span>
           ${elenco.length ? `<button class="play-neon" type="button" aria-label="Avvia ${esc(p.nome)}">${SVG_PLAY}</button>` : ""}
         </div>
       </div>`;
@@ -464,9 +508,16 @@ export class UI {
     const elenco = regole.valuta(p, this.catalogo.brani, this.ctx);
     const piano = motori.pianoRiproduzione(elenco, this.ctx);
     const righePiano = piano.gruppi.map((g) => `${esc(NOMI_MOTORE[g.motore] || g.motore)}: ${g.n}${g.continuo ? " (schermo spento)" : ""}`).join(" · ");
+    const pronti = elenco.filter((b) => this.ctx.fileIds.has(b.id)).length;
     el.innerHTML = `
       <div class="foglio-intestazione"><h2>${esc(p.nome)}</h2><button class="foglio-chiudi" id="foglio-chiudi">✕</button></div>
       <p class="muted small">${elenco.length} brani. ${righePiano || "Nessuna fonte disponibile"}${piano.esclusi.length ? ` · esclusi: ${piano.esclusi.length}` : ""}</p>
+      <div class="riquadro">
+        <label class="switch"><input id="pl-telefono" type="checkbox" ${p.telefono ? "checked" : ""}> Tieni questa playlist sul telefono</label>
+        <p class="muted small">${pronti} di ${elenco.length} brani già sul telefono (${(file.byte(elenco.map((b) => b.id)) / 1048576).toFixed(0)} MB).
+          ${p.telefono && pronti < elenco.length ? "Gli altri li prepara il PC: chiedi a Claude di preparare le playlist per il telefono." : ""}</p>
+        ${pronti ? `<button class="btn-secondary" id="pl-libera">Libera spazio</button>` : ""}
+      </div>
       <div class="azioni-riga">
         <button class="btn-primary" id="pl-avvia">▶ Avvia${piano.consigliato ? " con " + esc(NOMI_MOTORE[piano.consigliato] || piano.consigliato) : ""}</button>
         ${p.tipo === "intelligente" ? `<button class="btn-secondary" id="pl-modifica">Modifica</button><button class="btn-secondary" id="pl-congela">Congela</button>` : ""}
@@ -477,6 +528,28 @@ export class UI {
     `;
     $("#foglio-chiudi").addEventListener("click", () => { overlay.hidden = true; });
     $("#pl-avvia").addEventListener("click", () => { overlay.hidden = true; this.avviaPlaylist(p, elenco, piano); });
+    $("#pl-telefono").addEventListener("change", async (e) => {
+      const aggiornata = { ...p };
+      if (e.target.checked) aggiornata.telefono = true; else delete aggiornata.telefono;
+      try {
+        await this.salvaPlaylistSingola(aggiornata);
+        p = aggiornata;
+        showToast(e.target.checked ? "Segnata per il telefono: il PC la preparerà." : "Non più segnata per il telefono.", "ok");
+        this.renderPlaylist();
+      } catch { e.target.checked = !e.target.checked; }
+    });
+    $("#pl-libera")?.addEventListener("click", async () => {
+      // Toglie i file di questa playlist che non servono ad altre playlist tenute sul telefono.
+      const altre = new Set(this.playlists.filter((x) => x.id !== p.id && x.telefono)
+        .flatMap((x) => regole.valuta(x, this.catalogo.brani, this.ctx).map((b) => b.id)));
+      const via = elenco.map((b) => b.id).filter((id) => this.ctx.fileIds.has(id) && !altre.has(id) && id !== this.lettore.brano?.id);
+      if (!via.length) { showToast("Questi brani servono anche ad altre playlist sul telefono.", ""); return; }
+      if (!window.confirm(`Togliere dal telefono ${via.length} brani (${(file.byte(via) / 1048576).toFixed(0)} MB)?`)) return;
+      await file.rimuovi(via);
+      this.ctx.fileIds = file.ids();
+      overlay.hidden = true; this.renderPlaylist();
+      showToast(`${via.length} brani tolti dal telefono.`, "ok");
+    });
     if (p.tipo === "intelligente") {
       $("#pl-modifica").addEventListener("click", () => { overlay.hidden = true; this.apriCostruttore(p); });
       $("#pl-congela").addEventListener("click", async () => {
@@ -689,66 +762,139 @@ export class UI {
   }
 
   // ---------------- In riproduzione ----------------
+  // Avvia una coda. Col motore "file" la suona il Jukebox (anche a schermo spento)
+  // e contiene solo i brani che hanno il file; con gli altri motori il tasto
+  // grande apre l'app esterna, un brano alla volta.
   avviaPlaylist(p, elenco, piano) {
     if (!elenco.length) { showToast("Playlist vuota.", "err"); return; }
+    this.motoreCoda = piano.consigliato;
+    const brani = this.motoreCoda === "file" ? elenco.filter((b) => this.ctx.fileIds.has(b.id)) : elenco;
     this.playlistAttiva = p;
-    this.coda = new Coda(elenco, { ripeti: "no" });
+    this.coda = new Coda(brani, { ripeti: "no" });
     this.pianoAttuale = piano;
+    this.saltati = elenco.length - brani.length;
+    this.lettore.ferma();
     this.switchTab("riproduzione");
-    showToast(`"${p.nome}" avviata.`, "ok");
+    if (this.motoreCoda === "file") this.suonaBrano(this.coda.corrente);
+    else showToast(`"${p.nome}" pronta: premi il tasto grande per aprire il primo brano.`, "");
+  }
+
+  puoSuonare(b) { return this.ctx.fileIds.has(b.id); }
+
+  async suonaBrano(b) {
+    if (!b) return;
+    try {
+      await this.lettore.suona(b, { album: this.playlistAttiva?.nome || "Jukebox", icona: ICONA_PNG });
+    } catch (err) {
+      if (err?.name === "NotAllowedError") {
+        // Il browser vuole un tocco prima di far partire l'audio.
+        showToast("Premi ▶ per far partire la musica.", "");
+      } else {
+        // Per es. il file è stato tolto nel frattempo: si prova col prossimo.
+        showToast(err?.message || "Non riesco a suonare questo brano.", "err");
+        const prossimo = comandi.dopoFine(this.coda, b.id, (x) => x.id !== b.id && this.puoSuonare(x));
+        if (prossimo) return this.suonaBrano(prossimo);
+      }
+    }
+    this.renderRiproduzione();
+  }
+
+  fineBrano(b) {
+    if (!this.coda || this.motoreCoda !== "file") return;
+    const prossimo = comandi.dopoFine(this.coda, b?.id, (x) => this.puoSuonare(x));
+    if (prossimo) this.suonaBrano(prossimo);
+    else { this.lettore.ferma(); this.renderRiproduzione(); }
+  }
+
+  // Tasti precedente/successivo della schermata di blocco o delle cuffie: lì ci
+  // si aspetta che il brano cambi subito.
+  comandoBlocco(c) {
+    if (!this.coda || this.motoreCoda !== "file") return;
+    if (c === "indietro" && this.lettore.posizione > 4) { this.lettore.cerca(0); return; }
+    const b = comandi.spostaSelezione(this.coda, c === "avanti" ? 1 : -1);
+    if (b) this.suonaBrano(b);
+  }
+
+  statoTasto() {
+    const sel = this.coda?.corrente;
+    if (!sel) return { azione: "nessuna", icona: "play", etichetta: "" };
+    const { motore } = motori.motoreBrano(sel, this.ctx);
+    return comandi.tastoPrincipale({ motore, selezionato: sel.id, inCorso: this.lettore.brano?.id || null, stato: this.lettore.stato });
+  }
+
+  premiTastoGrande() {
+    const sel = this.coda?.corrente;
+    const t = this.statoTasto();
+    if (t.azione === "pausa") this.lettore.pausa();
+    else if (t.azione === "riprendi") this.lettore.riprendi();
+    else if (t.azione === "suona") this.suonaBrano(sel);
+    else if (t.azione === "apri") {
+      const { motore, fonte } = motori.motoreBrano(sel, this.ctx);
+      this.apriConMotore(motore, fonte);
+    }
+  }
+
+  // Aggiornamento leggero (ogni secondo mentre suona): tasto, disco, barra, mini lettore.
+  aggiornaStatoLettore() {
+    if (this.tab === "riproduzione" && this.coda) {
+      const t = this.statoTasto();
+      const principale = $("#rip-principale");
+      principale.disabled = t.azione === "nessuna";
+      principale.innerHTML = t.icona === "pausa" ? SVG_PAUSA : SVG_PLAY;
+      principale.setAttribute("aria-label", t.etichetta || "Suona");
+      $("#rip-principale-testo").textContent = t.etichetta;
+
+      const l = this.lettore;
+      const vedoInCorso = !!l.brano && this.coda.corrente?.id === l.brano.id;
+      $("#rip-avanzamento").hidden = !vedoInCorso; // la barra è del brano che si vede: se ne guardi un altro, sparisce
+      if (l.brano && !this.trascinando) {
+        const pos = $("#rip-posizione");
+        pos.max = String(Math.round(l.durata) || 1);
+        pos.value = String(Math.round(l.posizione));
+        $("#rip-tempo").textContent = durataFmt(l.posizione);
+        $("#rip-durata").textContent = durataFmt(l.durata);
+      }
+      $("#disco").classList.toggle("gira", l.stato === "suona" && vedoInCorso);
+      $("#etichetta-disco").classList.toggle("in-attesa", !!l.brano && !vedoInCorso);
+      const inCorso = $("#rip-in-corso");
+      inCorso.hidden = !l.brano || vedoInCorso;
+      if (!inCorso.hidden) {
+        const resta = l.durata ? ` (ancora ${durataFmt(Math.max(0, l.durata - l.posizione))})` : "";
+        inCorso.innerHTML = `${l.stato === "suona" ? "Sta suonando" : "In pausa"}: <b>${esc(titoloCompleto(l.brano))}</b>${resta} · tocca per tornarci`;
+      }
+    }
+    this.aggiornaMiniLettore();
   }
 
   renderRiproduzione() {
     const vuoto = $("#riproduzione-vuoto");
     const contenuto = $("#riproduzione-contenuto");
-    if (!this.coda || !this.playlistAttiva) { vuoto.hidden = false; contenuto.hidden = true; return; }
+    if (!this.coda || !this.playlistAttiva) { vuoto.hidden = false; contenuto.hidden = true; this.aggiornaMiniLettore(); return; }
     vuoto.hidden = true; contenuto.hidden = false;
 
     $("#riproduzione-nome").textContent = this.playlistAttiva.nome;
-    $("#riproduzione-piano").textContent = this.pianoAttuale.gruppi
-      .map((g) => `${NOMI_MOTORE[g.motore] || g.motore}: ${g.n}${g.continuo ? " · schermo spento ok" : ""}`).join(" · ") || "nessuna fonte";
+    $("#riproduzione-piano").textContent = this.motoreCoda === "file"
+      ? `Nel Jukebox · ${this.coda.ordine.length} brani · schermo spento ok${this.saltati ? ` · ${this.saltati} non ancora sul telefono` : ""}`
+      : (this.pianoAttuale.gruppi.map((g) => `${NOMI_MOTORE[g.motore] || g.motore}: ${g.n}`).join(" · ") || "nessuna fonte");
 
-    const corrente = this.coda.corrente;
-    const principale = $("#rip-principale");
-    this.azionePrincipale = null;
-    $("#disco").classList.toggle("gira", !!corrente);
-    if (!corrente) {
+    const sel = this.coda.corrente;
+    if (!sel) {
       $("#etichetta-disco").innerHTML = `<span class="ed-foro"></span>`;
       $("#riproduzione-corrente").innerHTML = `<p class="vuoto muted">Coda finita.</p>`;
       $("#riproduzione-azioni").innerHTML = "";
-      $("#rip-principale-testo").textContent = "";
-      principale.disabled = true;
     } else {
       $("#etichetta-disco").innerHTML = `
-        <span class="ed-artista">${esc(corrente.a || "")}</span>
+        <span class="ed-artista">${esc(sel.a || "")}</span>
         <span class="ed-foro"></span>
-        <span class="ed-titolo">${esc(corrente.t || "")}</span>
-        <span class="ed-anno">45 giri${corrente.y ? " · " + esc(corrente.y) : ""}</span>`;
-      const pos = Math.max(this.coda.indice, 0);
-      $("#riproduzione-corrente").innerHTML = this.rigaBrano(corrente, pos, { grande: true, play: false });
-      this.agganciaClicRighe($("#riproduzione-corrente"), [corrente]);
-
-      // Il tasto grande fa l'azione giusta per il motore del brano.
-      const { motore, fonte } = motori.motoreBrano(corrente, this.ctx);
-      const ETICHETTE = { newpipe: "Manda a NewPipe", "spotify-app": "Apri in Spotify", "spotify-premium": "Suona con Spotify", web: "Apri sul web" };
-      const azioni = [];
-      if (ETICHETTE[motore]) {
-        this.azionePrincipale = () => this.apriConMotore(motore, fonte);
-        $("#rip-principale-testo").textContent = ETICHETTE[motore];
-        principale.setAttribute("aria-label", ETICHETTE[motore]);
-        principale.disabled = false;
-        if (motore === "newpipe") azioni.push(`<button class="btn-secondary" id="rip-manda-10">Manda i prossimi 10</button>`);
-      } else {
-        principale.disabled = true;
-        $("#rip-principale-testo").textContent = motore === "file" ? "File: dalla prossima versione" : "Nessuna fonte";
-        azioni.push(`<span class="muted small">${motore === "file" ? "La riproduzione dei file dentro il Jukebox arriva con la prossima versione (M2)." : "Nessuna fonte disponibile per questo brano."}</span>`);
-      }
-      $("#riproduzione-azioni").innerHTML = azioni.join("");
-      $("#rip-manda-10")?.addEventListener("click", () => this.mandaProssimiNewPipe(10));
+        <span class="ed-titolo">${esc(sel.t || "")}</span>
+        <span class="ed-anno">45 giri${sel.y ? " · " + esc(sel.y) : ""}</span>`;
+      $("#riproduzione-corrente").innerHTML = this.rigaBrano(sel, Math.max(this.coda.indice, 0), { grande: true, play: false });
+      this.agganciaClicRighe($("#riproduzione-corrente"), [sel]);
+      $("#riproduzione-azioni").innerHTML = this.motoreCoda !== "file"
+        ? `<span class="muted small">Con le app esterne la coda non va avanti da sola: per farlo, tieni la playlist sul telefono.</span>` : "";
     }
 
-    const casuale = $("#rip-casuale");
-    casuale.setAttribute("aria-pressed", String(!!this.coda.casuale));
+    $("#rip-casuale").setAttribute("aria-pressed", String(!!this.coda.casuale));
     const ripeti = $("#rip-ripeti");
     ripeti.setAttribute("aria-pressed", String(this.coda.ripeti !== "no"));
     ripeti.setAttribute("aria-label", `Ripeti: ${this.coda.ripeti}`);
@@ -759,21 +905,38 @@ export class UI {
     $("#riproduzione-prossimi").innerHTML = prossimi.map((b, i) => this.rigaBrano(b, (Math.max(this.coda.indice, 0)) + i + 1)).join("")
       || `<p class="vuoto muted">Nessun altro brano in coda.</p>`;
     this.agganciaClicRighe($("#riproduzione-prossimi"), prossimi);
-    this.aggiornaMiniLettore();
+    this.aggiornaStatoLettore();
   }
 
-  mandaProssimiNewPipe(n) {
-    if (!this.coda) return;
-    const elenco = [this.coda.corrente, ...this.coda.prossimi].filter(Boolean).slice(0, n);
-    const { motore, fonte } = motori.motoreBrano(elenco[0], this.ctx);
-    if (fonte) this.apriConMotore(motore, fonte);
-    // NewPipe non ha un endpoint "apri tutti": si può mandare solo un brano alla
-    // volta con un intent. Il resto si tocca dalla lista "Prossimi in coda".
-    showToast(`Aperto il primo di ${elenco.length}. Tocca ogni brano in coda per mandare gli altri.`, "", { duration: 4500 });
+  // ---------------- Musica sul telefono ----------------
+  async importaFile(input) {
+    const files = [...(input.files || [])];
+    input.value = "";
+    if (!files.length) return;
+    const stato = $("#imp-file-avanzamento");
+    const idValidi = new Set(this.catalogo.brani.map((b) => b.id));
+    try {
+      const esito = await file.importa(files, idValidi, (fatti, tot) => { stato.textContent = `Copio nel Jukebox: ${fatti} di ${tot}…`; });
+      showToast(`${esito.aggiunti} brani aggiunti${esito.gia ? `, ${esito.gia} c'erano già` : ""}${esito.sconosciuti.length ? `, ${esito.sconosciuti.length} file non riconosciuti` : ""}. Ora puoi cancellare la cartella Download/Jukebox.`, "ok", { duration: 7000 });
+    } catch (err) {
+      showToast(err?.name === "QuotaExceededError" ? "Spazio finito sul telefono: libera spazio e riprova." : (err?.message || "Importazione non riuscita."), "err", { duration: 7000 });
+    }
+    stato.textContent = "";
+    this.ctx.fileIds = file.ids();
+    this.renderFileInfo();
   }
 
-  avantiCoda() { if (this.coda) { this.coda.avanti(); this.renderRiproduzione(); } }
-  indietroCoda() { if (this.coda) { this.coda.indietro(); this.renderRiproduzione(); } }
+  async renderFileInfo() {
+    const n = this.ctx.fileIds.size;
+    const mb = (file.byte() / 1048576).toFixed(0);
+    let libero = "";
+    try {
+      const st = await navigator.storage?.estimate?.();
+      if (st?.quota) libero = ` · spazio ancora disponibile: ${((st.quota - st.usage) / 1073741824).toFixed(1)} GB`;
+    } catch { /* stima non disponibile */ }
+    $("#imp-file-info").textContent = n ? `${n.toLocaleString("it-IT")} brani sul telefono (${mb} MB)${libero}` : `Nessun brano sul telefono${libero}`;
+    $("#imp-file-svuota").hidden = !n;
+  }
 
   // ---------------- Impostazioni ----------------
   renderImpostazioni(cfg, infoCache) {
@@ -782,7 +945,8 @@ export class UI {
     $("#imp-dati-info").textContent = infoCache
       ? `${infoCache.brani.toLocaleString("it-IT")} brani in cache, costruito il ${infoCache.costruitoIl || "?"}`
       : "Nessun dato in cache.";
-    $("#imp-versione").textContent = "Jukebox — versione M1";
+    $("#imp-versione").textContent = "Jukebox — versione M2";
+    this.renderFileInfo();
     $("#imp-newpipe").checked = this.ctx.usaNewPipe !== false;
     this.renderOrdineMotori();
   }

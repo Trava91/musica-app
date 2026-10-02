@@ -3,7 +3,7 @@
 // Session (quello è lettore.js/spotify.js, dalla M2/M5 in poi).
 //
 // ctx descrive lo stato del telefono in questo momento:
-//   { fileIds: Set<string>   percorsi "lo" dei file importati sul telefono (M2)
+//   { fileIds: Set<string>   id dei brani che hanno il file audio sul telefono (M2, file.js)
 //     spotify: "premium" | "senza" | "non-configurato" | "da-ricollegare"  (M5)
 //     usaNewPipe: bool       impostazione dell'utente (default true)
 //     priorita: string[] }   ordine dei motori, da config.leggiPreferenzaMotori()
@@ -28,8 +28,7 @@ export function motoreBrano(brano, ctx = {}) {
   const priorita = ctx.priorita?.length ? ctx.priorita : MOTORI_DEFAULT;
   for (const motore of priorita) {
     if (motore === "file") {
-      const f = fonte(brano, "lo");
-      if (f && ctx.fileIds?.has(f[1])) return { motore, fonte: f };
+      if (ctx.fileIds?.has(brano.id)) return { motore, fonte: ["file", brano.id] };
     } else if (motore === "spotify-premium") {
       const f = fonte(brano, "sp");
       if (f && ctx.spotify === "premium") return { motore, fonte: f };

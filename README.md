@@ -18,7 +18,8 @@ app/
 ├── index.html              pagina unica (onboarding + 5 schede + 4 fogli/overlay)
 ├── manifest.webmanifest    manifest PWA
 ├── sw.js                   service worker (app shell offline)
-├── css/styles.css          stile mobile-first, tema scuro di default
+├── css/styles.css          stile jukebox anni '50, blu notte con neon
+├── fonts/                  Yellowtail, Oswald, Courier Prime (offline, licenze in LICENZE.md)
 ├── js/
 │   ├── main.js              onboarding token, avvio, impostazioni, service worker
 │   ├── ui.js                render di tutte le schermate
@@ -31,8 +32,16 @@ app/
 │   ├── dj.js                  Camelot/BPM/percorso armonico (logica pura)
 │   ├── motori.js              chi suona ogni brano (logica pura)
 │   ├── link.js                 link intent:// verso NewPipe/Spotify, ricerche esterne
-│   └── coda.js                 la coda di riproduzione (posizione, avanti/indietro/casuale)
-├── strumenti/esporta.py     genera app-dati/catalogo.json da liste/dati/catalogo.sqlite
+│   ├── coda.js                 la coda di riproduzione (posizione, avanti/indietro/casuale)
+│   ├── comandi.js              tasto grande, ⏮ ⏭, cosa parte a fine brano (logica pura)
+│   ├── generi.js               generi raggruppati per la vista (Tech house, Disco)
+│   ├── file.js                 l'audio sul telefono (Cache Storage, id brano → file)
+│   └── lettore.js              lettore interno: <audio> + Media Session (schermo spento)
+├── strumenti/
+│   ├── esporta.py            genera app-dati/catalogo.json da liste/dati/catalogo.sqlite
+│   ├── prepara.py            procura l'audio delle playlist per il telefono (M2)
+│   ├── valuta.mjs            brani di ogni playlist con le regole dell'app (per prepara.py)
+│   └── test_prepara.py       test dell'abbinamento su YouTube Music
 ├── test/
 │   ├── logica.test.mjs      test Node della logica pura
 │   └── fixture.json          catalogo finto (nessun dato reale: repo pubblico)
@@ -74,6 +83,7 @@ Apri `http://localhost:8000` e usa il token nell'onboarding.
 
 ```bash
 node test/logica.test.mjs
+python strumenti/test_prepara.py
 ```
 
 `test/fixture.json` è un mini-catalogo **completamente inventato**: nessun dato
@@ -129,6 +139,43 @@ a Nicolò (creazione repo, push e attivazione di Pages sono azioni esterne).
 Aggiornamenti: `git push` → Pages rideploya. Per invalidare la cache dell'app
 shell, **bump** `CACHE = "jukebox-vN"` in [`sw.js`](sw.js).
 
+## Musica sul telefono (M2): le playlist vanno avanti da sole
+
+Il Jukebox suona da sé i file audio salvati sul telefono: avanza da solo, ha la
+pausa vera, va a schermo spento (comandi anche dalla schermata di blocco) e non
+dipende da NewPipe. Con le app esterne (NewPipe, Spotify gratis) non è possibile:
+Android non dice al Jukebox quando un brano è finito.
+
+1. **Nel Jukebox**: apri una playlist → "Tieni questa playlist sul telefono".
+2. **Sul PC** (o chiedi a Claude "prepara le playlist per il telefono"):
+   ```bash
+   python strumenti/prepara.py              # le playlist segnate
+   python strumenti/prepara.py "Hip Rap"    # oppure per nome
+   ```
+   Procura l'audio in `05-hobby/musica/audio-telefono/` (fuori dai repo, riusato
+   le volte dopo) e, se il telefono è collegato col debug USB, lo copia in
+   `Download/Jukebox/`. I brani solo-Spotify li cerca su YouTube Music e li
+   abbina per artista, titolo e durata (`abbinamenti.json`: un abbinamento
+   sbagliato si corregge lì, cambiando `videoId`, e cancellando il file in
+   `audio-telefono/`).
+3. **Nel Jukebox**: Altro → Musica sul telefono → Aggiungi file → apri
+   `Download/Jukebox`, tieni premuto il primo file → Seleziona tutto.
+4. Poi la cartella `Download/Jukebox` si può svuotare
+   (`python strumenti/prepara.py --pulisci`): i file sono già dentro il Jukebox.
+
+Spazio: circa 1 MB al minuto (m4a ~128 kbps), una playlist sta fra 0,3 e 3 GB.
+"Libera spazio" nel foglio di una playlist toglie i suoi brani che non servono
+ad altre playlist tenute sul telefono.
+
+**Se si ferma:**
+- `HTTP Error 403` → YouTube è cambiato: `python -m pip install -U "yt-dlp[default]"`
+  e rilancia (riprende da dove era).
+- La musica si interrompe a schermo spento → batteria di Chrome su "Senza
+  restrizioni" (sugli Oppo: Impostazioni → Batteria → Chrome).
+
+Nota: scaricare da YouTube è contro i suoi termini, come NewPipe (scelta di
+Nicolò, 02/10/2026). I file sono per uso personale.
+
 ## NewPipe
 
 Scelta di Nicolò (28/09/2026): suona YouTube e SoundCloud senza pubblicità e a
@@ -160,10 +207,11 @@ raccolte di provenienza, `x` presente solo se la versione è "di esplorazione").
 playlist:[{id, nome, tipo:"intelligente"|"manuale", regole|brani, ordine, seme,
 limite}]}`. Il formato completo delle regole è documentato in testa a `js/regole.js`.
 
-## Limiti noti di questa versione (M1)
+## Limiti noti di questa versione (M2)
 
-- I brani che esistono solo come file sul telefono si vedono e si cercano, ma non
-  si riproducono ancora dal Jukebox (arriva con M2): il foglio brano lo segnala.
+- Una playlist va avanti da sola solo con i brani che hanno il file sul
+  telefono: quelli non ancora preparati restano fuori dalla coda (la schermata
+  "Suona" dice quanti sono).
 - Spotify: solo l'app gratuita (apre il brano scelto, con pubblicità). Il motore
   "Spotify Premium" comparirà con M5, al prossimo periodo Premium di Nicolò.
 - "Manda i prossimi 10" a NewPipe apre solo il primo automaticamente (vedi sopra).

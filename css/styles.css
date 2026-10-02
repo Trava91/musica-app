@@ -162,11 +162,22 @@ button:disabled { opacity: .45; pointer-events: none; }
 
 /* --- mini lettore sopra la barra --- */
 .mini-lettore {
-  display: flex; align-items: center; gap: 12px; margin: 8px 12px; padding: 8px 12px 8px 10px; min-height: 56px;
-  background: var(--pannello); border: none; border-radius: 12px; color: var(--testo); text-align: left; cursor: pointer;
+  display: flex; align-items: center; gap: 6px; margin: 8px 12px; padding: 6px 8px 6px 10px; min-height: 56px;
+  background: var(--pannello); border-radius: 12px;
   box-shadow: inset 0 0 0 1.5px var(--neon-alone), 0 0 16px var(--neon-velo);
 }
+.mini-apri {
+  flex: 1; min-width: 0; min-height: 44px; display: flex; align-items: center; gap: 12px;
+  background: none; border: none; padding: 0; color: var(--testo); text-align: left; cursor: pointer;
+}
+.mini-pausa {
+  width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; border: none; cursor: pointer;
+  background: var(--neon); color: var(--inchiostro); display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 12px var(--neon-alone);
+}
+.mini-pausa svg { width: 18px; height: 18px; }
 .mini-disco { width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%; background: radial-gradient(circle, var(--rosso) 0 7px, #0E0E0E 8px); box-shadow: 0 0 0 2px #3A3A3A; }
+.mini-disco.gira { animation: gira 1.8s linear infinite; }
 .mini-testo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .mini-titolo { font-family: var(--f-macchina); font-weight: 700; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mini-sotto { font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--tenue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -311,6 +322,16 @@ button:disabled { opacity: .45; pointer-events: none; }
 }
 .testina { position: absolute; left: -6px; bottom: -20px; width: 20px; height: 28px; border-radius: 3px; background: #2A2A2A; border: 2px solid #C3CBD0; }
 
+.avanzamento { margin: .8rem 0 0; }
+.avanzamento input[type="range"] { width: 100%; height: 28px; margin: 0; padding: 0; background: none; border: none; accent-color: var(--neon); }
+.avanzamento-tempi { display: flex; justify-content: space-between; font-family: var(--f-macchina); font-size: .75rem; color: var(--tenue); }
+.in-corso {
+  display: block; width: 100%; min-height: 44px; margin: .5rem 0 0; padding: .4rem .8rem; border-radius: 10px; cursor: pointer;
+  background: var(--bg-2); color: var(--tenue); border: 1px dashed var(--bordo); font-family: var(--f-macchina); font-size: .8rem; text-align: center;
+}
+.in-corso b { color: var(--neon); font-weight: 700; }
+.etichetta-disco.in-attesa { filter: grayscale(.6) brightness(.8); }
+.solo-lettori { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .comandi { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 1rem; }
 .tasto-tondo {
   position: relative; width: 44px; height: 44px; border-radius: 50%; border: none; background: transparent; color: var(--tenue);
@@ -412,5 +433,5 @@ button:disabled { opacity: .45; pointer-events: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .titolo-neon, .arco-neon, .disco.gira { animation: none; }
+  .titolo-neon, .arco-neon, .disco.gira, .mini-disco.gira { animation: none; }
 }

@@ -16,6 +16,8 @@ import * as motori from "../js/motori.js";
 import * as link from "../js/link.js";
 import { Coda } from "../js/coda.js";
 import * as generi from "../js/generi.js";
+import * as comandi from "../js/comandi.js";
+import { idDaNome } from "../js/file.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixture = JSON.parse(readFileSync(join(__dirname, "fixture.json"), "utf-8"));
@@ -95,7 +97,7 @@ eq("regole: soloSchermoSpento senza file né Premium esclude tutto",
   regole.valuta({ tipo: "intelligente", regole: { soloSchermoSpento: true }, ordine: "artista" }, brani, {}).length, 0);
 
 {
-  const ctx = { fileIds: new Set(["test-locale/Cartella Locale - File Sul Telefono.mp3"]), spotify: "premium" };
+  const ctx = { fileIds: new Set(["f07"]), spotify: "premium" };
   const ris = new Set(
     regole.valuta({ tipo: "intelligente", regole: { soloSchermoSpento: true }, ordine: "artista" }, brani, ctx)
       .map((b) => b.id),
@@ -176,7 +178,9 @@ ok("scartoBpm 128→136 oltre la soglia", dj.scartoBpm(128, 136) > dj.TOLLERANZA
   const bMulti = { id: "m4", s: [["sp", "spY"], ["yt", "ytY"]] };
 
   eq("motoreBrano: il file sul telefono vince su tutto",
-    motori.motoreBrano(bFile, { fileIds: new Set(["percorso/uno.mp3"]), spotify: "premium" }).motore, "file");
+    motori.motoreBrano(bFile, { fileIds: new Set(["m1"]), spotify: "premium" }).motore, "file");
+  eq("motoreBrano: il file vale per id anche se il brano non era un file locale",
+    motori.motoreBrano(bSp, { fileIds: new Set(["m2"]) }).fonte, ["file", "m2"]);
   eq("motoreBrano: con Premium suona da Spotify",
     motori.motoreBrano(bMulti, { spotify: "premium" }).motore, "spotify-premium");
   eq("motoreBrano: senza Premium, un brano solo YouTube va a NewPipe",
@@ -186,7 +190,7 @@ ok("scartoBpm 128→136 oltre la soglia", dj.scartoBpm(128, 136) > dj.TOLLERANZA
   eq("motoreBrano: senza NewPipe, un brano YouTube va sul web",
     motori.motoreBrano(bYt, { spotify: "senza", usaNewPipe: false }).motore, "web");
 
-  const piano = motori.pianoRiproduzione([bFile, bSp, bYt, bMulti], { fileIds: new Set(["percorso/uno.mp3"]), spotify: "senza" });
+  const piano = motori.pianoRiproduzione([bFile, bSp, bYt, bMulti], { fileIds: new Set(["m1"]), spotify: "senza" });
   const contaMotore = (m) => piano.gruppi.find((g) => g.motore === m)?.n || 0;
   eq("pianoRiproduzione: conteggio file", contaMotore("file"), 1);
   eq("pianoRiproduzione: conteggio newpipe (yt singolo + multi senza premium)", contaMotore("newpipe"), 2);
@@ -277,6 +281,50 @@ eq("linkApertura: un file locale non ha un link", link.linkApertura("file", ["lo
   eq("vociSelezionate: voce parziale esclusa", generi.vociSelezionate(voci, [4]).length, 0);
   eq("vociGeneri: catalogo senza i membri del gruppo", generi.vociGeneri(["Rock"]).map((v) => v.nome), ["Rock"]);
 }
+
+// =========================================================== comandi.js ===
+
+{
+  const T = comandi.tastoPrincipale;
+  eq("tasto: brano in corso che suona → pausa", T({ motore: "file", selezionato: "a", inCorso: "a", stato: "suona" }).azione, "pausa");
+  eq("tasto: brano in corso in pausa → riprendi", T({ motore: "file", selezionato: "a", inCorso: "a", stato: "pausa" }).azione, "riprendi");
+  eq("tasto: scelto un altro mentre suona → suona questo", T({ motore: "file", selezionato: "b", inCorso: "a", stato: "suona" }), { azione: "suona", icona: "play", etichetta: "Suona questo" });
+  eq("tasto: niente in corso → suona", T({ motore: "file", selezionato: "a", inCorso: null, stato: "fermo" }).etichetta, "Suona");
+  eq("tasto: motore esterno → apri l'app", T({ motore: "newpipe", selezionato: "a", inCorso: null, stato: "fermo" }), { azione: "apri", icona: "play", etichetta: "Manda a NewPipe" });
+  eq("tasto: niente selezionato", T({ motore: null, selezionato: null }).azione, "nessuna");
+
+  const tre = [{ id: "a" }, { id: "b" }, { id: "c" }];
+  const tutti = () => true;
+  let c = new Coda(tre);
+  eq("spostaSelezione: avanti", comandi.spostaSelezione(c, 1).id, "b");
+  comandi.spostaSelezione(c, 1);
+  eq("spostaSelezione: in fondo resta sull'ultimo", comandi.spostaSelezione(c, 1).id, "c");
+  c.ripeti = "tutti";
+  eq("spostaSelezione: con ripeti ricomincia", comandi.spostaSelezione(c, 1).id, "a");
+  eq("spostaSelezione: indietro dal primo con ripeti va all'ultimo", comandi.spostaSelezione(c, -1).id, "c");
+
+  c = new Coda(tre);
+  eq("dopoFine: senza scelte parte il prossimo", comandi.dopoFine(c, "a", tutti).id, "b");
+  eq("dopoFine: la coda si sposta sul prossimo", c.corrente.id, "b");
+  c = new Coda(tre);
+  comandi.spostaSelezione(c, 1); comandi.spostaSelezione(c, 1); // mentre suona "a" scelgo "c"
+  eq("dopoFine: parte il brano scelto con ⏭", comandi.dopoFine(c, "a", tutti).id, "c");
+  c = new Coda(tre);
+  eq("dopoFine: salta i brani che il lettore non sa suonare", comandi.dopoFine(c, "a", (b) => b.id !== "b").id, "c");
+  c = new Coda(tre); c.salta("c");
+  eq("dopoFine: a fine coda si ferma", comandi.dopoFine(c, "c", tutti), null);
+  c = new Coda(tre, { ripeti: "tutti" }); c.salta("c");
+  eq("dopoFine: con ripeti tutti ricomincia", comandi.dopoFine(c, "c", tutti).id, "a");
+  c = new Coda(tre, { ripeti: "uno" });
+  eq("dopoFine: con ripeti uno rifà lo stesso", comandi.dopoFine(c, "a", tutti).id, "a");
+}
+
+// ============================================================== file.js ===
+
+eq("idDaNome: nome preparato dal PC", idDaNome("c9412dc07ba6.m4a"), "c9412dc07ba6");
+eq("idDaNome: copia doppia di Android", idDaNome("C9412DC07BA6 (1).m4a"), "c9412dc07ba6");
+eq("idDaNome: file qualunque", idDaNome("Dan Black - Laka Laka.mp3"), null);
+eq("idDaNome: id troppo lungo", idDaNome("c9412dc07ba6ff.m4a"), null);
 
 // ================================================================ esito ====
 
