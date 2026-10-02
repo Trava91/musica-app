@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Jukebox</title>
+
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon.svg">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Jukebox">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#070B18">
+
+  <link rel="preload" href="fonts/yellowtail-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/oswald-400-600.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- ================= ONBOARDING (primo avvio / nessun token) ================= -->
+  <section id="onboarding" class="screen" hidden>
+    <div class="onboarding-inner">
+      <div class="arco arco-basso"><div class="arco-rosso"><div class="arco-neon"><div class="arco-vetrina">
+        <h1 class="titolo-neon">Jukebox</h1>
+        <p class="arco-sotto">Primo avvio</p>
+      </div></div></div></div>
+      <p class="muted">Il tuo catalogo musicale: ricerca, playlist a più filtri e riproduzione, sul telefono.
+        Serve un token per leggere i dati dal tuo repo privato.</p>
+
+      <ol class="steps">
+        <li>Crea un <b>fine-grained PAT</b> su GitHub limitato al solo repo <code id="onb-repo-label">musica-dati</code>.</li>
+        <li>Dagli il permesso <b>Contents: Read and write</b> e una scadenza (es. 1 anno).</li>
+        <li>Incollalo qui sotto. Resta solo su questo telefono (<code>localStorage</code>).</li>
+      </ol>
+      <a id="onb-pat-link" class="btn-link" target="_blank" rel="noopener"
+         href="https://github.com/settings/personal-access-tokens/new">Apri la pagina dei token →</a>
+
+      <form id="onboarding-form" autocomplete="off">
+        <label>Token (PAT)
+          <input id="onb-token" type="password" inputmode="text" placeholder="github_pat_…" required>
+        </label>
+        <details class="advanced">
+          <summary>Impostazioni avanzate</summary>
+          <label>Owner
+            <input id="onb-owner" type="text" placeholder="Trava91">
+          </label>
+          <label>Repo
+            <input id="onb-repo" type="text" placeholder="musica-dati">
+          </label>
+        </details>
+        <div id="onb-feedback" class="feedback" role="status"></div>
+        <button type="submit" id="onb-submit" class="btn-primary">Verifica e salva</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ================= APP ================= -->
+  <div id="app" hidden>
+    <main id="schermi">
+
+      <!-- ---- Cerca ---- -->
+      <section class="schermo" data-schermo="cerca">
+        <header class="arco"><div class="arco-rosso"><div class="arco-neon"><div class="arco-vetrina">
+          <h1 class="titolo-neon">Jukebox</h1>
+          <p class="arco-sotto" id="arco-sotto"></p>
+        </div></div></div></header>
+        <div class="riga-pill"><span id="stato-motore" class="pill"></span></div>
+
+        <label for="cerca-testo" class="etichetta-sezione">Cerca nel jukebox</label>
+        <div class="campo-cromo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+          <input id="cerca-testo" type="search" placeholder="Artista, titolo, genere…" autocomplete="off">
+        </div>
+        <div class="tasti-rapidi">
+          <button id="rapido-generi" class="pillola" type="button"><span id="rapido-generi-testo">Generi</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+          <button id="rapido-ordine" class="pillola" type="button">Ordine: auto</button>
+          <button id="cerca-filtri-btn" class="pillola" type="button">Filtri<span id="cerca-filtri-badge" class="badge-neon" hidden>0</span></button>
+        </div>
+        <div class="riepilogo"><span id="cerca-riepilogo"></span><span id="cerca-ordine-testo" class="riepilogo-ordine"></span></div>
+        <div id="cerca-risultati" class="lista"></div>
+        <button id="cerca-altri" class="btn-secondary btn-blocco" hidden>Mostra altri</button>
+      </section>
+
+      <!-- ---- Generi ---- -->
+      <section class="schermo" data-schermo="generi" hidden>
+        <header class="arco arco-basso"><div class="arco-rosso"><div class="arco-neon"><div class="arco-vetrina">
+          <h2 class="titolo-neon">Scegli il genere</h2>
+          <p class="arco-sotto">Premi un tasto · come al bancone</p>
+        </div></div></div></header>
+        <div id="generi-lista" class="tasti-generi"></div>
+      </section>
+
+      <!-- ---- Playlist ---- -->
+      <section class="schermo" data-schermo="playlist" hidden>
+        <h2 class="titolo-neon titolo-schermo">Le tue playlist</h2>
+        <p class="sottotitolo" id="playlist-sotto"></p>
+        <div class="playlist-toolbar">
+          <button id="pl-nuova-intelligente" class="btn-cromo" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Coi filtri</button>
+          <button id="pl-nuova-manuale" class="btn-secondary" type="button">A mano</button>
+        </div>
+        <div id="playlist-lista" class="lista"></div>
+      </section>
+
+      <!-- ---- In riproduzione ---- -->
+      <section class="schermo" data-schermo="riproduzione" hidden>
+        <div id="riproduzione-vuoto" class="vuoto muted">
+          <div class="disco-vuoto"><div></div></div>
+          <p>Nessuna playlist avviata. Aprine una dalla scheda Playlist e tocca "Avvia".</p>
+        </div>
+        <div id="riproduzione-contenuto" hidden>
+          <div class="rip-testa">
+            <div class="rip-etichetta">In riproduzione</div>
+            <h2 id="riproduzione-nome" class="rip-nome"></h2>
+            <span id="riproduzione-piano" class="pill"></span>
+          </div>
+
+          <div class="disco-zona" aria-hidden="true">
+            <div class="piatto"><div id="disco" class="disco"><div class="etichetta-disco" id="etichetta-disco"></div></div></div>
+            <div class="braccio-base"></div>
+            <div class="braccio"><div class="testina"></div></div>
+          </div>
+
+          <div id="riproduzione-corrente"></div>
+
+          <div class="comandi">
+            <button id="rip-casuale" class="tasto-tondo" type="button" aria-label="Ordine casuale" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg></button>
+            <button id="rip-indietro" class="tasto-cromo" type="button" aria-label="Brano precedente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 20L9 12l10-8z" fill="currentColor"/><path d="M5 19V5"/></svg></button>
+            <button id="rip-principale" class="tasto-grande" type="button" aria-label="Suona"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg></button>
+            <button id="rip-avanti" class="tasto-cromo" type="button" aria-label="Brano successivo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4l10 8-10 8z" fill="currentColor"/><path d="M19 5v14"/></svg></button>
+            <button id="rip-ripeti" class="tasto-tondo" type="button" aria-label="Ripeti: no" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg><span class="ripeti-uno" id="rip-ripeti-uno" hidden>1</span></button>
+          </div>
+          <div id="rip-principale-testo" class="comandi-testo"></div>
+          <div id="riproduzione-azioni" class="riproduzione-azioni"></div>
+
+          <div class="riepilogo"><span>A seguire</span><span id="prossimi-info" class="riepilogo-ordine"></span></div>
+          <div id="riproduzione-prossimi" class="lista"></div>
+        </div>
+      </section>
+
+      <!-- ---- Impostazioni ---- -->
+      <section class="schermo" data-schermo="impostazioni" hidden>
+        <h2 class="titolo-neon titolo-schermo">Impostazioni</h2>
+
+        <div class="riquadro">
+          <h3>Dati</h3>
+          <div id="imp-dati-info" class="muted small"></div>
+          <button id="imp-aggiorna" class="btn-secondary">Aggiorna dati ora</button>
+          <button id="imp-svuota-cache" class="btn-secondary">Svuota cache dati</button>
+        </div>
+
+        <div class="riquadro">
+          <h3>Riproduzione</h3>
+          <label class="switch"><input id="imp-newpipe" type="checkbox" checked> Usa NewPipe per YouTube e SoundCloud</label>
+          <p class="muted small">Ordine con cui il Jukebox sceglie chi suona un brano (tocca ↑/↓ per cambiarlo).</p>
+          <ul id="imp-ordine-motori" class="ordine-motori"></ul>
+          <div class="muted small" id="imp-spotify-stato">Spotify: non configurato (arriva con una prossima versione).</div>
+        </div>
+
+        <div class="riquadro">
+          <h3>Account</h3>
+          <div class="muted small">Repo dati: <code id="imp-repo"></code></div>
+          <button id="imp-cambia-token" class="btn-secondary">Cambia token</button>
+        </div>
+
+        <div class="muted small" id="imp-versione"></div>
+      </section>
+
+    </main>
+
+    <button id="mini-lettore" class="mini-lettore" type="button" hidden>
+      <span class="mini-disco" aria-hidden="true"></span>
+      <span class="mini-testo"><span class="mini-titolo" id="mini-titolo"></span><span class="mini-sotto" id="mini-sotto"></span></span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+    </button>
+
+    <nav class="tabbar" aria-label="Sezioni">
+      <button class="tab" data-tab="cerca" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Cerca</button>
+      <button class="tab" data-tab="generi" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg>Generi</button>
+      <button class="tab" data-tab="playlist" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h12M4 11h12M4 16h7"/><circle cx="17" cy="18" r="2"/><path d="M19 18V10"/></svg>Playlist</button>
+      <button class="tab" data-tab="riproduzione" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg>Suona</button>
+      <button class="tab" data-tab="impostazioni" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Altro</button>
+    </nav>
+  </div>
+
+  <!-- ================= FOGLIO BRANO ================= -->
+  <div id="foglio-overlay" class="overlay" hidden>
+    <div id="foglio-brano" class="foglio" role="dialog" aria-modal="true"></div>
+  </div>
+
+  <!-- ================= AGGIUNGI A PLAYLIST ================= -->
+  <div id="aggiungi-overlay" class="overlay" hidden>
+    <div id="aggiungi-a-playlist" class="foglio" role="dialog" aria-modal="true"></div>
+  </div>
+
+  <!-- ================= COSTRUTTORE PLAYLIST ================= -->
+  <div id="costruttore-overlay" class="overlay" hidden>
+    <div id="costruttore" class="foglio foglio-grande" role="dialog" aria-modal="true"></div>
+  </div>
+
+  <!-- ================= PANNELLO FILTRI (Cerca) ================= -->
+  <div id="filtri-overlay" class="overlay" hidden>
+    <div id="filtri-pannello" class="foglio" role="dialog" aria-modal="true"></div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+  <div id="spinner" class="spinner" hidden></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "Jukebox",
+  "short_name": "Jukebox",
+  "description": "Il tuo catalogo musicale: ricerca, playlist a più filtri e assistente DJ, sul telefono.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#070B18",
+  "background_color": "#0C1226",
+  "lang": "it",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

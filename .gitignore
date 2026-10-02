@@ -1,0 +1,20 @@
+# Configurazione locale (il PAT lo inserisce l'utente a runtime: mai nel repo).
+config.local.*
+
+# Dati veri: questo repo è PUBBLICO. I dati stanno nel repo separato app-dati/
+# (privato) e in ogni caso non devono mai finire qui per errore.
+*.sqlite
+*.sqlite-*
+*.mp3
+*.m4a
+*.wav
+app-dati/
+
+# Sistema operativo / editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Python (strumenti/esporta.py)
+__pycache__/
+*.pyc
