@@ -39,9 +39,12 @@ app/
 │   └── lettore.js              lettore interno: <audio> + Media Session (schermo spento)
 ├── strumenti/
 │   ├── esporta.py            genera app-dati/catalogo.json da liste/dati/catalogo.sqlite
-│   ├── prepara.py            procura l'audio delle playlist per il telefono (M2)
+│   ├── prepara.py            procura l'audio delle playlist per il telefono e dell'archivio (M2)
+│   ├── archivio.py           registro, metadati, indice, collegamenti, riallineamento, orfani
 │   ├── valuta.mjs            brani di ogni playlist con le regole dell'app (per prepara.py)
-│   └── test_prepara.py       test dell'abbinamento su YouTube Music
+│   ├── test_prepara.py       test dell'abbinamento su YouTube Music
+│   ├── test_archivio.py      test di metadati, nomi leggibili, fonti
+│   └── test_esporta.py       test della tabella degli id rinominati
 ├── test/
 │   ├── logica.test.mjs      test Node della logica pura
 │   └── fixture.json          catalogo finto (nessun dato reale: repo pubblico)
@@ -84,6 +87,8 @@ Apri `http://localhost:8000` e usa il token nell'onboarding.
 ```bash
 node test/logica.test.mjs
 python strumenti/test_prepara.py
+python strumenti/test_archivio.py
+python strumenti/test_esporta.py
 ```
 
 `test/fixture.json` è un mini-catalogo **completamente inventato**: nessun dato
@@ -152,24 +157,90 @@ Android non dice al Jukebox quando un brano è finito.
    python strumenti/prepara.py              # le playlist segnate
    python strumenti/prepara.py "Hip Rap"    # oppure per nome
    ```
-   Procura l'audio in `05-hobby/musica/audio-telefono/` (fuori dai repo, riusato
+   Procura l'audio in `05-hobby/musica/audio/` (fuori dai repo, riusato
    le volte dopo) e, se il telefono è collegato col debug USB, lo copia in
    `Download/Jukebox/`. I brani solo-Spotify li cerca su YouTube Music e li
    abbina per artista, titolo e durata (`abbinamenti.json`: un abbinamento
    sbagliato si corregge lì, cambiando `videoId`, e cancellando il file in
-   `audio-telefono/`).
+   `audio/`).
 3. **Nel Jukebox**: Altro → Musica sul telefono → Aggiungi file → apri
    `Download/Jukebox`, tieni premuto il primo file → Seleziona tutto.
 4. Poi la cartella `Download/Jukebox` si può svuotare
    (`python strumenti/prepara.py --pulisci`): i file sono già dentro il Jukebox.
 
-Spazio: circa 1 MB al minuto (m4a ~128 kbps), una playlist sta fra 0,3 e 3 GB.
+Formato: da YouTube l'audio **Opus** (`.webm`, qualità variabile, circa 110-160 kbps:
+scelta di Nicolò del 05/10/2026); da SoundCloud il suo AAC 160 o mp3 128 (lì l'Opus
+è a 64 kbps). I vecchi `.m4a` arrivati da YouTube si rifanno da soli al giro
+successivo (`audio/origini.json` ricorda da dove arriva ogni file).
+
+Spazio: circa 1 MB al minuto, una playlist sta fra 0,3 e 3 GB.
+
+**Archivio sul PC** (scelta di Nicolò, 05/10/2026): tutti i brani "scelti" del
+catalogo (circa 8.400, 39 GB) scaricati in `05-hobby/musica/audio/` a giri da
+circa 30 minuti (circa 150 brani a giro), lanciati a mano:
+```bash
+python strumenti/prepara.py --archivio --minuti 30   # un giro
+python strumenti/prepara.py --archivio --prova       # a che punto è
+```
+Ordine: brani delle playlist, poi link diretti (YouTube, SoundCloud, file),
+poi i solo-Spotify (trovati su YouTube Music circa 9 su 10). I brani già
+cercati e non trovati non si ricercano (`--riprova` per rifarlo). Con
+l'archivio, preparare una playlist per il telefono diventa una copia.
+
+Cosa contiene l'archivio (`05-hobby/musica/audio/`, cura in `strumenti/archivio.py`):
+- `<id brano>.<ext>`: i file. Dentro, i **metadati** (artista, titolo con la
+  versione, genere, anno, BPM, Camelot, id), scritti con `ffmpeg -c copy` subito
+  dopo ogni scaricamento, senza ricodificare. Provati con ffprobe e VLC:
+  - `.mp3`: ID3v2.3 + ID3v1; BPM e tonalità in TBPM e TKEY. VLC legge il commento
+    solo dall'ID3v1, per questo è corto e ASCII (`128 BPM, 8B, id …`);
+  - `.m4a`: solo i campi standard. Con campi personalizzati VLC non legge più
+    nulla, quindi BPM, tonalità e id stanno nel commento;
+  - `.webm`: tag Matroska (anno in DATE_RELEASED, BPM, INITIAL_KEY). VLC mostra
+    l'artista come "Artista dell'album".
+- `registro.json`: per ogni file la **fonte** del catalogo (`yt:…`, `sp:…`,
+  `sc:…`, `lo:…`), la provenienza, la data di scaricamento e l'impronta dei
+  metadati scritti.
+- `indice.html` e `indice.csv`: l'elenco leggibile (artista, titolo, genere,
+  durata, provenienza, file), rigenerato a ogni giro.
+- `abbinamenti.json`, `inviati.json`: ricerche su YouTube Music e copie mandate
+  al telefono (con la data di scaricamento: si ricopia solo se cambia l'audio,
+  non i metadati, quindi il Jukebox non reimporta niente).
+- `_orfani/`: file il cui brano non c'è più nel catalogo. Non si cancellano da soli.
+
+E accanto, `05-hobby/musica/audio-per-nome/`: **hard link NTFS** chiamati
+"Artista - Titolo (versione).ext", rigenerati a ogni giro (stesso file su disco,
+nessuno spazio in più, niente permessi di amministratore). Nomi ripuliti dai
+caratteri vietati da Windows e troncati a 140 caratteri; se due brani darebbero
+lo stesso nome, entrambi prendono anche l'id.
+
+```bash
+python strumenti/prepara.py --metadati     # dopo una correzione dei titoli: riscrive solo i metadati cambiati
+python strumenti/prepara.py --riallinea    # dopo una ricostruzione del catalogo (anche --orfani)
+python strumenti/prepara.py --indice       # solo indice e collegamenti
+```
+
+**Gli id possono cambiare.** L'id di un brano è un'impronta delle sue fonti
+(`liste/motore/catalogo.py`): resta uguale correggendo un titolo o ricostruendo
+il catalogo, cambia se si uniscono doppioni, se si separa una versione o se un
+brano guadagna o perde una fonte (o se una correzione lo fonde con un altro).
+Per questo:
+- `esporta.py` scrive in `catalogo.json` la tabella cumulativa `rinominati`
+  (id vecchio → id nuovo, trovata attraverso le fonti in comune);
+- il Jukebox la usa all'avvio: sposta i file salvati sul telefono e corregge le
+  playlist a mano senza reimportare niente;
+- `prepara.py --riallinea` riaggancia i file dell'archivio (dalla fonte del
+  registro o dalla tabella), tiene il migliore se due finiscono sullo stesso
+  brano e sposta il resto in `_orfani/`.
+
 "Libera spazio" nel foglio di una playlist toglie i suoi brani che non servono
 ad altre playlist tenute sul telefono.
 
 **Se si ferma:**
 - `HTTP Error 403` → YouTube è cambiato: `python -m pip install -U "yt-dlp[default]"`
   e rilancia (riprende da dove era).
+- "Sign in to confirm you're not a bot" → YouTube ferma chi scarica troppo di fila
+  (successo il 05/10/2026 dopo circa 850 brani in 2 ore). Dopo 3 rifiuti di fila il giro
+  si ferma da solo: riprovare fra qualche ora, senza insistere.
 - La musica si interrompe a schermo spento → batteria di Chrome su "Senza
   restrizioni" (sugli Oppo: Impostazioni → Batteria → Chrome).
 
@@ -202,6 +273,7 @@ per versione con campi abbreviati (`a` artista, `t` titolo, `v` versione, `k` ti
 `g` indice del macro-genere, `b`/`c`/`e` BPM/Camelot/energia, `s` le fonti
 `[[codice, riferimento], …]` con codice `sp`/`yt`/`sc`/`lo`, `r` gli indici delle
 raccolte di provenienza, `x` presente solo se la versione è "di esplorazione").
+In più `rinominati: {id vecchio: id nuovo}` (dal 05/10/2026, vedi sopra).
 
 `app-dati/playlist.json` (scritto dall'app, non da `esporta.py`): `{schema:1,
 playlist:[{id, nome, tipo:"intelligente"|"manuale", regole|brani, ordine, seme,

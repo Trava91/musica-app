@@ -5,7 +5,7 @@
 // per conto proprio (Cache Storage "jukebox-dati", localStorage per le playlist).
 // Qui si mette in cache solo lo "shell" statico dell'app.
 
-const CACHE = "jukebox-v8"; // bump a ogni deploy per invalidare lo shell
+const CACHE = "jukebox-v9"; // bump a ogni deploy per invalidare lo shell
 
 const SHELL = [
   "./",

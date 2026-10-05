@@ -45,7 +45,8 @@ function salvaInCache(testo) {
 
 function preparaCatalogo(dati) {
   preparaIndice(dati.brani, dati.raccolte);
-  return { brani: dati.brani, macro: dati.macro, raccolte: dati.raccolte, costruitoIl: dati.costruito_il };
+  // rinominati: id vecchio → id nuovo (vedi strumenti/esporta.py), per i file e le playlist salvati.
+  return { brani: dati.brani, macro: dati.macro, raccolte: dati.raccolte, costruitoIl: dati.costruito_il, rinominati: dati.rinominati || {} };
 }
 
 // Sorgente "url": niente token né sha. Online scarica, offline ripiega sulla cache.

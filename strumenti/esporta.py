@@ -31,13 +31,22 @@ e la sezione "Contratto dati" di README.md.
       "r": [ <indici in "raccolte"> ],
       "q": "AAAA-MM-GG" (data di aggiunta più recente tra le appartenenze; assente se ignota)
     }, ...
-  ]
+  ],
+  "rinominati": { "<id vecchio>": "<id nuovo>", ... }   # dal 05/10/2026, vedi sotto
 }
+
+"rinominati": l'id di un brano è un'impronta delle sue fonti, quindi cambia se si
+uniscono doppioni o se un brano guadagna/perde una fonte. Confrontando col
+catalogo.json precedente attraverso le fonti, l'export dice quale id nuovo ha preso
+il posto di quello vecchio. È cumulativa (le voci vecchie puntano all'arrivo di
+oggi), così il Jukebox e prepara.py --riallinea ritrovano i brani anche dopo più
+export. Un id sparito senza eredi (tutte le sue fonti tolte) non ha voce.
 """
 from __future__ import annotations
 
 import json
 import shutil
+from collections import Counter
 import sqlite3
 import sys
 import tempfile
@@ -210,8 +219,31 @@ def verifica(dati: dict):
         print("  Uno o più controlli campione sono falliti: dai un'occhiata al database.")
 
 
+def calcola_rinominati(precedenti: list[dict], nuovi: list[dict], vecchi: dict | None = None) -> dict:
+    """Id vecchio → id nuovo, attraverso le fonti in comune (vedi docstring)."""
+    ids_nuovi = {b["id"] for b in nuovi}
+    fonte_a_nuovo = {f"{c}:{r}": b["id"] for b in nuovi for c, r in b["s"]}
+    mappa = {}
+    for b in precedenti:
+        if b["id"] in ids_nuovi:
+            continue
+        eredi = Counter(fonte_a_nuovo[k] for c, r in b["s"] if (k := f"{c}:{r}") in fonte_a_nuovo)
+        if eredi:  # se si è diviso, vince il brano con più fonti in comune
+            mappa[b["id"]] = eredi.most_common(1)[0][0]
+    for vecchio, arrivo in (vecchi or {}).items():
+        if vecchio in ids_nuovi:
+            continue  # l'id è tornato a esistere
+        oggi = arrivo if arrivo in ids_nuovi else mappa.get(arrivo)
+        if oggi:
+            mappa.setdefault(vecchio, oggi)
+    return mappa
+
+
 def main():
     dati = esporta()
+    precedente = json.loads(DEST.read_text(encoding="utf-8")) if DEST.exists() else None
+    if precedente:
+        dati["rinominati"] = calcola_rinominati(precedente["brani"], dati["brani"], precedente.get("rinominati"))
     DEST.parent.mkdir(parents=True, exist_ok=True)
     testo = json.dumps(dati, ensure_ascii=False, separators=(",", ":"))
     DEST.write_text(testo, encoding="utf-8", newline="\n")
@@ -222,6 +254,9 @@ def main():
     print(f"Esportato: {len(dati['brani'])} brani, {len(dati['raccolte'])} raccolte, "
           f"{dimensione_kb} KB → {DEST.relative_to(APP.parent)}")
     print(f"  scelti: {scelti} | esplorazione: {len(dati['brani']) - scelti} | con BPM: {con_bpm}")
+    if precedente:
+        nuovi_oggi = sum(1 for b in precedente["brani"] if b["id"] in dati.get("rinominati", {}))
+        print(f"  id cambiati da questo export: {nuovi_oggi} · tabella rinominati: {len(dati.get('rinominati', {}))} voci")
     if dimensione_kb > 5000:
         print(f"  ATTENZIONE: sopra i 5 MB previsti dal piano ({dimensione_kb} KB).")
     verifica(dati)

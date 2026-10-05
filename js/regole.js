@@ -93,6 +93,18 @@ function ordina(elenco, ordine, seme) {
 // l'elenco ordinato dei brani. ctx serve solo per "soloSchermoSpento" (vedi
 // motori.js): passalo com'è quando disponibile, altrimenti la regola esclude
 // semplicemente tutto (nessun motore continuo configurato).
+// Le playlist salvate citano i brani per id. Se un id è cambiato (catalogo.rinominati,
+// vedi strumenti/esporta.py: doppioni uniti, fonti aggiunte o tolte) si usa quello
+// nuovo, senza doppioni. Restituisce la playlist com'è se non cambia niente.
+export function rimappaPlaylist(p, rinominati = {}) {
+  if (!rinominati || !Object.keys(rinominati).length) return p;
+  const nuovi = (ids) => [...new Set(ids.map((id) => rinominati[id] || id))];
+  let r = p;
+  if (p.brani?.some((id) => rinominati[id])) r = { ...r, brani: nuovi(p.brani) };
+  if (p.regole?.escludiBrani?.some((id) => rinominati[id])) r = { ...r, regole: { ...p.regole, escludiBrani: nuovi(p.regole.escludiBrani) } };
+  return r;
+}
+
 export function valuta(playlist, brani, ctx) {
   let elenco;
   if (playlist.tipo === "manuale") {

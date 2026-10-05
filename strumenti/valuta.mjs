@@ -7,7 +7,7 @@
 
 import { readFileSync } from "node:fs";
 import { preparaIndice } from "../js/cerca.js";
-import { valuta } from "../js/regole.js";
+import { valuta, rimappaPlaylist } from "../js/regole.js";
 
 const [percorsoCatalogo, percorsoPlaylist] = process.argv.slice(2);
 const catalogo = JSON.parse(readFileSync(percorsoCatalogo, "utf-8"));
@@ -22,6 +22,6 @@ const uscita = (dati.playlist || []).map((p) => ({
   id: p.id,
   nome: p.nome,
   telefono: Boolean(p.telefono),
-  brani: valuta(p, catalogo.brani, ctx).map((b) => b.id),
+  brani: valuta(rimappaPlaylist(p, catalogo.rinominati), catalogo.brani, ctx).map((b) => b.id),
 }));
 process.stdout.write(JSON.stringify(uscita));

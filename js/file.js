@@ -48,6 +48,29 @@ export async function verifica() {
   return ids();
 }
 
+// Se l'id di un brano è cambiato (catalogo.rinominati, vedi strumenti/esporta.py)
+// il suo file passa all'id nuovo; se il brano nuovo ha già un file (doppioni
+// uniti) quello vecchio si toglie. Niente da reimportare. Restituisce quanti ne sposta.
+export async function riallinea(rinominati = {}, idValidi) {
+  const daSpostare = Object.keys(indice).filter((id) => !idValidi.has(id) && idValidi.has(rinominati[id]));
+  if (!daSpostare.length || !("caches" in globalThis)) return 0;
+  const c = await caches.open(CACHE);
+  let spostati = 0;
+  for (const vecchio of daSpostare) {
+    const nuovo = rinominati[vecchio];
+    const resp = await c.match(chiave(vecchio));
+    if (resp && !indice[nuovo]) {
+      await c.put(chiave(nuovo), resp);
+      indice[nuovo] = indice[vecchio];
+      spostati++;
+    }
+    await c.delete(chiave(vecchio));
+    delete indice[vecchio];
+  }
+  salvaIndice();
+  return spostati;
+}
+
 // L'id del brano dal nome del file: "c9412dc07ba6.m4a", anche "c9412dc07ba6 (1).m4a".
 export function idDaNome(nome) {
   const m = /^([0-9a-f]{12})(?![0-9a-z])/i.exec(nome.trim());

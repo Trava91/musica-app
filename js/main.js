@@ -8,6 +8,7 @@ import { GitHubApi, ApiError } from "./api.js";
 import * as dati from "./dati.js";
 import * as playlist from "./playlist.js";
 import * as file from "./file.js";
+import { rimappaPlaylist } from "./regole.js";
 import { UI, showToast } from "./ui.js";
 
 const $ = (s) => document.querySelector(s);
@@ -64,6 +65,14 @@ async function onOnboardingSubmit(e) {
   await bootApp();
 }
 
+// Un catalogo nuovo: se degli id sono cambiati, i file sul telefono li seguono.
+async function applicaCatalogo(catalogo) {
+  ui.setCatalogo(catalogo);
+  const idValidi = new Set(catalogo.brani.map((b) => b.id));
+  await file.riallinea(catalogo.rinominati, idValidi).catch(() => 0);
+  ui.ctx.fileIds = await file.verifica().catch(() => file.ids());
+}
+
 // --- avvio dell'app -----------------------------------------------------------
 async function bootApp() {
   show("app");
@@ -72,10 +81,9 @@ async function bootApp() {
     ui.ctx.priorita = leggiPreferenzaMotori();
     ui.ctx.usaNewPipe = leggiPreferenzaNewPipe();
     const catalogo = await dati.carica();
-    ui.setCatalogo(catalogo);
-    ui.ctx.fileIds = await file.verifica().catch(() => file.ids());
+    await applicaCatalogo(catalogo);
     const elencoPlaylist = await playlist.carica();
-    ui.setPlaylists(elencoPlaylist);
+    ui.setPlaylists(elencoPlaylist.map((p) => rimappaPlaylist(p, catalogo.rinominati)));
     ui.aggiornaPillMotore();
     ui.switchTab("cerca");
   } catch (err) {
@@ -92,7 +100,8 @@ function wireImpostazioni() {
     $("#spinner").hidden = false;
     try {
       const catalogo = await dati.carica({ forza: true });
-      ui.setCatalogo(catalogo);
+      await applicaCatalogo(catalogo);
+      ui.setPlaylists(ui.playlists.map((p) => rimappaPlaylist(p, catalogo.rinominati)));
       showToast("Dati aggiornati.", "ok");
       await refreshImpostazioni();
       if (ui.tab === "cerca") ui.renderCerca();

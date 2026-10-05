@@ -319,6 +319,17 @@ eq("linkApertura: un file locale non ha un link", link.linkApertura("file", ["lo
   eq("dopoFine: con ripeti uno rifà lo stesso", comandi.dopoFine(c, "a", tutti).id, "a");
 }
 
+// ======================================================== rimappaPlaylist ===
+
+{
+  const R = { vecchio1: "nuovo1", vecchio2: "unito", vecchio3: "unito" };
+  const man = { id: "m", tipo: "manuale", brani: ["vecchio1", "f01", "vecchio2", "vecchio3"] };
+  eq("rimappa: id vecchi → nuovi, doppioni uniti una volta sola", regole.rimappaPlaylist(man, R).brani, ["nuovo1", "f01", "unito"]);
+  eq("rimappa: esclusioni nelle playlist coi filtri", regole.rimappaPlaylist({ tipo: "intelligente", regole: { escludiBrani: ["vecchio1"] } }, R).regole.escludiBrani, ["nuovo1"]);
+  ok("rimappa: nessun cambio → stessa playlist", regole.rimappaPlaylist(man, {}) === man);
+  ok("rimappa: tabella senza id della playlist → stessa playlist", regole.rimappaPlaylist({ tipo: "manuale", brani: ["f01"] }, R).brani[0] === "f01");
+}
+
 // ============================================================== file.js ===
 
 eq("idDaNome: nome preparato dal PC", idDaNome("c9412dc07ba6.m4a"), "c9412dc07ba6");
