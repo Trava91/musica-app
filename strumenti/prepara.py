@@ -42,6 +42,14 @@ mano. Ordine: prima i brani delle playlist, poi quelli con un link diretto
 (YouTube, SoundCloud, file), per ultimi i solo-Spotify. I brani già cercati e
 non trovati non si ricercano (si riprovano con --riprova).
 
+Durante un giro: il PC non va in standby (lo schermo può spegnersi; la richiesta
+a Windows sparisce da sola quando il programma finisce, anche se si chiude male),
+un solo giro alla volta (audio/.giro-in-corso; un blocco di un giro morto si
+riconosce e si toglie, insieme ai file rimasti a metà), e a fine giro una riga
+in audio/giri.json (quando, quanti, errori, anti-bot). Codici di uscita: 0 ok,
+3 giro fermato dal controllo anti-bot di YouTube, 4 un altro giro è già in corso.
+La skill /archivio-musica usa tutto questo.
+
 Telefono: un file si ricopia solo se il suo AUDIO è cambiato (inviati.json
 ricorda la data di scaricamento), non se cambiano solo i metadati: così il
 Jukebox non reimporta niente inutilmente.
@@ -73,6 +81,8 @@ DATI = MUSICA / "app-dati"
 AUDIO = MUSICA / "audio"
 ABBINAMENTI = AUDIO / "abbinamenti.json"
 REGISTRO = AUDIO / A.REGISTRO  # id → fonte, provenienza, scaricato, impronta metadati
+GIRI = AUDIO / "giri.json"  # storico dei giri (per il riepilogo e per il limite di YouTube)
+BLOCCO = AUDIO / ".giro-in-corso"  # pid del giro attivo
 INVIATI = AUDIO / "inviati.json"  # id → data di scaricamento della copia mandata al telefono
 PER_NOME = MUSICA / "audio-per-nome"
 CARTELLA_TELEFONO = "/sdcard/Download/Jukebox"
@@ -336,9 +346,59 @@ def origine(brano: dict, registro: dict, abbinamenti: dict) -> str:
 
 
 def da_rifare_in_opus(brano: dict, registro: dict, abbinamenti: dict) -> bool:
-    """Un vecchio .m4a arrivato da YouTube: va riscaricato in Opus."""
+    """Un vecchio .m4a arrivato da YouTube: va riscaricato in Opus. Ma una volta
+    sola: se YouTube non ha l'Opus di quel video ridà l'm4a, e il registro lo
+    ricorda (opus_cercato) per non riscaricarlo a ogni giro."""
     f = file_audio(brano["id"])
-    return bool(f) and f.suffix.lower() == ".m4a" and origine(brano, registro, abbinamenti).startswith("YouTube")
+    return (bool(f) and f.suffix.lower() == ".m4a" and origine(brano, registro, abbinamenti).startswith("YouTube")
+            and not registro.get(brano["id"], {}).get("opus_cercato"))
+
+
+# ------------------------------------------------------------- durante un giro --
+
+def tieni_sveglio() -> None:
+    """Chiede a Windows di non andare in standby finché questo programma gira
+    (lo schermo può spegnersi). La richiesta muore col processo: niente da chiudere."""
+    try:
+        import ctypes
+        ctypes.windll.kernel32.SetThreadExecutionState(0x80000000 | 0x00000001)  # ES_CONTINUOUS | ES_SYSTEM_REQUIRED
+    except Exception:
+        pass  # non Windows: niente da fare
+
+
+def processo_vivo(pid: int) -> bool:
+    r = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/NH"], capture_output=True, text=True)
+    return str(pid) in r.stdout
+
+
+def prendi_blocco() -> bool:
+    """Un solo giro alla volta. Se il blocco è di un giro morto (sessione chiusa,
+    PC spento), lo toglie e pulisce i file rimasti a metà."""
+    if BLOCCO.exists():
+        try:
+            pid = int(BLOCCO.read_text().strip() or 0)
+        except ValueError:
+            pid = 0
+        if pid and pid != os.getpid() and processo_vivo(pid):
+            return False
+    for resto in [*AUDIO.glob("*.part"), *AUDIO.glob("*.ytdl"), *AUDIO.glob("*.temp.*"), *(AUDIO / "_tmp").glob("*")]:
+        resto.unlink(missing_ok=True)
+    BLOCCO.write_text(str(os.getpid()))
+    return True
+
+
+def lascia_blocco() -> None:
+    try:
+        if BLOCCO.exists() and BLOCCO.read_text().strip() == str(os.getpid()):
+            BLOCCO.unlink()
+    except OSError:
+        pass
+
+
+def annota_giro(voce: dict) -> None:
+    storia = leggi_json(GIRI, [])
+    storia.append(voce)
+    scrivi_json(GIRI, storia[-200:])
 
 
 def finisci_giro(brani: dict, macro: list[str], registro: dict) -> None:
@@ -421,6 +481,18 @@ def main() -> int:
         print(f"Svuotata {CARTELLA_TELEFONO} sul telefono.")
         return 0
 
+    if not a.prova:
+        if not prendi_blocco():
+            print("Un altro giro è già in corso: aspetta che finisca (o fermalo) prima di lanciarne un altro.")
+            return 4
+        tieni_sveglio()
+    try:
+        return lavora(a, adb)
+    finally:
+        lascia_blocco()
+
+
+def lavora(a, adb) -> int:
     subprocess.run(["git", "-C", str(DATI), "pull", "-q"], check=False)
     catalogo = json.loads((DATI / "catalogo.json").read_text(encoding="utf-8"))
     brani = {b["id"]: b for b in catalogo["brani"]}
@@ -500,7 +572,9 @@ def main() -> int:
 
     falliti = []
     inizio = time.time()
+    inizio_iso = A.adesso()
     fatti = 0
+    fermato_anti_bot = False
     rifiuti_di_fila = 0  # "conferma di non essere un bot": YouTube ci ha fermati per troppi scaricamenti
     for n, i in enumerate(mancanti, 1):
         if a.minuti and time.time() - inizio > a.minuti * 60:
@@ -513,6 +587,8 @@ def main() -> int:
             prov = "YouTube Music" if come.startswith("YouTube Music") else come
             # Una data di scaricamento nuova = audio nuovo: il telefono riceverà la copia aggiornata.
             registro[i] = {"fonte": A.fonte_ancora(b, prov), "origine": prov, "scaricato": A.adesso()}
+            if prov.startswith("YouTube"):
+                registro[i]["opus_cercato"] = True  # scaricato con l'Opus come prima scelta
             tag = A.tag_brano(b, macro)
             f = file_audio(i)
             try:
@@ -531,6 +607,7 @@ def main() -> int:
                 # Insistere allunga il blocco: meglio fermarsi e riprovare fra qualche ora.
                 print("\nYouTube ha chiesto di confermare di non essere un bot (troppi scaricamenti di fila).")
                 print("Mi fermo qui: riprova fra qualche ora, il giro riparte da dove sono arrivato.")
+                fermato_anti_bot = True
                 break
         time.sleep(1)  # un po' di garbo con YouTube
 
@@ -542,6 +619,13 @@ def main() -> int:
         gb = sum(file_audio(i).stat().st_size for i in pronti) / 1073741824
         print(f"\nGiro finito: {fatti - len(falliti)} brani scaricati in {(time.time() - inizio) / 60:.0f} minuti.")
         print(f"Archivio sul PC: {len(pronti)} di {len(ids)} brani scelti ({gb:.1f} GB).")
+        annota_giro({
+            "inizio": inizio_iso, "fine": A.adesso(), "minuti": round((time.time() - inizio) / 60),
+            "scaricati": fatti - len(falliti), "falliti": len(falliti),
+            "anti_bot": sum("not a bot" in m for _, m in falliti), "errori_403": sum("403" in m for _, m in falliti),
+            "rete": sum("Unable to download API page" in m or "HTTPSConnection" in m for _, m in falliti),
+            "fermato_anti_bot": fermato_anti_bot, "archivio": len(pronti), "totale": len(ids), "gb": round(gb, 1),
+        })
     if falliti:
         print(f"\nNon procurati ({len(falliti)}): restano suonabili con Spotify/NewPipe.")
         anti_bot = sum("not a bot" in m for _, m in falliti)
@@ -557,7 +641,7 @@ def main() -> int:
     finisci_giro(brani, macro, registro)
 
     if a.solo_pc:
-        return 0
+        return 3 if fermato_anti_bot else 0
     if not adb or not telefono_collegato(adb):
         print("\nTelefono non collegato: i file sono pronti sul PC. Collegalo (debug USB) e rilancia per copiarli.")
         return 0
