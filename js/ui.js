@@ -116,6 +116,7 @@ export class UI {
     this.playlistAttiva = null;
     this.esterno = null;    // ultimo brano mandato a un'app esterna (NewPipe, Spotify)
     this.motoreCoda = null; // il motore con cui suona la coda attuale ("file" = lettore interno)
+    this.prossimiMostrati = 30; // quanti brani di "A seguire" si vedono (cresce con "Mostra altri")
     this.lettore = new Lettore({
       onFine: (b) => this.fineBrano(b),
       onStato: () => this.aggiornaStatoLettore(),
@@ -171,6 +172,7 @@ export class UI {
       this.renderRiproduzione();
     });
     $("#mini-apri").addEventListener("click", () => this.switchTab("riproduzione"));
+    $("#prossimi-altri").addEventListener("click", () => { this.prossimiMostrati += 30; this.renderRiproduzione(); });
     $$(".overlay").forEach((ov) => ov.addEventListener("click", (e) => { if (e.target === ov) ov.hidden = true; }));
   }
 
@@ -453,7 +455,7 @@ export class UI {
     const b = this.coda?.corrente;
     this.lettore.ferma();
     this.esterno = b || null;
-    this.aggiornaStatoLettore();
+    if (this.coda) this.renderRiproduzione(); else this.aggiornaStatoLettore();
     apriLink(link.linkApertura(motore, fonte, { android: ANDROID }));
   }
 
@@ -837,6 +839,7 @@ export class UI {
     this.playlistAttiva = p;
     this.coda = new Coda(brani, { ripeti: "no" });
     if (da) this.coda.salta(da.id);
+    this.prossimiMostrati = 30;
     this.saltati = saltati;
     this.lettore.ferma();
     this.esterno = null;
@@ -966,7 +969,11 @@ export class UI {
     ripeti.setAttribute("aria-label", `Ripeti: ${this.coda.ripeti}`);
     $("#rip-ripeti-uno").hidden = this.coda.ripeti !== "uno";
 
-    const prossimi = this.coda.prossimi.slice(0, 30);
+    const tutti = this.coda.prossimi;
+    const prossimi = tutti.slice(0, this.prossimiMostrati);
+    const altri = $("#prossimi-altri");
+    altri.hidden = tutti.length <= prossimi.length;
+    if (!altri.hidden) altri.textContent = `Mostra altri (${(tutti.length - prossimi.length).toLocaleString("it-IT")})`;
     $("#prossimi-info").textContent = this.coda.casuale ? "ordine casuale" : (NOMI_ORDINE_PL[this.playlistAttiva.ordine] || "");
     $("#riproduzione-prossimi").innerHTML = prossimi.map((b, i) => this.rigaBrano(b, (Math.max(this.coda.indice, 0)) + i + 1)).join("")
       || `<p class="vuoto muted">Nessun altro brano in coda.</p>`;
