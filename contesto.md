@@ -7,46 +7,59 @@ unificato di Nicolò (fase 1 della rotta musica, `liste/dati/catalogo.sqlite`),
 crea playlist a più filtri e le riproduce **senza mandarlo alle altre app** dove
 si può evitare. Nasce dal piano
 [`plans/2026-09-28-app-musica-telefono.md`](../../../plans/2026-09-28-app-musica-telefono.md),
-che copre 7 tappe (M1-M7); questa sessione ha implementato **solo M1**.
+che copre 7 tappe (M1-M7): **M1 e M2 sono fatte** (le note in fondo al piano
+raccontano deviazioni e scelte, data per data).
 
-È un repo Git **separato e pubblico** (`Trava91/musica-app`, da creare): il
-sorgente non contiene segreti né dati (il PAT lo inserisce l'utente a runtime).
-I dati veri (`catalogo.json`, `playlist.json`) stanno in `app-dati/`, cartella
-**sorella**, repo **privato** (`Trava91/musica-dati`, da creare) — scelta
-esplicita di Nicolò il 28/09/2026 ("per adesso privata con token").
+È un repo Git **separato e pubblico** (`Trava91/musica-app`, online su
+https://trava91.github.io/musica-app/): il sorgente non contiene segreti né dati
+(il PAT lo inserisce l'utente a runtime). I dati veri (`catalogo.json`,
+`playlist.json`) stanno in `app-dati/`, cartella **sorella**, repo **privato**
+(`Trava91/musica-dati`) — scelta esplicita di Nicolò il 28/09/2026 ("per adesso
+privata con token").
 
 ## Il problema che risolve: riprodurre senza uscire dal Jukebox
 
 Nicolò non vuole essere rimandato a YouTube/Spotify/SoundCloud, e vuole la
 musica anche a schermo spento. Ma YouTube **vieta** la riproduzione in
-background dal player incorporato (Developer Policies III.I.9) — è la stessa
-regola per cui Google ha chiuso i bot Discord Rythm e Groovy nel 2021 — e
-Spotify richiede **Premium** per essere comandato da un'altra app.
+background dal player incorporato (Developer Policies III.I.9) e Spotify
+richiede **Premium** per essere comandato da un'altra app. In più, con un'app
+esterna la coda non può andare avanti da sola: Android non avvisa il Jukebox
+quando un brano finisce.
 
-Soluzione a tre motori (`js/motori.js`), scelti in ordine di priorità per ogni
-brano:
-1. **file** sul telefono → suona nel Jukebox stesso, a schermo spento (M2, non
-   ancora implementata: oggi il foglio brano lo segnala e basta).
-2. **Spotify Premium** → comandato dal Jukebox, a schermo spento (M5, al
-   prossimo periodo Premium di Nicolò: l'app sviluppatore Spotify in modalità
-   dev funziona solo mentre il proprietario è abbonato).
-3. **NewPipe** → scelta di Nicolò (28/09/2026), sapendo che è fuori dal Play
-   Store e contro i termini di YouTube. Apre YouTube/SoundCloud senza pubblicità
-   e a schermo spento tramite un link `intent://…;package=org.schabi.newpipe`.
-4. **app Spotify gratuita** → ripiego universale, apre il brano scelto (Pick &
-   Play da settembre 2025) con pubblicità.
-5. **web** → ultimo ripiego, apre il link nel browser.
+Motori di riproduzione (`js/motori.js`), in ordine di priorità per ogni brano:
+1. **file** sul telefono → suona nel Jukebox stesso (`lettore.js`, Media
+   Session): avanza da solo, pausa vera, schermo spento. **È la strada scelta da
+   Nicolò il 02/10/2026** (strada A): i file li prepara il PC (vedi sotto).
+2. **Spotify Premium** → comandato dal Jukebox (M5, al prossimo periodo Premium
+   di Nicolò: l'app sviluppatore Spotify funziona solo mentre è abbonato).
+3. **NewPipe** → apre YouTube/SoundCloud senza pubblicità e a schermo spento
+   (`intent://…;package=org.schabi.newpipe`), un brano alla volta.
+4. **app Spotify gratuita** → apre il brano scelto, con pubblicità.
+5. **web** → ultimo ripiego.
 
-**Una playlist suona con UN SOLO motore alla volta** (`motori.pianoRiproduzione`):
-a schermo spento il Jukebox non può aprire un'altra app quando il motore
-cambierebbe, quindi mischiarli fermerebbe la coda al primo passaggio.
+**Una playlist suona con UN SOLO motore alla volta** (`motori.pianoRiproduzione`).
+
+## Archivio audio sul PC e file sul telefono
+
+- `strumenti/prepara.py` procura l'audio in `05-hobby/musica/audio/`
+  (fuori dai repo): da YouTube l'Opus, da SoundCloud AAC/mp3, i brani
+  solo-Spotify cercati su YouTube Music e abbinati per artista, titolo e durata.
+  Poi li copia sul telefono (adb, `Download/Jukebox`) e l'app li importa.
+- **Archivio** (scelta di Nicolò, 05/10/2026): tutti i brani "scelti"
+  (8.392, circa 40 GB) a giri da 30 minuti lanciati a mano. **Si gestisce con la
+  skill `/archivio-musica`** ("scarica un'altra tranche"), che rispetta il
+  limite anti-bot di YouTube (massimo 2-3 giri di fila). Al 06/10/2026:
+  1.333 brani, 6,8 GB.
+- `strumenti/archivio.py`: metadati dentro i file, `audio/indice.html`,
+  `audio-per-nome/` (hard link), registro delle fonti, riallineamento e orfani.
 
 ## Regola d'oro: il contratto dati
 
 `strumenti/esporta.py` (Python, autonomo, non importa da `liste/motore/`) legge
 **una copia** di `liste/dati/catalogo.sqlite` e scrive `app-dati/catalogo.json`
 nel contratto v1 documentato in testa allo script. `js/dati.js` lo legge con
-quella stessa forma (campi abbreviati: `a`/`t`/`v`/`k`/`g`/`b`/`c`/`e`/`s`/`r`/`x`/`q`).
+quella stessa forma (campi abbreviati: `a`/`t`/`v`/`k`/`g`/`b`/`c`/`e`/`s`/`r`/`x`/`q`,
+più la tabella `rinominati`).
 
 > **Se cambia un campo del contratto, va cambiato su ENTRAMBI i lati**:
 > `esporta.py` *e* `js/dati.js` (più `js/cerca.js`, che si aspetta quei nomi).
@@ -54,49 +67,48 @@ quella stessa forma (campi abbreviati: `a`/`t`/`v`/`k`/`g`/`b`/`c`/`e`/`s`/`r`/`
 Per `playlist.json` il contratto è simmetrico ma **scritto dall'app stessa**
 (non da `esporta.py`): la forma è documentata in testa a `js/regole.js`.
 
-## Perché non tocca `liste/` durante l'implementazione
+**Gli id dei brani possono cambiare** (sono impronte delle fonti: cambiano se
+si uniscono doppioni o un brano guadagna/perde una fonte; non cambiano
+correggendo un titolo). Per questo `esporta.py` scrive la tabella cumulativa
+`rinominati`, il Jukebox la usa per spostare i file e correggere le playlist, e
+`prepara.py --riallinea` riaggancia l'archivio. A revisione del catalogo finita
+resta da rendere gli id stabili alla radice (`liste/motore/catalogo.py`).
 
-La revisione del catalogo (fase 1) può proseguire in un'altra sessione mentre si
-lavora qui: `esporta.py` fa sempre `shutil.copy2` prima di aprire il database,
-mai l'originale, perché quella sessione può ricostruirlo con `os.replace` in
-qualsiasi momento. Nessun file sotto `liste/` viene toccato da questo progetto
-prima dello Step 9.1 del piano (aggancio a `aggiorna.py`), e solo dopo che la
-revisione risulta chiusa.
+## Perché non tocca `liste/`
+
+La revisione del catalogo (fase 1) prosegue in un'altra sessione: `esporta.py`
+fa sempre `shutil.copy2` prima di aprire il database, mai l'originale. Nessun
+file sotto `liste/` viene toccato da questo progetto prima dello Step 9.1 del
+piano (aggancio a `aggiorna.py`), e solo a revisione chiusa.
 
 ## Stato
 
-- **2026-09-28 (questa sessione):** implementata la **M1** — catalogo esportato
-  (`esporta.py`), scheletro PWA, ricerca e filtri (`cerca.js`), playlist
-  intelligenti/manuali a più filtri combinati (`regole.js`), nucleo di teoria
-  armonica per l'ordine "percorso armonico" (`dj.js`, solo Camelot/BPM: i
-  suggerimenti DJ veri arrivano con M4), scelta del motore di riproduzione per
-  brano e per playlist (`motori.js`), link verso NewPipe/Spotify (`link.js`),
-  coda di riproduzione (`coda.js`), lettura/scrittura playlist con lock
-  ottimistico (`playlist.js`), interfaccia completa a 5 schede (`ui.js`/`main.js`).
-  84 test Node passano (`test/logica.test.mjs`, dati tutti inventati).
+- **M1 (28/09/2026):** ricerca e filtri, playlist coi filtri e a mano, motori,
+  link verso NewPipe/Spotify, coda, 5 schede.
 - **Estetica (01–02/10/2026):** jukebox anni '50 in blu notte con neon, dal
-  disegno su tela Claude Design "Jukebox anni '50"; caratteri in `fonts/`.
-  Generi raggruppati solo nella vista (`js/generi.js`): house/techno → "Tech
-  house", disco house + disco/funk/soul → "Disco".
-- **Verificato:** anteprima sul PC (`?dati=../app-dati/catalogo.json`) provata
-  da Nicolò e con un browser automatico (Playwright + Edge, viewport telefono)
-  su tutte le schermate, senza errori in console.
-- **Online e installata (02/10/2026):** PWA sul telefono di Nicolò (Oppo, Android
+  disegno su tela Claude Design; caratteri in `fonts/`. Generi raggruppati solo
+  nella vista (`js/generi.js`): house/techno → "Tech house", disco house +
+  disco/funk/soul → "Disco". "Va bene per iniziare, la miglioriamo più avanti."
+- **Online e installata (02/10/2026)** sul telefono di Nicolò (Oppo, Android
   11) col token; NewPipe 0.29.1 installato via adb.
-- **M2 (02/10/2026), strada A scelta da Nicolò:** dalla prova della M1 è emerso
-  che con NewPipe/Spotify la coda non va avanti da sola (Android non avvisa il
-  Jukebox a fine brano). Ora il Jukebox suona da sé i file: `strumenti/prepara.py`
-  li procura sul PC (yt-dlp, YouTube Music per i solo-Spotify) e li copia in
-  `Download/Jukebox`; l'app li importa (`file.js`) e li suona (`lettore.js`,
-  Media Session) con avanzamento automatico, pausa e schermo spento. Il tasto
-  grande agisce sul brano che si vede, ⏮ ⏭ spostano solo la selezione
-  (`comandi.js`). Provato sul PC con un browser automatico e file veri.
-- **Da fare:** prova sul telefono a schermo spento con "Hip Rap USA ITA
-  (youtube)"; poi le tappe M3-M7 del piano (M3 probabilmente non serve più).
+- **M2 (02–06/10/2026):** file sul telefono suonati dal Jukebox; tasto grande
+  sul brano che si vede, ⏮ ⏭ spostano solo la selezione (`comandi.js`); ▶ su
+  una riga suona la lista da lì; brano in corso evidenziato ovunque; scheda
+  Suona sempre fedele a ciò che si sente, "Mostra altri" in "A seguire". In uso
+  sul telefono: playlist "Hip Rap USA ITA (youtube)", 234 brani su 238.
+- **Test:** 110 Node (`test/logica.test.mjs`, dati inventati) + 47 Python
+  (`strumenti/test_*.py`).
+- **Da fare:** finire l'archivio; a revisione del catalogo chiusa →
+  `esporta.py`, `--riallinea`, `--metadati`, `--riprova`, id stabili; poi M4
+  (assistente DJ + Shazam), M5 (Spotify Premium), M6 (Deezer + lista da
+  comprare). Idee non ancora fatte: Jukebox anche sul PC (legge da `audio/`),
+  disegni di Impostazioni e scheda brano. M3 probabilmente non serve più.
 
 ## Limiti noti (per onestà)
 
-- Vedi la sezione "Limiti noti di questa versione (M1)" in `README.md`.
-- Il modulo `dj.js` in questa fase copre solo Camelot/BPM/percorso armonico: le
-  funzioni `suggerisci()` e `scaletta()` per l'assistente DJ vero e proprio
-  arrivano con M4 (richiede prima gli esempi reali di Shazam da Nicolò).
+- Vedi la sezione "Limiti noti" in `README.md`.
+- `dj.js` copre solo Camelot/BPM/percorso armonico: `suggerisci()` e
+  `scaletta()` per l'assistente DJ arrivano con M4 (servono prima esempi veri di
+  Shazam da Nicolò).
+- YouTube ferma chi scarica troppo (controllo anti-bot) e cambia spesso
+  (errore 403 → aggiornare yt-dlp): dettagli nella skill `/archivio-musica`.
