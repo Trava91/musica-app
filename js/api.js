@@ -99,10 +99,12 @@ export class GitHubApi {
   }
 
   // Contenuto grezzo (fino a 100 MB): niente base64, restituisce testo o JSON già parsato.
+  // L'indirizzo ha un parametro in più apposta: con lo stesso indirizzo di getSha il
+  // browser del telefono riceveva la risposta dei metadati al posto del file (20/10/2026).
   async getRaw(path, { json = true } = {}) {
     let resp;
     try {
-      resp = await fetch(`${this._contentsUrl(path)}?ref=${encodeURIComponent(this.branch)}`, {
+      resp = await fetch(`${this._contentsUrl(path)}?ref=${encodeURIComponent(this.branch)}&grezzo=${Date.now()}`, {
         headers: this._headers({ "Accept": "application/vnd.github.raw+json" }), cache: "no-store",
       });
     } catch {

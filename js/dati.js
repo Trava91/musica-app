@@ -27,7 +27,8 @@ async function daCache() {
     return await entro((async () => {
       const c = await caches.open(CACHE_NOME);
       const resp = await c.match(CACHE_CHIAVE);
-      return resp ? resp.json() : null;
+      const dati = resp ? await resp.json() : null;
+      return Array.isArray(dati?.brani) ? dati : null; // una cache senza brani non è un catalogo
     })(), 5000, null);
   } catch {
     return null;
@@ -87,9 +88,13 @@ async function caricaDaGitHub(cfg, forza) {
 
   if (online) {
     const testo = await gh.getRaw(cfg.file, { json: false });
+    const dati = JSON.parse(testo);
+    if (!Array.isArray(dati?.brani)) {
+      throw new ApiError("GitHub non ha mandato il catalogo: riprova con \"Aggiorna dati ora\".", { kind: "network" });
+    }
     await salvaInCache(testo);
     localStorage.setItem(LS_SHA, shaRemoto);
-    return preparaCatalogo(JSON.parse(testo));
+    return preparaCatalogo(dati);
   }
 
   const offline = await daCache();
