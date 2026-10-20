@@ -138,9 +138,16 @@ export class UI {
     });
     $("#pl-nuova-intelligente").addEventListener("click", () => this.apriCostruttore(null));
     $("#pl-nuova-manuale").addEventListener("click", () => this.creaManualeVuota());
-    // ⏮ ⏭ spostano solo la selezione: il brano scelto parte col tasto grande o a fine brano.
-    $("#rip-avanti").addEventListener("click", () => { if (this.coda) { comandi.spostaSelezione(this.coda, 1); this.renderRiproduzione(); } });
-    $("#rip-indietro").addEventListener("click", () => { if (this.coda) { comandi.spostaSelezione(this.coda, -1); this.renderRiproduzione(); } });
+    // ⏮ ⏭: con i file del telefono cambiano subito brano (⏮ dopo 4 s riparte dall'inizio);
+    // con gli altri motori spostano solo la selezione, il brano parte col tasto grande.
+    const salta = (dir) => {
+      if (!this.coda) return;
+      if (this.motoreCoda === "file") { this.comandoBlocco(dir > 0 ? "avanti" : "indietro"); return; }
+      comandi.spostaSelezione(this.coda, dir);
+      this.renderRiproduzione();
+    };
+    $("#rip-avanti").addEventListener("click", () => salta(1));
+    $("#rip-indietro").addEventListener("click", () => salta(-1));
     $("#rip-principale").addEventListener("click", () => this.premiTastoGrande());
     $("#rip-in-corso").addEventListener("click", () => {
       if (this.coda && this.lettore.brano) { this.coda.salta(this.lettore.brano.id); this.renderRiproduzione(); }
