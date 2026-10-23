@@ -138,13 +138,14 @@ export class UI {
     });
     $("#pl-nuova-intelligente").addEventListener("click", () => this.apriCostruttore(null));
     $("#pl-nuova-manuale").addEventListener("click", () => this.creaManualeVuota());
-    // ⏮ ⏭: con i file del telefono cambiano subito brano (⏮ dopo 4 s riparte dall'inizio);
-    // con gli altri motori spostano solo la selezione, il brano parte col tasto grande.
+    // ⏮ ⏭ cambiano subito brano: coi file del telefono lo suona il Jukebox (⏮ dopo
+    // 4 s riparte dall'inizio); con le app esterne apre il brano nuovo nell'app.
     const salta = (dir) => {
       if (!this.coda) return;
       if (this.motoreCoda === "file") { this.comandoBlocco(dir > 0 ? "avanti" : "indietro"); return; }
       comandi.spostaSelezione(this.coda, dir);
       this.renderRiproduzione();
+      this.premiTastoGrande();
     };
     $("#rip-avanti").addEventListener("click", () => salta(1));
     $("#rip-indietro").addEventListener("click", () => salta(-1));
