@@ -16,6 +16,7 @@ const LS = {
   token: "jukebox.token",
   motori: "jukebox.motori", // ordine di preferenza dei motori di riproduzione
   usaNewPipe: "jukebox.usaNewPipe",
+  soloJukebox: "jukebox.soloJukebox",
 };
 
 const DEFAULT = {
@@ -81,4 +82,14 @@ export function leggiPreferenzaNewPipe() {
 
 export function salvaPreferenzaNewPipe(on) {
   localStorage.setItem(LS.usaNewPipe, on ? "1" : "0");
+}
+
+// "Solo Jukebox": suona solo i brani col file sul telefono, mai le app esterne
+// (scelta di Nicolò 03/11/2026: spento di default).
+export function leggiPreferenzaSoloJukebox() {
+  return localStorage.getItem(LS.soloJukebox) === "1";
+}
+
+export function salvaPreferenzaSoloJukebox(on) {
+  localStorage.setItem(LS.soloJukebox, on ? "1" : "0");
 }

@@ -6,6 +6,7 @@
 //   { fileIds: Set<string>   id dei brani che hanno il file audio sul telefono (M2, file.js)
 //     spotify: "premium" | "senza" | "non-configurato" | "da-ricollegare"  (M5)
 //     usaNewPipe: bool       impostazione dell'utente (default true)
+//     soloJukebox: bool      solo i file sul telefono, mai le app esterne (default false)
 //     priorita: string[] }   ordine dei motori, da config.leggiPreferenzaMotori()
 
 import { MOTORI_DEFAULT } from "./config.js";
@@ -27,6 +28,7 @@ function fonte(brano, codice) {
 export function motoreBrano(brano, ctx = {}) {
   const priorita = ctx.priorita?.length ? ctx.priorita : MOTORI_DEFAULT;
   for (const motore of priorita) {
+    if (ctx.soloJukebox && motore !== "file") continue; // "Solo Jukebox": niente app esterne
     if (motore === "file") {
       if (ctx.fileIds?.has(brano.id)) return { motore, fonte: ["file", brano.id] };
     } else if (motore === "spotify-premium") {

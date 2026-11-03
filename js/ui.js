@@ -111,7 +111,7 @@ export class UI {
     this.filtri = { soloScelti: true, tipo: "canzoni" };
     this.ordineRisultati = undefined;
     this.paginaRisultati = 100;
-    this.ctx = { fileIds: new Set(), spotify: "non-configurato", usaNewPipe: true, priorita: [] };
+    this.ctx = { fileIds: new Set(), spotify: "non-configurato", usaNewPipe: true, soloJukebox: false, priorita: [] };
     this.coda = null;
     this.playlistAttiva = null;
     this.esterno = null;    // ultimo brano mandato a un'app esterna (NewPipe, Spotify)
@@ -242,7 +242,8 @@ export class UI {
     const p = $("#stato-motore");
     if (!p) return;
     if (!ANDROID) { p.textContent = "Anteprima PC · link web"; return; }
-    p.textContent = this.ctx.spotify === "premium" ? "Spotify Premium"
+    p.textContent = this.ctx.soloJukebox ? "Solo Jukebox"
+      : this.ctx.spotify === "premium" ? "Spotify Premium"
       : this.ctx.usaNewPipe ? "NewPipe attivo" : "Spotify gratis";
   }
 
@@ -295,7 +296,8 @@ export class UI {
       this.nomeGenere(b.g), b.y || "", piatt,
     ].filter(Boolean).join(" · ");
     const inCorso = b.id === this.idInCorso();
-    return `<div class="striscia${grande ? " grande" : ""}${inCorso ? " in-corso" : ""}" data-id="${esc(b.id)}">
+    const spento = this.ctx.soloJukebox && !this.ctx.fileIds.has(b.id); // "Solo Jukebox": non è sul telefono
+    return `<div class="striscia${grande ? " grande" : ""}${inCorso ? " in-corso" : ""}${spento ? " senza-file" : ""}" data-id="${esc(b.id)}">
       <button class="striscia-corpo" type="button" aria-label="${esc(titoloCompleto(b) + " di " + (b.a || "artista sconosciuto"))}: apri la scheda">
         <span class="striscia-codice" aria-hidden="true">${codiceSelezione(i)}</span>
         <span class="striscia-testo">
@@ -366,7 +368,16 @@ export class UI {
 
   // Suona `b` e poi il resto di `lista` (come le app di musica). Resta nella
   // schermata in cui sei: cosa suona lo dicono il mini lettore e la scheda Suona.
+  // Con "Solo Jukebox" un brano senza file non apre altre app: si parte dal
+  // primo brano della lista, dopo di lui, che ha il file.
   suonaDaLista(lista, b, nome) {
+    if (this.ctx.soloJukebox && !this.ctx.fileIds.has(b.id)) {
+      const i = lista.findIndex((x) => x.id === b.id);
+      const dopo = lista.slice(i + 1).find((x) => this.ctx.fileIds.has(x.id));
+      if (!dopo) { showToast("Questo brano non è sul telefono.", "err"); return; }
+      showToast(`"${titoloCompleto(b)}" non è sul telefono: parto da "${titoloCompleto(dopo)}".`, "");
+      b = dopo;
+    }
     const { motore } = motori.motoreBrano(b, this.ctx);
     if (!motore) { showToast("Nessuna fonte disponibile per questo brano.", "err"); return; }
     const brani = motore === "file" ? lista.filter((x) => this.ctx.fileIds.has(x.id)) : lista;
@@ -1029,6 +1040,7 @@ export class UI {
     $("#imp-versione").textContent = "Jukebox — versione M2";
     this.renderFileInfo();
     $("#imp-newpipe").checked = this.ctx.usaNewPipe !== false;
+    $("#imp-solo-jukebox").checked = this.ctx.soloJukebox;
     this.renderOrdineMotori();
   }
 

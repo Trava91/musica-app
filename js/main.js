@@ -3,6 +3,7 @@
 import {
   leggiConfig, salvaConfig, configPronta, rimuoviToken,
   leggiPreferenzaMotori, leggiPreferenzaNewPipe, salvaPreferenzaNewPipe,
+  leggiPreferenzaSoloJukebox, salvaPreferenzaSoloJukebox,
 } from "./config.js";
 import { GitHubApi, ApiError } from "./api.js";
 import * as dati from "./dati.js";
@@ -80,6 +81,7 @@ async function bootApp() {
   try {
     ui.ctx.priorita = leggiPreferenzaMotori();
     ui.ctx.usaNewPipe = leggiPreferenzaNewPipe();
+    ui.ctx.soloJukebox = leggiPreferenzaSoloJukebox();
     const catalogo = await dati.carica();
     await applicaCatalogo(catalogo);
     const elencoPlaylist = await playlist.carica();
@@ -122,6 +124,12 @@ function wireImpostazioni() {
   $("#imp-newpipe").addEventListener("change", (e) => {
     ui.ctx.usaNewPipe = e.target.checked;
     salvaPreferenzaNewPipe(e.target.checked);
+    ui.aggiornaPillMotore();
+  });
+
+  $("#imp-solo-jukebox").addEventListener("change", (e) => {
+    ui.ctx.soloJukebox = e.target.checked;
+    salvaPreferenzaSoloJukebox(e.target.checked);
     ui.aggiornaPillMotore();
   });
 

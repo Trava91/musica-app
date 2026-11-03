@@ -197,6 +197,15 @@ ok("scartoBpm 128→136 oltre la soglia", dj.scartoBpm(128, 136) > dj.TOLLERANZA
   eq("pianoRiproduzione: conteggio spotify-app", contaMotore("spotify-app"), 1);
   eq("pianoRiproduzione: il consigliato è l'unico motore continuo", piano.consigliato, "file");
   eq("pianoRiproduzione: nessun brano escluso", piano.esclusi.length, 0);
+
+  const solo = { fileIds: new Set(["m1"]), spotify: "premium", soloJukebox: true };
+  eq("motoreBrano: Solo Jukebox, il file suona",
+    motori.motoreBrano(bFile, solo).motore, "file");
+  eq("motoreBrano: Solo Jukebox, senza file nessun motore (niente app esterne)",
+    motori.motoreBrano(bMulti, solo).motore, null);
+  const pianoSolo = motori.pianoRiproduzione([bFile, bSp, bYt, bMulti], solo);
+  eq("pianoRiproduzione: Solo Jukebox, solo il gruppo file", pianoSolo.gruppi.map((g) => g.motore), ["file"]);
+  eq("pianoRiproduzione: Solo Jukebox, gli altri sono esclusi", pianoSolo.esclusi.length, 3);
 }
 
 // ============================================================== link.js ====
