@@ -27,6 +27,7 @@ app/
 │   ├── api.js                client GitHub Contents API (getFile/getSha/getRaw/putFile)
 │   ├── dati.js               carica catalogo.json (sha, cache, offline)
 │   ├── playlist.js           legge/scrive playlist.json (lock ottimistico)
+│   ├── valida.js              controlla catalogo e playlist in lettura: scarta o corregge in memoria (logica pura)
 │   ├── cerca.js               ricerca e filtri (logica pura)
 │   ├── regole.js              valutazione delle playlist intelligenti (logica pura)
 │   ├── dj.js                  Camelot/BPM/percorso armonico (logica pura)
@@ -49,6 +50,8 @@ app/
 │   ├── *.test.mjs            test Node della logica pura, un file per modulo
 │   ├── fixture.mjs           carica e indicizza il catalogo finto
 │   ├── fixture.json          catalogo finto (nessun dato reale: repo pubblico)
+│   ├── genera-catalogo.mjs   catalogo finto di qualsiasi misura (seme fisso), per velocità e browser
+│   ├── browser/prova.py      prova automatica nel browser: 5 giri sull'app vera (npm run prova)
 │   └── riferimento/          fotografia di partenza del restauro
 └── icons/icon.svg
 ```
@@ -92,6 +95,7 @@ python -m pip install ruff    # una volta sola: il controllo dei file Python
 npm run verifica              # lint (Biome, Ruff) + tutti i test JavaScript e Python
 npm test                      # solo i test JavaScript (node:test)
 npm run test:py               # solo i test Python
+npm run prova                 # prova nel browser (serve Chrome e `pip install playwright`)
 ```
 
 `test/fixture.json` è un mini-catalogo **completamente inventato**: nessun dato
