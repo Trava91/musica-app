@@ -98,14 +98,15 @@ piano (aggancio a `aggiorna.py`), e solo a revisione chiusa.
   11) col token; NewPipe 0.29.1 installato via adb.
 - **M2 (02–06/10/2026):** file sul telefono suonati dal Jukebox; tasto grande
   sul brano che si vede; dal 22/10/2026 ⏮ ⏭ cambiano subito brano (coi file
-  lo suona il Jukebox, con le app esterne lo apre lì; `js/ui/ui.js`); ▶ su
+  lo suona il Jukebox, con le app esterne lo apre lì; dal 16/11/2026 lo decide
+  `js/nucleo/sessione.js`, le viste in `js/ui/` disegnano soltanto); ▶ su
   una riga suona la lista da lì; brano in corso evidenziato ovunque; scheda
   Suona sempre fedele a ciò che si sente, "Mostra altri" in "A seguire". In uso
   sul telefono: playlist "Hip Rap USA ITA (youtube)", 234 brani su 238.
 - **Solo Jukebox (03/11/2026):** interruttore nelle Impostazioni (spento di
   default): acceso, il Jukebox non apre mai app esterne, i brani senza file
   appaiono spenti e un ▶ su uno di loro parte dal prossimo della lista che c'è.
-- **Test:** 258 Node (`test/*.test.mjs`, dati inventati) + 50 Python
+- **Test:** 338 Node (`test/*.test.mjs`, dati inventati) + 50 Python
   (`strumenti/test_*.py`); `npm run verifica` lancia lint, tipi e tutti i test;
   `npm run prova` fa 5 giri nel browser sull'app vera (dal 16/11/2026, restauro).
 - **Da fare:** finire l'archivio; a revisione del catalogo chiusa →

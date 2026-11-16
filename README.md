@@ -23,7 +23,7 @@ app/
 ├── package.json, biome.json, pyproject.toml, tsconfig.json   attrezzi di sviluppo (npm run verifica)
 ├── fonts/                  Yellowtail, Oswald, Courier Prime (offline, licenze in LICENZE.md)
 ├── js/
-│   ├── main.js              onboarding token, avvio, impostazioni, service worker
+│   ├── main.js              avvio: crea stato, lettore, sessione e viste, carica i dati (non disegna)
 │   ├── config.js            da dove arrivano i dati, preferenze, tempi e soglie, VERSIONE
 │   ├── nucleo/              LOGICA PURA: niente schermo, niente rete (lo controlla test/dipendenze.test.mjs)
 │   │   ├── testo.js           normalizza, titolo con versione, artista con feat., durata
@@ -35,8 +35,10 @@ app/
 │   │   ├── dj.js              Camelot/BPM/percorso armonico
 │   │   ├── motori.js          chi suona ogni brano
 │   │   ├── link.js            link intent:// verso NewPipe/Spotify, ricerche esterne
-│   │   ├── coda.js            la coda di riproduzione (posizione, avanti/indietro/casuale)
+│   │   ├── coda.js            la coda di riproduzione (voci con chi e quando, avanti/indietro/casuale, accoda/togli)
 │   │   ├── comandi.js         tasto grande, ⏮ ⏭, cosa parte a fine brano
+│   │   ├── sessione.js        la sessione di ascolto: coda + lettore + regole, l'unico punto che decide cosa suona
+│   │   ├── stato.js           lo stato dell'app (catalogo, playlist, filtri, ctx, scheda) e l'indice id → brano
 │   │   └── generi.js          generi raggruppati per la vista (Tech house, Disco)
 │   ├── dati/                DATI: da dove arrivano e dove vanno
 │   │   ├── github.js          client GitHub Contents API (getFile/getSha/getRaw/putFile)
@@ -44,7 +46,13 @@ app/
 │   │   ├── playlist.js        legge/scrive playlist.json (lock ottimistico)
 │   │   └── file-audio.js      l'audio sul telefono (Cache Storage, id brano → file)
 │   ├── audio/lettore.js     lettore interno: <audio> + Media Session (schermo spento)
-│   └── ui/ui.js             render di tutte le schermate (si divide alla fase 5 del restauro)
+│   └── ui/                  INTERFACCIA: disegna dallo stato e passa i tocchi alla sessione
+│       ├── base.js            aiuti comuni: avvisi, finestre, schede, campi min–max, chip
+│       ├── riga-brano.js      la riga di un brano e le liste (un solo ascoltatore per lista)
+│       ├── vista-*.js         una per schermata: avvio, cerca, generi, playlist, suona, impostazioni
+│       ├── foglio-*.js        scheda del brano, filtri, foglio di una playlist
+│       ├── costruttore-playlist.js   il modulo delle playlist coi filtri
+│       └── azioni-playlist.js        salva, elimina, nuova playlist a mano
 ├── strumenti/
 │   ├── esporta.py            genera app-dati/catalogo.json da liste/dati/catalogo.sqlite
 │   ├── prepara.py            procura l'audio delle playlist per il telefono e dell'archivio (M2)

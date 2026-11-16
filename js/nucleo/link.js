@@ -1,6 +1,6 @@
 // link.js — logica pura per i link verso le altre app e le ricerche esterne.
 // Nessun accesso al DOM: solo stringhe. Chi le apre (window.location, un <a>...) è
-// compito di ui.js.
+// compito di ui/base.js (apriLink), che la sessione riceve da main.js.
 
 // Forma intent:// di Android: apre `pacchetto` con quell'URL https, e se
 // l'app non c'è ripiega sul browser (S.browser_fallback_url).
