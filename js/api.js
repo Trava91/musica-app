@@ -34,11 +34,16 @@ function base64ToUtf8(b64) {
 }
 
 export class GitHubApi {
-  constructor({ owner, repo, token, branch = "main" }) {
+  // `fetch` si può passare da fuori (i test ne danno una finta); di default è quella del
+  // browser, chiamata come funzione semplice (chiamata come metodo dà "Illegal invocation").
+  constructor({ owner, repo, token, branch = "main", fetch: fetchEsterna = null }) {
     this.owner = owner;
     this.repo = repo;
     this.token = token;
     this.branch = branch;
+    this._fetch = fetchEsterna
+      ? (url, opzioni) => fetchEsterna(url, opzioni)
+      : (url, opzioni) => globalThis.fetch(url, opzioni);
   }
 
   _headers(extra = {}) {
@@ -76,7 +81,7 @@ export class GitHubApi {
   async getFile(path) {
     let resp;
     try {
-      resp = await fetch(`${this._contentsUrl(path)}?ref=${encodeURIComponent(this.branch)}`, {
+      resp = await this._fetch(`${this._contentsUrl(path)}?ref=${encodeURIComponent(this.branch)}`, {
         headers: this._headers(),
         cache: "no-store",
       });
@@ -93,7 +98,7 @@ export class GitHubApi {
   async getSha(path) {
     let resp;
     try {
-      resp = await fetch(`${this._contentsUrl(path)}?ref=${encodeURIComponent(this.branch)}`, {
+      resp = await this._fetch(`${this._contentsUrl(path)}?ref=${encodeURIComponent(this.branch)}`, {
         headers: this._headers(),
         cache: "no-store",
       });
@@ -111,10 +116,13 @@ export class GitHubApi {
   async getRaw(path, { json = true } = {}) {
     let resp;
     try {
-      resp = await fetch(`${this._contentsUrl(path)}?ref=${encodeURIComponent(this.branch)}&grezzo=${Date.now()}`, {
-        headers: this._headers({ Accept: "application/vnd.github.raw+json" }),
-        cache: "no-store",
-      });
+      resp = await this._fetch(
+        `${this._contentsUrl(path)}?ref=${encodeURIComponent(this.branch)}&grezzo=${Date.now()}`,
+        {
+          headers: this._headers({ Accept: "application/vnd.github.raw+json" }),
+          cache: "no-store",
+        },
+      );
     } catch {
       throw new ApiError("Rete assente.", { kind: "network" });
     }
@@ -130,7 +138,7 @@ export class GitHubApi {
     if (sha) body.sha = sha; // assente solo alla creazione del file
     let resp;
     try {
-      resp = await fetch(this._contentsUrl(path), {
+      resp = await this._fetch(this._contentsUrl(path), {
         method: "PUT",
         headers: this._headers({ "Content-Type": "application/json" }),
         body: JSON.stringify(body),

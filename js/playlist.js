@@ -5,6 +5,7 @@
 
 import { GitHubApi, ApiError } from "./api.js";
 import { leggiConfig } from "./config.js";
+import { validaPlaylist } from "./valida.js";
 
 const FILE = "playlist.json";
 const LS_CACHE = "jukebox.playlist.cache";
@@ -35,24 +36,37 @@ function salvaCacheLocale(dati) {
 // playlist vivono solo in questo browser, nella stessa cache locale.
 const soloLocale = () => leggiConfig().tipo !== "github-privato";
 
+// Cosa non andava nell'ultimo playlist.json letto (vedi valida.js): lo mostra Impostazioni → Dati.
+let ultimoControllo = { scartate: [], avvisi: [] };
+export const controlloPlaylist = () => ultimoControllo;
+
+// Quello che si mostra è l'elenco controllato (le playlist sbagliate non arrivano
+// all'interfaccia). Quello che si SCRIVE su GitHub resta quello vero: l'app non
+// riscrive mai un file "ripulito", per non perdere dati.
+function controlla(dati) {
+  const { playlist, scartate, avvisi } = validaPlaylist(dati);
+  ultimoControllo = { scartate, avvisi };
+  return playlist;
+}
+
 // Le playlist attuali. Prova la rete; se il file non esiste ancora (prima
 // playlist mai salvata) restituisce un elenco vuoto senza errore; offline
 // ripiega sulla cache locale.
 export async function carica() {
-  if (soloLocale()) return daCacheLocale().playlist;
+  if (soloLocale()) return controlla(daCacheLocale());
   try {
     const { data, sha } = await api().getFile(FILE);
     localStorage.setItem(LS_SHA, sha);
     salvaCacheLocale(data);
-    return data.playlist;
+    return controlla(data);
   } catch (err) {
     if (err instanceof ApiError && err.kind === "notfound") {
       salvaCacheLocale(VUOTO());
       localStorage.removeItem(LS_SHA);
-      return [];
+      return controlla(VUOTO());
     }
     const cache = daCacheLocale();
-    if (err instanceof ApiError && err.kind === "network") return cache.playlist;
+    if (err instanceof ApiError && err.kind === "network") return controlla(cache);
     throw err;
   }
 }
@@ -64,7 +78,7 @@ export async function salva(modifica) {
   if (soloLocale()) {
     const nuovo = { schema: 1, playlist: modifica(daCacheLocale().playlist.slice()) };
     salvaCacheLocale(nuovo);
-    return nuovo.playlist;
+    return controlla(nuovo);
   }
   const gh = api();
   let sha = localStorage.getItem(LS_SHA);
@@ -90,7 +104,7 @@ export async function salva(modifica) {
       const nuovoSha = await gh.putFile(FILE, nuovo, sha, "playlist: aggiornamento dal Jukebox");
       localStorage.setItem(LS_SHA, nuovoSha);
       salvaCacheLocale(nuovo);
-      return nuovo.playlist;
+      return controlla(nuovo);
     } catch (err) {
       if (err instanceof ApiError && err.conflict) {
         attuale = null; // forza la rilettura al giro successivo

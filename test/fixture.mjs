@@ -8,7 +8,10 @@ import { preparaIndice } from "../js/cerca.js";
 
 const cartella = dirname(fileURLToPath(import.meta.url));
 
-export const fixture = JSON.parse(readFileSync(join(cartella, "fixture.json"), "utf-8"));
+/** Il testo grezzo di fixture.json, come lo manderebbe GitHub. */
+export const testoFixture = readFileSync(join(cartella, "fixture.json"), "utf-8");
+
+export const fixture = JSON.parse(testoFixture);
 preparaIndice(fixture.brani, fixture.raccolte);
 
 export const brani = fixture.brani;

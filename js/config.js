@@ -29,14 +29,16 @@ const DEFAULT = {
 // Ordine di default con cui motori.js sceglie chi suona un brano (scelta 3 del piano).
 export const MOTORI_DEFAULT = ["file", "spotify-premium", "newpipe", "spotify-app", "web"];
 
-export function leggiConfig() {
+// `memoria` è dove si leggono le impostazioni: nell'app è localStorage, nei test una finta.
+/** @param {{ getItem: (chiave: string) => string | null }} [memoria] */
+export function leggiConfig(memoria = localStorage) {
   return {
-    tipo: localStorage.getItem(LS.tipo) || DEFAULT.tipo,
-    url: localStorage.getItem(LS.url) || "",
-    owner: localStorage.getItem(LS.owner) || DEFAULT.owner,
-    repo: localStorage.getItem(LS.repo) || DEFAULT.repo,
-    file: localStorage.getItem(LS.file) || DEFAULT.file,
-    token: localStorage.getItem(LS.token) || "",
+    tipo: memoria.getItem(LS.tipo) || DEFAULT.tipo,
+    url: memoria.getItem(LS.url) || "",
+    owner: memoria.getItem(LS.owner) || DEFAULT.owner,
+    repo: memoria.getItem(LS.repo) || DEFAULT.repo,
+    file: memoria.getItem(LS.file) || DEFAULT.file,
+    token: memoria.getItem(LS.token) || "",
   };
 }
 

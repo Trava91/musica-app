@@ -1336,11 +1336,47 @@ export class UI {
     $("#imp-dati-info").textContent = infoCache
       ? `${infoCache.brani.toLocaleString("it-IT")} brani in cache, costruito il ${infoCache.costruitoIl || "?"}`
       : "Nessun dato in cache.";
+    this.renderControlloDati();
     $("#imp-versione").textContent = "Jukebox — versione M2";
     this.renderFileInfo();
     $("#imp-newpipe").checked = this.ctx.usaNewPipe !== false;
     $("#imp-solo-jukebox").checked = this.ctx.soloJukebox;
     this.renderOrdineMotori();
+  }
+
+  // Cosa non andava nei dati appena letti (vedi valida.js): brani lasciati fuori perché
+  // incompleti, playlist ignorate, correzioni fatte in memoria. I file non si toccano mai.
+  renderControlloDati() {
+    const el = $("#imp-dati-controllo");
+    const scartati = this.catalogo?.scartati || [];
+    const { scartate, avvisi: avvisiPlaylist } = playlist.controlloPlaylist();
+    const avvisi = [...(this.catalogo?.avvisi || []), ...avvisiPlaylist];
+
+    const MAX_RIGHE = 200; // un catalogo molto rovinato non deve riempire la pagina
+    const elenco = (righe) => {
+      const voci = righe.slice(0, MAX_RIGHE).map((r) => `<li>${esc(r)}</li>`);
+      if (righe.length > MAX_RIGHE) voci.push(`<li>…e altri ${righe.length - MAX_RIGHE}</li>`);
+      return `<ul>${voci.join("")}</ul>`;
+    };
+    const blocco = (titolo, righe) =>
+      righe.length ? `<details><summary>${esc(titolo)}</summary>${elenco(righe)}</details>` : "";
+    const voce = (s) => `${s.id ?? "(senza id)"} — ${s.motivo}`;
+
+    el.innerHTML =
+      blocco(
+        scartati.length === 1
+          ? "1 brano ignorato perché incompleto"
+          : `${scartati.length} brani ignorati perché incompleti`,
+        scartati.map(voce),
+      ) +
+      blocco(
+        scartate.length === 1
+          ? "1 playlist ignorata perché incompleta"
+          : `${scartate.length} playlist ignorate perché incomplete`,
+        scartate.map(voce),
+      ) +
+      blocco(`Segnalazioni sui dati (${avvisi.length})`, avvisi);
+    el.hidden = !el.innerHTML;
   }
 
   renderOrdineMotori() {
