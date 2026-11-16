@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": false,
+    "skipLibCheck": true
+  },
+  "include": [
+    "js/cerca.js",
+    "js/regole.js",
+    "js/dj.js",
+    "js/motori.js",
+    "js/link.js",
+    "js/coda.js",
+    "js/comandi.js",
+    "js/generi.js",
+    "test/**/*.mjs"
+  ]
+}

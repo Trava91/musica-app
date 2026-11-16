@@ -61,6 +61,8 @@ function energiaVerso(ea, eb) {
  * passo dopo passo, come in un set. I brani senza BPM+Camelot restano fuori dal
  * percorso e vanno in coda, in ordine alfabetico (servono comunque _normA/_normT,
  * quindi vanno passati brani già indicizzati con cerca.preparaIndice).
+ * @param {any[]} brani
+ * @param {{ inizio?: object }} [opzioni] inizio: il brano da cui partire (default: quello con meno BPM).
  */
 export function percorsoArmonico(brani, { inizio } = {}) {
   const conDati = brani.filter((b) => b.b !== undefined && b.c !== undefined);

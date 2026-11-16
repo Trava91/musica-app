@@ -23,6 +23,7 @@ const ESTERNI = {
  * - stato: "suona" | "pausa" | "fermo" (del lettore interno).
  * Restituisce {azione, icona, etichetta}; azione è "pausa" | "riprendi" |
  * "suona" (carica il selezionato) | "apri" (app esterna) | "nessuna".
+ * @param {{ motore?: string | null, selezionato?: string | null, inCorso?: string | null, stato?: string }} p
  */
 export function tastoPrincipale({ motore, selezionato, inCorso, stato }) {
   if (!selezionato) return { azione: "nessuna", icona: "play", etichetta: "" };

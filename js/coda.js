@@ -28,6 +28,8 @@ export class Coda {
    * opts.casuale: mescola subito. opts.ripeti: "no" | "tutti" | "uno".
    * opts.seme: per un mescolamento ripetibile (comodo nei test); senza, cambia
    * a ogni avvio della coda.
+   * @param {object[]} [elenco]
+   * @param {{ casuale?: boolean, ripeti?: string, seme?: number }} [opts]
    */
   constructor(elenco = [], { casuale = false, ripeti = "no", seme } = {}) {
     this.originale = elenco.slice();

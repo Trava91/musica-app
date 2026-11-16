@@ -95,7 +95,8 @@ function comparatore(ordine) {
   switch (ordine) {
     case "artista":
       // I brani senza artista (titoli ancora da sistemare nel catalogo) vanno in fondo.
-      return (a, b) => !a._normA - !b._normA || a._normA.localeCompare(b._normA) || a._normT.localeCompare(b._normT);
+      return (a, b) =>
+        Number(!a._normA) - Number(!b._normA) || a._normA.localeCompare(b._normA) || a._normT.localeCompare(b._normT);
     case "recenti":
       return (a, b) => (b.q || "").localeCompare(a.q || "");
     case "bpm":
