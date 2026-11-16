@@ -106,3 +106,19 @@ test("motoreFonte: senza NewPipe YouTube va sul web", () => {
 test("motoreFonte: 'Solo Jukebox' non conta, la fonte la sceglie l'utente", () => {
   assert.equal(motori.motoreFonte(["sp", "spX"], { soloJukebox: true }), "spotify-app");
 });
+
+// ----------------------------------------------- perché un brano non si può suonare ----
+
+test("motivoSenzaMotore: con Solo Jukebox acceso dice che non è sul telefono", () => {
+  assert.match(motori.motivoSenzaMotore(bYt, { soloJukebox: true }), /non è sul telefono.*Solo Jukebox/);
+});
+
+test("motivoSenzaMotore: un brano che esiste solo come file del PC spiega che serve la musica sul telefono", () => {
+  assert.match(motori.motivoSenzaMotore(bFile, { fileIds: new Set() }), /file del PC.*non è sul telefono/);
+});
+
+test("motivoSenzaMotore: negli altri casi manda a controllare l'ordine dei motori", () => {
+  const ctx = { priorita: ["spotify-premium"], spotify: "senza", fileIds: new Set() };
+  assert.equal(motori.motoreBrano(bYt, ctx).motore, null);
+  assert.match(motori.motivoSenzaMotore(bYt, ctx), /ordine dei motori/);
+});

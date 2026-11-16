@@ -4,6 +4,7 @@
 // sessione, che decide cosa suonare.
 
 import { voceDi } from "../nucleo/generi.js";
+import { motivoSenzaMotore, motoreBrano } from "../nucleo/motori.js";
 import { sottotitolo, titoloCompleto } from "../nucleo/testo.js";
 import { $, $$, classeFascia, codiceSelezione, esc, SIGLA_PIATT, SVG_PLAY } from "./base.js";
 import { apriFoglioBrano } from "./foglio-brano.js";
@@ -38,7 +39,14 @@ function rigaBrano(b, i, d, { grande = false, play = true } = {}) {
     .filter(Boolean)
     .join(" · ");
   const inCorso = b.id === d.inCorso;
-  const spento = d.ctx.soloJukebox && !d.ctx.fileIds.has(b.id); // "Solo Jukebox": non è sul telefono
+  // Spenta se con le impostazioni di adesso nessun motore la può suonare ("Solo Jukebox" e non è
+  // sul telefono, file del PC non ancora importato...): il tasto ▶ spiega perché.
+  const spento = !motoreBrano(b, d.ctx).motore;
+  const etichettaPlay = inCorso
+    ? etichettaInCorso(d)
+    : spento
+      ? `${titoloCompleto(b)}: non si può suonare. ${motivoSenzaMotore(b, d.ctx)}`
+      : `Suona ${titoloCompleto(b)}`;
   return `<div class="striscia${grande ? " grande" : ""}${inCorso ? " in-corso" : ""}${spento ? " senza-file" : ""}" data-id="${esc(b.id)}">
       <button class="striscia-corpo" type="button" aria-label="${esc(`${titoloCompleto(b)} di ${b.a || "artista sconosciuto"}`)}: apri la scheda">
         <span class="striscia-codice" aria-hidden="true">${codiceSelezione(i)}</span>
@@ -48,7 +56,7 @@ function rigaBrano(b, i, d, { grande = false, play = true } = {}) {
           <span class="striscia-meta">${esc(meta)}</span>
         </span>
       </button>
-      ${play ? `<button class="striscia-play" type="button" aria-label="${inCorso ? etichettaInCorso(d) : `Suona ${esc(titoloCompleto(b))}`}">${inCorso ? iconaInCorso(d) : SVG_PLAY}</button>` : ""}
+      ${play ? `<button class="striscia-play" type="button" aria-label="${esc(etichettaPlay)}" title="${esc(spento && !inCorso ? motivoSenzaMotore(b, d.ctx) : "")}">${inCorso ? iconaInCorso(d) : SVG_PLAY}</button>` : ""}
     </div>`;
 }
 
@@ -60,21 +68,31 @@ const liste = new WeakMap();
  * Disegna una lista di brani in `contenitore`.
  * contesto: {lista, nome} = la lista da cui suonare ("suona da qui"), oppure {coda: true} per
  * le righe della coda attuale (lì ▶ salta a quel brano).
- * opzioni: inizio (numero del primo codice di selezione), grande, play, vuoto (frase se non ci
- * sono righe).
+ * opzioni: inizio (numero del primo codice di selezione), grande, play, vuoto (cosa mostrare se
+ * non ci sono righe: una frase, oppure { testo, azione: { etichetta, fai } } con un tasto).
  */
 export function mostraLista(app, contenitore, righe, contesto, opzioni = {}) {
   const d = datiRighe(app);
   const inizio = opzioni.inizio ?? 0;
   contenitore.innerHTML =
-    righe.map((b, i) => rigaBrano(b, inizio + i, d, opzioni)).join("") ||
-    (opzioni.vuoto ? `<p class="vuoto muted">${esc(opzioni.vuoto)}</p>` : "");
+    righe.map((b, i) => rigaBrano(b, inizio + i, d, opzioni)).join("") || statoVuoto(opzioni.vuoto);
   if (!liste.has(contenitore)) collegaLista(app, contenitore);
-  liste.set(contenitore, { righe, contesto });
+  liste.set(contenitore, { righe, contesto, azioneVuoto: opzioni.vuoto?.azione?.fai });
+}
+
+/** Lo "stato vuoto" di una lista: una frase e, se c'è, un tasto per uscirne. */
+export function statoVuoto(vuoto) {
+  if (!vuoto) return "";
+  const { testo, azione } = typeof vuoto === "string" ? { testo: vuoto, azione: null } : vuoto;
+  return `<div class="vuoto muted"><p>${esc(testo)}</p>${azione ? `<button class="btn-secondary" type="button" data-azione-vuoto>${esc(azione.etichetta)}</button>` : ""}</div>`;
 }
 
 function collegaLista(app, contenitore) {
   contenitore.addEventListener("click", (e) => {
+    if (e.target.closest?.("[data-azione-vuoto]")) {
+      liste.get(contenitore)?.azioneVuoto?.();
+      return;
+    }
     const tasto = e.target.closest?.(".striscia-corpo, .striscia-play");
     const riga = tasto?.closest(".striscia");
     const lista = liste.get(contenitore);

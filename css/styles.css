@@ -1571,6 +1571,72 @@ button:disabled {
   animation: gira 0.8s linear infinite;
 }
 
+/* --- avvio (caricamento / errore), finestre di dialogo, stati vuoti, diagnostica --- */
+.avvio {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem 1.2rem;
+  text-align: center;
+}
+.avvio-ruota {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 3px solid var(--pannello-2);
+  border-top-color: var(--neon);
+  box-shadow: 0 0 12px var(--neon-alone);
+  animation: gira 0.8s linear infinite;
+}
+.avvio-testo {
+  max-width: 28rem;
+  margin: 0;
+  font-family: var(--f-macchina);
+  color: var(--tenue);
+}
+.avvio-testo.err {
+  color: var(--errore);
+}
+.avvio .azioni-riga {
+  justify-content: center;
+}
+.overlay-dialogo {
+  z-index: 70;
+  align-items: center;
+  padding: 1rem;
+}
+.overlay-dialogo .foglio {
+  border-radius: 18px;
+  border: 2px solid var(--neon);
+  max-width: 420px;
+}
+.elenco-dialogo,
+.elenco-diagnostica {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+  max-height: 30dvh;
+  overflow-y: auto;
+  font-family: var(--f-macchina);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+.elenco-diagnostica {
+  max-height: 40dvh;
+  padding-left: 0;
+  list-style: none;
+}
+.elenco-diagnostica li {
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--bordo);
+  user-select: text;
+}
+.vuoto .btn-secondary {
+  margin-top: 0.6rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .titolo-neon,
   .arco-neon,

@@ -26,6 +26,7 @@ const DEFAULT = {
   file: "catalogo.json",
 };
 
+import { scrivi } from "./memoria.js";
 import { MOTORI_DEFAULT } from "./nucleo/motori.js";
 
 // --- Tempi e soglie (prima sparsi nei file) -----------------------------------------------------
@@ -38,11 +39,17 @@ export const ATTESA_CACHE_MS = 5000; // quanto aspettare la cache del catalogo p
 export const MAX_TENTATIVI_SALVATAGGIO = 3; // se GitHub segnala un conflitto, quante volte riprovare a salvare
 export const DURATA_AVVISO_MS = 3200; // quanto resta in vista un avviso
 export const DURATA_AVVISO_LUNGO_MS = 7000; // ...e quelli lunghi (importazione dei file)
+export const DURATA_AVVISO_SALVATAGGIO_MS = 30000; // "Salvo…" resta finché non arriva l'esito (che lo sostituisce)
+export const DURATA_AVVISO_AGGIORNAMENTO_MS = 120000; // "Versione nuova pronta" resta finché non lo si tocca (o quasi)
+export const ATTESA_BLOCCO_MS = 6000; // un file che si ferma a caricare da tanto tempo si considera rovinato
+export const ATTESA_APERTURA_APP_MS = 2500; // se l'app esterna non si è aperta entro questo tempo, si offre il web
 
 // Questi vivono nella logica pura (nucleo) ma si guardano da qui, con tutti gli altri.
 export { TOLLERANZA_BPM } from "./nucleo/dj.js"; // quanto possono differire i BPM di due brani "in mix" (6%)
 export { RAGGRUPPATI } from "./nucleo/generi.js"; // i generi che il Jukebox mostra fusi in un'unica voce
 export { SECONDI_PER_RIPARTIRE } from "./nucleo/sessione.js"; // ⏮ oltre questi secondi riparte dall'inizio del brano
+export { MAX_ERRORI_AUDIO_DI_FILA } from "./nucleo/sessione.js"; // dopo tanti file rovinati di fila la coda si ferma
+export { MAX_ERRORI } from "./nucleo/diagnostica.js"; // quanti errori tiene la Diagnostica
 
 // Il numero della versione dell'app: dev'essere lo stesso di "jukebox-vN" in sw.js (lo controlla
 // test/contratti.test.mjs). Si alza a ogni pubblicazione, in tutti e due i posti.
@@ -72,12 +79,12 @@ export function configPronta(cfg = leggiConfig()) {
 }
 
 export function salvaConfig({ tipo, url, owner, repo, file, token }) {
-  if (tipo !== undefined) localStorage.setItem(LS.tipo, tipo || DEFAULT.tipo);
-  if (url !== undefined) localStorage.setItem(LS.url, url);
-  if (owner !== undefined) localStorage.setItem(LS.owner, owner || DEFAULT.owner);
-  if (repo !== undefined) localStorage.setItem(LS.repo, repo || DEFAULT.repo);
-  if (file !== undefined) localStorage.setItem(LS.file, file || DEFAULT.file);
-  if (token !== undefined) localStorage.setItem(LS.token, token);
+  if (tipo !== undefined) scrivi(LS.tipo, tipo || DEFAULT.tipo);
+  if (url !== undefined) scrivi(LS.url, url);
+  if (owner !== undefined) scrivi(LS.owner, owner || DEFAULT.owner);
+  if (repo !== undefined) scrivi(LS.repo, repo || DEFAULT.repo);
+  if (file !== undefined) scrivi(LS.file, file || DEFAULT.file);
+  if (token !== undefined) scrivi(LS.token, token);
 }
 
 export function rimuoviToken() {
@@ -95,7 +102,7 @@ export function leggiPreferenzaMotori() {
 }
 
 export function salvaPreferenzaMotori(ordine) {
-  localStorage.setItem(LS.motori, JSON.stringify(ordine));
+  scrivi(LS.motori, JSON.stringify(ordine));
 }
 
 // Se usare NewPipe per YouTube/SoundCloud (scelta di Nicolò: sì di default).
@@ -105,7 +112,7 @@ export function leggiPreferenzaNewPipe() {
 }
 
 export function salvaPreferenzaNewPipe(on) {
-  localStorage.setItem(LS.usaNewPipe, on ? "1" : "0");
+  scrivi(LS.usaNewPipe, on ? "1" : "0");
 }
 
 // "Solo Jukebox": suona solo i brani col file sul telefono, mai le app esterne
@@ -115,5 +122,5 @@ export function leggiPreferenzaSoloJukebox() {
 }
 
 export function salvaPreferenzaSoloJukebox(on) {
-  localStorage.setItem(LS.soloJukebox, on ? "1" : "0");
+  scrivi(LS.soloJukebox, on ? "1" : "0");
 }

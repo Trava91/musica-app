@@ -7,6 +7,10 @@
 // catalogo. Un indice in localStorage (id → [byte, estensione]) dice subito cosa
 // c'è, senza aprire la cache a ogni avvio.
 
+import { scrivi } from "../memoria.js";
+import { registra } from "../nucleo/diagnostica.js";
+import { eSpazioFinito } from "../nucleo/errori.js";
+
 const CACHE = "jukebox-audio";
 const LS = "jukebox.file.indice";
 const chiave = (id) => new URL(`audio/${id}`, globalThis.location?.href || "http://localhost/").href;
@@ -27,12 +31,16 @@ let indice = leggiIndice();
 function leggiIndice() {
   try {
     return JSON.parse(localStorage.getItem(LS)) || {};
-  } catch {
-    return {};
+  } catch (err) {
+    registra(
+      "file",
+      `L'elenco della musica sul telefono non si legge (${err?.message}): lo rifaccio da quello che c'è.`,
+    );
+    return {}; // verifica() lo ricostruisce da ciò che c'è davvero in cache
   }
 }
 function salvaIndice() {
-  localStorage.setItem(LS, JSON.stringify(indice));
+  scrivi(LS, JSON.stringify(indice)); // se non si riesce, l'errore è già nella diagnostica
 }
 
 // Gli id dei brani che hanno il file sul telefono (per motori.js: ctx.fileIds).
@@ -98,14 +106,19 @@ export function idDaNome(nome) {
 }
 
 /**
- * Copia nel Jukebox i file scelti dal selettore. idValidi: Set degli id del
- * catalogo. avanzamento(fatti, totale) viene chiamato dopo ogni file.
- * Restituisce {aggiunti, gia, sconosciuti: [nomi]}.
+ * Copia nel Jukebox i file scelti dal selettore. idValidi: Set degli id del catalogo.
+ * avanzamento(fatti, totale) viene chiamato dopo ogni file. Un file che non si riesce a copiare
+ * non ferma gli altri; se lo spazio finisce ci si ferma e si dice quanti ne restano fuori.
+ * Restituisce {aggiunti, gia, sconosciuti: [nomi], falliti: [nomi], spazioFinito, nonCopiati}:
+ * sconosciuti = nome che non è di un brano del catalogo; falliti = errore nel copiarli;
+ * nonCopiati = quanti non sono stati nemmeno provati perché lo spazio era finito.
  */
 export async function importa(files, idValidi, avanzamento) {
-  const esito = { aggiunti: 0, gia: 0, sconosciuti: [] };
+  const esito = { aggiunti: 0, gia: 0, sconosciuti: [], falliti: [], spazioFinito: false, nonCopiati: 0 };
   // Chiede ad Android di non cancellare questi dati quando lo spazio scarseggia.
-  navigator.storage?.persist?.().catch(() => {});
+  navigator.storage?.persist?.().catch(() => {
+    /* è solo un favore chiesto al sistema: se lo rifiuta la musica si importa lo stesso */
+  });
   const c = await caches.open(CACHE);
   let fatti = 0;
   for (const f of files) {
@@ -117,10 +130,20 @@ export async function importa(files, idValidi, avanzamento) {
       esito.gia++;
     } else {
       const ext = (f.name.split(".").pop() || "").toLowerCase();
-      await c.put(chiave(id), new Response(f, { headers: { "Content-Type": f.type || MIME[ext] || "audio/mpeg" } }));
-      indice[id] = [f.size, ext];
-      salvaIndice(); // a ogni file: se l'importazione si interrompe, quelli fatti restano
-      esito.aggiunti++;
+      try {
+        await c.put(chiave(id), new Response(f, { headers: { "Content-Type": f.type || MIME[ext] || "audio/mpeg" } }));
+        indice[id] = [f.size, ext];
+        salvaIndice(); // a ogni file: se l'importazione si interrompe, quelli fatti restano
+        esito.aggiunti++;
+      } catch (err) {
+        if (eSpazioFinito(err)) {
+          esito.spazioFinito = true;
+          esito.nonCopiati = files.length - fatti + 1; // questo e tutti i restanti
+          break;
+        }
+        registra("file", `Importazione di ${f.name}: ${err?.message || err}`);
+        esito.falliti.push(f.name);
+      }
     }
     avanzamento?.(fatti, files.length);
   }

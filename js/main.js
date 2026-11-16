@@ -5,6 +5,7 @@
 import { Lettore } from "./audio/lettore.js";
 import {
   configPronta,
+  DURATA_AVVISO_LUNGO_MS,
   leggiPreferenzaMotori,
   leggiPreferenzaNewPipe,
   leggiPreferenzaSoloJukebox,
@@ -12,18 +13,29 @@ import {
 } from "./config.js";
 import * as dati from "./dati/catalogo.js";
 import * as file from "./dati/file-audio.js";
-import { ApiError } from "./dati/github.js";
 import * as playlist from "./dati/playlist.js";
+import * as diagnostica from "./nucleo/diagnostica.js";
+import { eErroreAccesso, testoErroreAvvio } from "./nucleo/errori.js";
 import { rimappaPlaylist } from "./nucleo/regole.js";
 import { Sessione } from "./nucleo/sessione.js";
 import { Stato } from "./nucleo/stato.js";
-import { apriLink, attesa, collegaFinestre, collegaSchede, mostraAvviso, vaiA } from "./ui/base.js";
-import { collegaAvvio, mostra, mostraOnboarding } from "./ui/vista-avvio.js";
+import { dataBreve } from "./nucleo/testo.js";
+import { registraServiceWorker } from "./ui/aggiornamento.js";
+import { apriLink, collegaFinestre, collegaSchede, mostraAvviso, vaiA } from "./ui/base.js";
+import { collegaAvvio, mostra, mostraAvvio, mostraOnboarding } from "./ui/vista-avvio.js";
 import { collegaCerca } from "./ui/vista-cerca.js";
 import { collegaGeneri } from "./ui/vista-generi.js";
 import { collegaImpostazioni } from "./ui/vista-impostazioni.js";
 import { collegaPlaylist } from "./ui/vista-playlist.js";
 import { collegaSuona } from "./ui/vista-suona.js";
+
+// --- la rete di sicurezza ---------------------------------------------------------
+// Prima di tutto: un errore imprevisto (anche durante l'avvio) finisce nel registro della
+// Diagnostica e, se ha una frase per l'utente, in un avviso.
+diagnostica.installaReteDiSicurezza(window);
+diagnostica.ascolta((voce) => {
+  if (voce.avviso) mostraAvviso(voce.avviso, "err");
+});
 
 // --- i pezzi ----------------------------------------------------------------------
 const stato = new Stato();
@@ -56,13 +68,24 @@ collegaImpostazioni(app);
 async function applicaCatalogo(catalogo) {
   stato.cambia({ catalogo });
   const idValidi = new Set(catalogo.brani.map((b) => b.id));
-  await file.riallinea(catalogo.rinominati, idValidi).catch(() => 0);
-  stato.cambiaCtx({ fileIds: await file.verifica().catch(() => file.ids()) });
+  // Se i file sul telefono non si riescono a riallineare l'app parte lo stesso, con quello che c'è.
+  await file.riallinea(catalogo.rinominati, idValidi).catch((err) => {
+    diagnostica.registra("file", err);
+    return 0;
+  });
+  stato.cambiaCtx({
+    fileIds: await file.verifica().catch((err) => {
+      diagnostica.registra("file", err);
+      return file.ids();
+    }),
+  });
 }
 
+// L'avvio ha tre stati (vedi mostraAvvio): caricamento, errore (con Riprova) e pronto. Se la rete
+// manca ma c'è una copia dei dati, si parte con quella e lo si dice.
 async function avviaApp() {
   mostra("app");
-  attesa(true);
+  mostraAvvio("caricamento", { testo: "Leggo il catalogo…" });
   try {
     stato.cambiaCtx({
       priorita: leggiPreferenzaMotori(),
@@ -70,15 +93,21 @@ async function avviaApp() {
       soloJukebox: leggiPreferenzaSoloJukebox(),
     });
     const catalogo = await dati.carica();
+    mostraAvvio("caricamento", { testo: "Leggo le playlist…" });
     await applicaCatalogo(catalogo);
     const elenco = await playlist.carica();
     stato.cambia({ playlist: elenco.map((p) => rimappaPlaylist(p, catalogo.rinominati)) });
+    mostraAvvio("pronto");
     vaiA(app, "cerca");
+    if (catalogo.offline) {
+      const quando = dataBreve(catalogo.costruitoIl);
+      mostraAvviso(`Dati ${quando ? `del ${quando}` : "salvati"}, non aggiornati: rete assente.`, "", {
+        duration: DURATA_AVVISO_LUNGO_MS,
+      });
+    }
   } catch (err) {
-    mostraAvviso(err?.message || "Caricamento fallito.", "err");
-    if (err instanceof ApiError && err.kind === "auth") mostraOnboarding();
-  } finally {
-    attesa(false);
+    diagnostica.registra("avvio", err);
+    mostraAvvio("errore", { testo: testoErroreAvvio(err), accesso: eErroreAccesso(err) });
   }
 }
 
@@ -87,14 +116,6 @@ async function aggiornaDati() {
   const catalogo = await dati.carica({ forza: true });
   await applicaCatalogo(catalogo);
   stato.cambia({ playlist: stato.leggi().playlist.map((p) => rimappaPlaylist(p, catalogo.rinominati)) });
-}
-
-// --- service worker ----------------------------------------------------------------
-function registraServiceWorker() {
-  if (!("serviceWorker" in navigator)) return;
-  navigator.serviceWorker.register("sw.js").catch(() => {
-    /* offline al primo avvio: non è un errore da mostrare */
-  });
 }
 
 // --- avvio -------------------------------------------------------------------------

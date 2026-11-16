@@ -31,8 +31,30 @@ export function mostraOnboarding() {
   mostra("onboarding");
 }
 
+/**
+ * I tre stati dell'avvio, al posto della rotella sola: "caricamento" (con la frase di cosa si sta
+ * leggendo), "errore" (la frase + Riprova, e Cambia token se il problema è l'accesso) e "pronto"
+ * (le schede dell'app).
+ * @param {"caricamento" | "errore" | "pronto"} stato
+ * @param {{ testo?: string, accesso?: boolean }} [opzioni]  accesso = l'errore è il token
+ */
+export function mostraAvvio(stato, { testo = "", accesso = false } = {}) {
+  const pronto = stato === "pronto";
+  $("#avvio").hidden = pronto;
+  $("#schermi").hidden = !pronto;
+  $(".tabbar").hidden = !pronto;
+  $("#avvio-ruota").hidden = stato !== "caricamento";
+  $("#avvio-testo").textContent = testo;
+  $("#avvio-testo").classList.toggle("err", stato === "errore");
+  $("#avvio-azioni").hidden = stato !== "errore";
+  $("#avvio-token").hidden = !accesso;
+  if (stato === "errore") $("#avvio-riprova").focus();
+}
+
 export function collegaAvvio(app) {
   $("#onboarding-form").addEventListener("submit", (e) => inviaToken(app, e));
+  $("#avvio-riprova").addEventListener("click", () => app.avvia());
+  $("#avvio-token").addEventListener("click", () => mostraOnboarding());
 }
 
 async function inviaToken(app, e) {

@@ -9,6 +9,7 @@ import { $, esc, mostraAvviso, NOMI_MOTORE, NOMI_ORDINE_PL, NOMI_PIATT, SVG_PLAY
 import { nuovaManuale } from "./azioni-playlist.js";
 import { apriCostruttore } from "./costruttore-playlist.js";
 import { apriFoglioPlaylist } from "./foglio-playlist.js";
+import { statoVuoto } from "./riga-brano.js";
 
 const DIPENDENZE = ["scheda", "catalogo", "playlist", "ctx"];
 const FASCE = ["f-rosso", "f-blu", "f-ambra"];
@@ -20,6 +21,10 @@ export function collegaPlaylist(app) {
   });
   // Un solo ascoltatore per tutti i cartellini.
   $("#playlist-lista").addEventListener("click", (e) => {
+    if (e.target.closest?.("[data-azione-vuoto]")) {
+      apriCostruttore(app, null); // lo stato vuoto: "Crea la prima playlist"
+      return;
+    }
     const tasto = e.target.closest?.(".cartellino-testa, .play-neon");
     const cartellino = tasto?.closest(".cartellino");
     if (!cartellino) return;
@@ -61,7 +66,11 @@ export function disegnaPlaylist(app) {
         </div>
       </div>`;
       })
-      .join("") || `<p class="vuoto muted">Nessuna playlist ancora. Creane una con i pulsanti qui sopra.</p>`;
+      .join("") ||
+    statoVuoto({
+      testo: "Nessuna playlist ancora.",
+      azione: { etichetta: "Crea la prima playlist", fai: () => apriCostruttore(app, null) },
+    });
 }
 
 // Le regole di una playlist in poche etichette leggibili (per il cartellino).

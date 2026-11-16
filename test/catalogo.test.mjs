@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { ApiError } from "../js/dati/github.js";
 import * as dati from "../js/dati/catalogo.js";
+import { eErroreAccesso, testoErroreAvvio } from "../js/nucleo/errori.js";
 import { ErroreDati } from "../js/nucleo/valida.js";
 import { fixture, testoFixture } from "./fixture.mjs";
 
@@ -153,6 +154,19 @@ test("rete assente con un catalogo in cache: usa la cache", async () => {
     { fetch: githubFinto({ rete: false }).fetch, caches, memoria: conToken({ "jukebox.dati.sha": "S1" }) },
   );
   assert.equal(catalogo.brani.length, fixture.brani.length);
+  assert.equal(catalogo.offline, true, "è la copia salvata: l'app lo dice");
+});
+
+test("rete presente: il catalogo non è segnato offline (nemmeno se letto dalla cache con lo stesso sha)", async () => {
+  const caches = cachesFinte();
+  await mettiInCache(caches, testoFixture);
+  const dallaCache = await dati.carica(
+    {},
+    { fetch: githubFinto({ sha: "S1" }).fetch, caches, memoria: conToken({ "jukebox.dati.sha": "S1" }) },
+  );
+  assert.equal(dallaCache.offline, false);
+  const scaricato = await dati.carica({}, { fetch: githubFinto().fetch, caches: cachesFinte(), memoria: conToken() });
+  assert.equal(scaricato.offline, false);
 });
 
 test("rete assente e nessuna cache: errore 'Nessuna connessione…'", async () => {
@@ -294,6 +308,7 @@ test("anteprima: indirizzo non raggiungibile ma catalogo in cache → usa la cac
   };
   const catalogo = await dati.carica({}, { fetch: rotto.fetch, caches, memoria: anteprima() });
   assert.equal(catalogo.brani.length, fixture.brani.length);
+  assert.equal(catalogo.offline, true);
 });
 
 test("anteprima: file che non è un catalogo leggibile → errore chiaro, non un ripiego muto sulla cache", async () => {
@@ -336,4 +351,28 @@ test("svuotaCache: toglie la copia del catalogo e lo sha ricordato", async () =>
   await dati.svuotaCache({ caches, memoria });
   assert.equal(inCache(caches), undefined);
   assert.equal(memoria.getItem("jukebox.dati.sha"), null);
+});
+
+// ======================================== lo stato "errore" dell'avvio (con Riprova) ====
+
+test("avvio: un catalogo illeggibile dà un errore con un testo chiaro, senza 'Cambia token'", async () => {
+  const github = githubFinto({ testo: JSON.stringify({ schema: 1, brani: "non una lista" }) });
+  const err = await errore(dati.carica({}, { fetch: github.fetch, caches: cachesFinte(), memoria: conToken() }));
+  assert.equal(testoErroreAvvio(err), err.message);
+  assert.match(testoErroreAvvio(err), /catalogo|brani/i);
+  assert.equal(eErroreAccesso(err), false, "non è un problema di token: niente tasto 'Cambia token'");
+});
+
+test("avvio: un token rifiutato dà l'errore con il tasto 'Cambia token'", async () => {
+  const github = githubFinto({ statoSha: 401 });
+  const err = await errore(dati.carica({}, { fetch: github.fetch, caches: cachesFinte(), memoria: conToken() }));
+  assert.equal(eErroreAccesso(err), true);
+  assert.match(testoErroreAvvio(err), /Token errato o scaduto\..*cambiarlo/);
+});
+
+test("avvio: senza rete e senza cache l'errore dice di riprovare quando torna la connessione", async () => {
+  const err = await errore(
+    dati.carica({}, { fetch: githubFinto({ rete: false }).fetch, caches: cachesFinte(), memoria: conToken() }),
+  );
+  assert.match(testoErroreAvvio(err), /Nessuna connessione.*Riprova quando torna la connessione/);
 });

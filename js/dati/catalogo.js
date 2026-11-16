@@ -17,13 +17,14 @@
 import { ApiError, GitHubApi } from "./github.js";
 import { preparaIndice } from "../nucleo/cerca.js";
 import { ATTESA_CACHE_MS, leggiConfig } from "../config.js";
+import { registra } from "../nucleo/diagnostica.js";
 import { ErroreDati, validaCatalogo } from "../nucleo/valida.js";
 
 const CACHE_NOME = "jukebox-dati";
 // Chiave sullo stesso indirizzo dell'app (Cache Storage vuole un URL assoluto).
 const CACHE_CHIAVE = new URL("cache-dati/catalogo.json", globalThis.location?.href || "http://localhost/").href;
 const LS_SHA = "jukebox.dati.sha";
-const NON_E_UN_CATALOGO = 'GitHub non ha mandato il catalogo: riprova con "Aggiorna dati ora".';
+const NON_E_UN_CATALOGO = "GitHub non ha mandato il catalogo. Riprova tra poco.";
 
 /**
  * Le dipendenze di catalogo.js, tutte facoltative: di default sono quelle del browser.
@@ -70,7 +71,8 @@ async function daCache(d) {
       d.attesaCache,
       null,
     );
-  } catch {
+  } catch (err) {
+    registra("cache", err); // la cache non risponde: si prosegue senza, ma resta nel registro
     return null;
   }
 }
@@ -82,12 +84,13 @@ function salvaInCache(testo, d) {
   return d.caches
     .open(CACHE_NOME)
     .then((c) => c.put(CACHE_CHIAVE, new Response(testo, { headers: { "Content-Type": "application/json" } })))
-    .catch((err) => console.warn("Cache del catalogo non salvata:", err));
+    .catch((err) => registra("cache", `Copia del catalogo non salvata: ${err?.message || err}`));
 }
 
 // Controlla il catalogo (lancia ErroreDati se è illeggibile) e lo indicizza. `scartati` e
-// `avvisi` dicono cosa non andava nei dati: li mostra Impostazioni → Dati.
-function preparaCatalogo(dati) {
+// `avvisi` dicono cosa non andava nei dati: li mostra Impostazioni → Dati. `offline` = è la
+// copia in cache perché la rete non c'era: chi avvia l'app lo dice all'utente.
+function preparaCatalogo(dati, offline = false) {
   const { catalogo, scartati, avvisi } = validaCatalogo(dati);
   preparaIndice(catalogo.brani, catalogo.raccolte);
   // rinominati: id vecchio → id nuovo (vedi strumenti/esporta.py), per i file e le playlist salvati.
@@ -99,6 +102,7 @@ function preparaCatalogo(dati) {
     rinominati: catalogo.rinominati || {},
     scartati,
     avvisi,
+    offline,
   };
 }
 
@@ -119,7 +123,7 @@ async function caricaDaUrl(cfg, d) {
   } catch (err) {
     if (err instanceof ErroreDati) throw err; // il file c'è ma non è un catalogo: non si copre con la cache
     const dallaCache = await daCache(d);
-    if (dallaCache) return preparaCatalogo(dallaCache);
+    if (dallaCache) return preparaCatalogo(dallaCache, true);
     throw err instanceof ApiError ? err : new ApiError("Impossibile leggere il file dati.", { kind: "network" });
   }
 }
@@ -151,7 +155,7 @@ async function caricaDaGitHub(cfg, forza, d) {
     } catch {
       /* non è JSON: lo dice l'errore qui sotto */
     }
-    if (!Array.isArray(dati?.brani)) throw new ApiError(NON_E_UN_CATALOGO, { kind: "network" });
+    if (!Array.isArray(dati?.brani)) throw new ApiError(NON_E_UN_CATALOGO, { kind: "generic" });
     const catalogo = preparaCatalogo(dati); // se è illeggibile lancia prima di toccare cache e sha
     salvaInCache(testo, d);
     d.memoria.setItem(LS_SHA, shaRemoto);
@@ -159,14 +163,15 @@ async function caricaDaGitHub(cfg, forza, d) {
   }
 
   const offline = await daCache(d);
-  if (offline) return preparaCatalogo(offline);
+  if (offline) return preparaCatalogo(offline, true);
   throw new ApiError("Nessuna connessione e nessun catalogo salvato sul telefono.", { kind: "network" });
 }
 
 /**
  * Carica il catalogo. Con forza:true riscarica anche se lo sha non è cambiato
  * (pulsante "Aggiorna dati ora"). Restituisce {brani, macro, raccolte, costruitoIl,
- * rinominati, scartati, avvisi} con brani già controllati e passati da preparaIndice.
+ * rinominati, scartati, avvisi, offline} con brani già controllati e passati da preparaIndice
+ * (offline = vero se la rete non c'era e questa è la copia salvata).
  * @param {{ forza?: boolean }} [opzioni]
  * @param {Dipendenze} [dip] le dipendenze, vedi in cima al file.
  */

@@ -7,6 +7,7 @@ import * as playlist from "../dati/playlist.js";
 import * as motori from "../nucleo/motori.js";
 import * as regole from "../nucleo/regole.js";
 import { $, apriFinestra, chiudiFinestra, esc, mostraAvviso, NOMI_MOTORE, vaiA } from "./base.js";
+import { chiediConferma } from "./dialoghi.js";
 import { eliminaPlaylist, salvaPlaylist } from "./azioni-playlist.js";
 import { apriCostruttore } from "./costruttore-playlist.js";
 import { mostraLista } from "./riga-brano.js";
@@ -19,7 +20,7 @@ async function salvaEChiudi(app, p, fatto) {
   try {
     await salvaPlaylist(app, p);
   } catch {
-    return;
+    return; // già detto da salvaPlaylist
   }
   mostraAvviso(fatto, "ok");
   chiudi();
@@ -64,7 +65,7 @@ export function apriFoglioPlaylist(app, pScelta) {
     try {
       await salvaPlaylist(app, aggiornata);
     } catch {
-      e.target.checked = !e.target.checked;
+      e.target.checked = !e.target.checked; // il salvataggio non è riuscito (già detto): l'interruttore torna com'era
       return;
     }
     p = aggiornata;
@@ -89,7 +90,13 @@ export function apriFoglioPlaylist(app, pScelta) {
       mostraAvviso("Questi brani servono anche ad altre playlist sul telefono.", "");
       return;
     }
-    if (!window.confirm(`Togliere dal telefono ${via.length} brani (${(file.byte(via) / MB).toFixed(0)} MB)?`)) return;
+    const conferma = await chiediConferma({
+      titolo: "Libera spazio",
+      testo: `Togliere dal telefono ${via.length} brani (${(file.byte(via) / MB).toFixed(0)} MB)? Per riaverli andranno reimportati.`,
+      conferma: "Togli",
+      pericolo: true,
+    });
+    if (!conferma) return;
     await file.rimuovi(via);
     app.stato.cambiaCtx({ fileIds: file.ids() });
     chiudi();
@@ -121,15 +128,44 @@ export function apriFoglioPlaylist(app, pScelta) {
     ),
   );
   $("#pl-elimina").addEventListener("click", async () => {
-    if (!window.confirm(`Eliminare "${p.nome}"? Non si può annullare.`)) return;
+    const conferma = await chiediConferma({
+      titolo: "Eliminare la playlist?",
+      testo: `«${p.nome}» verrà eliminata. Non si può annullare.`,
+      conferma: "Elimina",
+      pericolo: true,
+    });
+    if (!conferma) return;
     try {
       await eliminaPlaylist(app, p);
     } catch {
-      return;
+      return; // già detto da eliminaPlaylist
     }
     chiudi();
     mostraAvviso("Playlist eliminata.", "ok");
   });
-  mostraLista(app, $("#pl-elenco"), elenco.slice(0, RIGHE_MAX_PLAYLIST), { lista: elenco, nome: p.nome });
+  // Una playlist vuota dice cosa fare: aggiungere dischi (a mano) o cambiare i filtri.
+  const vuoto =
+    p.tipo === "intelligente"
+      ? {
+          testo: "Nessun disco con questi filtri.",
+          azione: {
+            etichetta: "Modifica i filtri",
+            fai: () => {
+              chiudi();
+              apriCostruttore(app, p);
+            },
+          },
+        }
+      : {
+          testo: "Questa playlist è vuota.",
+          azione: {
+            etichetta: "Cerca dischi da aggiungere",
+            fai: () => {
+              chiudi();
+              vaiA(app, "cerca");
+            },
+          },
+        };
+  mostraLista(app, $("#pl-elenco"), elenco.slice(0, RIGHE_MAX_PLAYLIST), { lista: elenco, nome: p.nome }, { vuoto });
   apriFinestra("foglio-overlay");
 }

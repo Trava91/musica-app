@@ -52,6 +52,17 @@ export function motoreBrano(brano, ctx = {}) {
 }
 
 /**
+ * Perché un brano non si può suonare adesso (quando `motoreBrano` non trova nessun motore), in una
+ * frase. Serve alla riga spenta e all'avviso del tasto ▶.
+ */
+export function motivoSenzaMotore(brano, ctx = {}) {
+  if (ctx.soloJukebox) return "Questo brano non è sul telefono e «Solo Jukebox» è acceso.";
+  if (brano.s.every(([c]) => c === "lo"))
+    return "È un file del PC che non è sul telefono: serve la musica sul telefono.";
+  return "Nessuna fonte utilizzabile: controlla l'ordine dei motori nelle Impostazioni.";
+}
+
+/**
  * Il motore con cui aprire UNA fonte precisa scelta a mano (il tasto "Apri" accanto a ogni
  * fonte nella scheda del brano): Spotify nell'app, YouTube e SoundCloud in NewPipe se è
  * attivo, altrimenti il web. Non guarda la priorità né "Solo Jukebox": è l'utente che sceglie.

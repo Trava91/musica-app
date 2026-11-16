@@ -5,7 +5,7 @@
 import { PROSSIMI_MOSTRATI } from "../config.js";
 import { durataFmt, titoloCompleto } from "../nucleo/testo.js";
 import { $, esc, NOMI_DOVE, NOMI_ORDINE_PL, SVG_PAUSA, SVG_PLAY, vaiA } from "./base.js";
-import { aggiornaEvidenziati, mostraLista } from "./riga-brano.js";
+import { aggiornaEvidenziati, mostraLista, statoVuoto } from "./riga-brano.js";
 
 let prossimiMostrati = PROSSIMI_MOSTRATI; // quanti brani di "A seguire" si vedono ("Mostra altri" ne aggiunge)
 let trascinando = false; // il dito sta spostando la posizione nel brano: la barra non si aggiorna
@@ -73,7 +73,11 @@ export function disegnaSuona(app) {
   const inizio = Math.max(s.indice, 0);
   if (!sel) {
     $("#etichetta-disco").innerHTML = `<span class="ed-foro"></span>`;
-    $("#riproduzione-corrente").innerHTML = `<p class="vuoto muted">Coda finita.</p>`;
+    $("#riproduzione-corrente").innerHTML = statoVuoto({
+      testo: "La coda è finita.",
+      azione: { etichetta: "Scegli un'altra playlist" },
+    });
+    $("#riproduzione-corrente [data-azione-vuoto]").addEventListener("click", () => vaiA(app, "playlist"));
     $("#riproduzione-azioni").innerHTML = "";
   } else {
     $("#etichetta-disco").innerHTML = `

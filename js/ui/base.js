@@ -5,7 +5,7 @@
 //
 // Ogni vista riceve `app` = { stato, sessione, android, avvia, aggiornaDati } da main.js.
 
-import { DURATA_AVVISO_MS } from "../config.js";
+import { ATTESA_APERTURA_APP_MS, DURATA_AVVISO_LUNGO_MS, DURATA_AVVISO_MS } from "../config.js";
 import { vociSelezionate } from "../nucleo/generi.js";
 
 export const $ = (sel, root = document) => root.querySelector(sel);
@@ -105,11 +105,36 @@ export function attesa(on) {
 
 // ----------------------------------------------------------------- link esterni ----
 // Sul telefono Android i link intent:// aprono NewPipe/Spotify; sul PC (anteprima) non
-// esistono e la sessione passa il link web.
-export function apriLink(url) {
+// esistono e la sessione passa il link web. `web` = l'indirizzo da offrire se l'app non si apre.
+export function apriLink(url, { web = null } = {}) {
   if (!url) return;
-  if (url.startsWith("intent://")) window.location.href = url;
-  else window.open(url, "_blank", "noopener");
+  if (!url.startsWith("intent://")) {
+    window.open(url, "_blank", "noopener");
+    return;
+  }
+  // Se l'app si apre, il Jukebox passa in secondo piano (la pagina diventa "nascosta"). Se dopo un
+  // attimo è ancora lì, l'apertura non è partita: si offre il web invece di non fare nulla.
+  let partita = false;
+  const controlla = () => {
+    if (document.hidden) partita = true;
+  };
+  document.addEventListener("visibilitychange", controlla);
+  window.location.href = url;
+  setTimeout(() => {
+    document.removeEventListener("visibilitychange", controlla);
+    if (partita || document.hidden) return;
+    mostraAvviso(
+      "L'app non si è aperta.",
+      "err",
+      web
+        ? {
+            actionLabel: "Apri sul web",
+            onAction: () => window.open(web, "_blank", "noopener"),
+            duration: DURATA_AVVISO_LUNGO_MS,
+          }
+        : {},
+    );
+  }, ATTESA_APERTURA_APP_MS);
 }
 
 // -------------------------------------------------------------------- finestre ----
@@ -123,7 +148,8 @@ export function chiudiFinestra(id) {
 
 /** Un tocco fuori dal foglio chiude la finestra. Da chiamare una volta all'avvio. */
 export function collegaFinestre() {
-  for (const ov of $$(".overlay")) {
+  // (le finestre di dialogo hanno la loro chiusura: devono sempre dare una risposta)
+  for (const ov of $$(".overlay:not([data-dialogo])")) {
     ov.addEventListener("click", (e) => {
       if (e.target === ov) ov.hidden = true;
     });

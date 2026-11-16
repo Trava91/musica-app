@@ -16,8 +16,12 @@ import {
 import * as dati from "../dati/catalogo.js";
 import * as file from "../dati/file-audio.js";
 import * as playlist from "../dati/playlist.js";
+import { registra } from "../nucleo/diagnostica.js";
+import { eSpazioFinito } from "../nucleo/errori.js";
 import { $, attesa, esc, mostraAvviso, NOMI_MOTORE } from "./base.js";
+import { chiediConferma, mostraRiepilogo } from "./dialoghi.js";
 import { mostraOnboarding } from "./vista-avvio.js";
+import { collegaDiagnostica, disegnaDiagnostica } from "./vista-diagnostica.js";
 
 // Lo stato di Spotify (ctx.spotify, vedi motori.js) detto a parole.
 const NOMI_SPOTIFY = {
@@ -33,6 +37,7 @@ export function collegaImpostazioni(app) {
   // La scheda ha dati che arrivano da promesse (la cache, non solo il catalogo in memoria):
   // si aggiorna ogni volta che la si apre.
   $('[data-tab="impostazioni"]').addEventListener("click", () => aggiornaImpostazioni(app));
+  collegaDiagnostica();
 
   $("#imp-aggiorna").addEventListener("click", async () => {
     attesa(true);
@@ -41,13 +46,21 @@ export function collegaImpostazioni(app) {
       mostraAvviso("Dati aggiornati.", "ok");
       await aggiornaImpostazioni(app);
     } catch (err) {
-      mostraAvviso(err?.message || "Aggiornamento fallito.", "err");
+      registra("dati", err);
+      mostraAvviso(testoErroreAggiornamento(err), "err");
+      await aggiornaImpostazioni(app); // la Diagnostica ha una voce in più
     } finally {
       attesa(false);
     }
   });
   $("#imp-svuota-cache").addEventListener("click", async () => {
-    if (!window.confirm("Svuotare la cache dei dati? Verranno riscaricati al prossimo avvio online.")) return;
+    const conferma = await chiediConferma({
+      titolo: "Svuotare la cache dei dati?",
+      testo: "Verranno riscaricati al prossimo avvio online. Senza rete l'app non partirà.",
+      conferma: "Svuota",
+      pericolo: true,
+    });
+    if (!conferma) return;
     await dati.svuotaCache();
     await aggiornaImpostazioni(app);
     mostraAvviso("Cache svuotata.", "ok");
@@ -56,7 +69,13 @@ export function collegaImpostazioni(app) {
   $("#imp-file-aggiungi").addEventListener("click", () => $("#imp-file-input").click());
   $("#imp-file-input").addEventListener("change", (e) => importaFile(app, e.target));
   $("#imp-file-svuota").addEventListener("click", async () => {
-    if (!window.confirm("Togliere dal telefono tutta la musica del Jukebox? Per riaverla andrà reimportata.")) return;
+    const conferma = await chiediConferma({
+      titolo: "Togliere tutta la musica?",
+      testo: "Verranno tolti dal telefono tutti i brani del Jukebox. Per riaverli andranno reimportati.",
+      conferma: "Togli tutto",
+      pericolo: true,
+    });
+    if (!conferma) return;
     app.sessione.ferma();
     await file.svuota();
     app.stato.cambiaCtx({ fileIds: file.ids() });
@@ -94,7 +113,12 @@ export function collegaImpostazioni(app) {
       else mostraOnboarding();
       return;
     }
-    if (!window.confirm("Rimuovere il token salvato su questo telefono?")) return;
+    const conferma = await chiediConferma({
+      titolo: "Cambiare il token?",
+      testo: "Il token salvato su questo telefono verrà tolto: ne servirà uno nuovo per leggere i dati.",
+      conferma: "Cambia",
+    });
+    if (!conferma) return;
     rimuoviToken();
     mostraOnboarding();
   });
@@ -120,6 +144,15 @@ function disegnaImpostazioni(app, cfg, infoCache) {
   $("#imp-newpipe").checked = ctx.usaNewPipe !== false;
   $("#imp-solo-jukebox").checked = ctx.soloJukebox;
   disegnaOrdineMotori(app);
+  disegnaDiagnostica();
+}
+
+// Perché "Aggiorna dati ora" non ha funzionato, e cosa fare.
+function testoErroreAggiornamento(err) {
+  if (err?.kind === "network")
+    return "Rete assente: i dati restano quelli di prima. Riprova quando torna la connessione.";
+  if (err?.kind === "auth") return `${err.message} Cambia il token da qui sotto.`;
+  return err?.message || "Aggiornamento fallito.";
 }
 
 // Cosa non andava nei dati appena letti (vedi valida.js): brani lasciati fuori perché
@@ -184,14 +217,37 @@ async function importaFile(app, input) {
     const esito = await file.importa(files, idValidi, (fatti, tot) => {
       stato.textContent = `Copio nel Jukebox: ${fatti} di ${tot}…`;
     });
-    mostraAvviso(
-      `${esito.aggiunti} brani aggiunti${esito.gia ? `, ${esito.gia} c'erano già` : ""}${esito.sconosciuti.length ? `, ${esito.sconosciuti.length} file non riconosciuti` : ""}. Ora puoi cancellare la cartella Download/Jukebox.`,
-      "ok",
-      { duration: DURATA_AVVISO_LUNGO_MS },
-    );
+    stato.textContent = "";
+    const aggiunti = `${esito.aggiunti} brani aggiunti${esito.gia ? `, ${esito.gia} c'erano già` : ""}.`;
+    if (!esito.sconosciuti.length && !esito.falliti.length && !esito.spazioFinito) {
+      mostraAvviso(`${aggiunti} Ora puoi cancellare la cartella Download/Jukebox.`, "ok", {
+        duration: DURATA_AVVISO_LUNGO_MS,
+      });
+    } else {
+      // Qualcosa non è andato: un riepilogo con i nomi, da leggere con calma.
+      await mostraRiepilogo({
+        titolo: esito.spazioFinito ? "Spazio finito" : "Importazione finita",
+        righe: [
+          aggiunti,
+          esito.spazioFinito
+            ? `Lo spazio del telefono è finito: ${esito.nonCopiati} file non sono stati copiati. Libera spazio e riprova.`
+            : "",
+          esito.sconosciuti.length
+            ? "Alcuni file non sono brani del catalogo: il nome deve cominciare con l'id del brano (12 cifre), come li prepara il PC."
+            : "",
+          esito.falliti.length ? "Alcuni file non si sono riusciti a copiare." : "",
+        ].filter(Boolean),
+        elencoTitolo: "File da controllare",
+        elenco: [
+          ...esito.sconosciuti.map((n) => `${n}: non riconosciuto`),
+          ...esito.falliti.map((n) => `${n}: copia non riuscita`),
+        ],
+      });
+    }
   } catch (err) {
+    registra("file", err);
     mostraAvviso(
-      err?.name === "QuotaExceededError"
+      eSpazioFinito(err)
         ? "Spazio finito sul telefono: libera spazio e riprova."
         : err?.message || "Importazione non riuscita.",
       "err",
@@ -215,6 +271,6 @@ async function disegnaFileInfo(app) {
   }
   $("#imp-file-info").textContent = n
     ? `${n.toLocaleString("it-IT")} brani sul telefono (${mb} MB)${libero}`
-    : `Nessun brano sul telefono${libero}`;
+    : `Nessun brano sul telefono${libero}. Tocca «Aggiungi file dal telefono» per importare quelli che ha preparato il PC.`;
   $("#imp-file-svuota").hidden = !n;
 }

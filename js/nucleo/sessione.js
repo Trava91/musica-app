@@ -2,7 +2,8 @@
 // decidono cosa suona. È il cervello della riproduzione, separato dall'interfaccia: non disegna
 // nulla e non tocca la pagina né la rete. Riceve da fuori ciò che le serve:
 //   - lettore: chi suona i file (audio/lettore.js; nei test uno finto);
-//   - apri(indirizzo): apre un link verso un'app esterna (NewPipe, Spotify, web);
+//   - apri(indirizzo, {web}): apre un link verso un'app esterna (NewPipe, Spotify, web); `web` è
+//     l'indirizzo da offrire se l'app non si apre;
 //   - ctx(): lo stato del telefono per motori.js (file presenti, NewPipe, "Solo Jukebox"…).
 // Ogni modifica della coda passa da qui. Chi disegna ascolta i cambiamenti con
 // ascolta(funzione) e legge stato(), una fotografia fatta di soli dati (id, numeri, testi): la
@@ -19,8 +20,9 @@
 
 import { Coda } from "./coda.js";
 import * as comandi from "./comandi.js";
+import { registra } from "./diagnostica.js";
 import { linkApertura } from "./link.js";
-import { motoreBrano, motoreFonte, pianoRiproduzione } from "./motori.js";
+import { motivoSenzaMotore, motoreBrano, motoreFonte, pianoRiproduzione } from "./motori.js";
 import { titoloCompleto } from "./testo.js";
 
 /**
@@ -44,6 +46,7 @@ import { titoloCompleto } from "./testo.js";
  * @property {((brano: Brano | null) => void) | null} [onFine]      il brano è finito
  * @property {(() => void) | null} [onStato]                        stato o posizione cambiati
  * @property {((comando: string) => void) | null} [onComando]      "avanti" | "indietro" dalla schermata di blocco
+ * @property {((brano: Brano, motivo: string) => void) | null} [onErrore]  il file del brano che suonava non si legge più
  */
 
 /**
@@ -71,11 +74,14 @@ import { titoloCompleto } from "./testo.js";
 
 // ⏮ oltre questi secondi riparte dall'inizio del brano invece di passare al precedente.
 export const SECONDI_PER_RIPARTIRE = 4;
+// Dopo tanti file che non si riescono a suonare di fila la coda si ferma (altrimenti una playlist
+// tutta rovinata girerebbe a vuoto saltando un brano dopo l'altro).
+export const MAX_ERRORI_AUDIO_DI_FILA = 3;
 const GIRO_RIPETI = ["no", "tutti", "uno"];
 
 export class Sessione {
   /**
-   * @param {{ lettore: Lettore, apri?: (indirizzo: string | null) => void, ctx?: object | (() => any), android?: boolean, icona?: string }} opts
+   * @param {{ lettore: Lettore, apri?: (indirizzo: string | null, opzioni?: { web?: string | null }) => void, ctx?: object | (() => any), android?: boolean, icona?: string }} opts
    *   android: si aprono le app (intent://) invece del web; icona: l'immagine per la schermata di blocco.
    */
   constructor({ lettore, apri = () => {}, ctx = {}, android = false, icona }) {
@@ -98,8 +104,10 @@ export class Sessione {
     this.partenza = Promise.resolve();
     /** @type {Set<(evento: any) => void>} */
     this.ascoltatori = new Set();
+    this.erroriDiFila = 0; // file che non si sono riusciti a suonare uno dopo l'altro
 
     lettore.onFine = (b) => this.fineBrano(b);
+    lettore.onErrore = (b, motivo) => this.erroreAudio(b, motivo);
     lettore.onStato = () => this.emetti({ tipo: "lettore" });
     lettore.onComando = (c) => this.comandoBlocco(c);
   }
@@ -210,7 +218,7 @@ export class Sessione {
     }
     const { motore } = motoreBrano(b, ctx);
     if (!motore) {
-      this.avvisa("Nessuna fonte disponibile per questo brano.", "err");
+      this.avvisa(motivoSenzaMotore(b, ctx), "err");
       return false;
     }
     const brani = motore === "file" ? lista.filter((x) => this.puoSuonare(x)) : lista;
@@ -358,7 +366,9 @@ export class Sessione {
    * @param {string[]} fonte [codice, riferimento]
    */
   apriFonte(fonte) {
-    this.apri(linkApertura(motoreFonte(fonte, this.leggiCtx()), fonte, { android: this.android }));
+    this.apri(linkApertura(motoreFonte(fonte, this.leggiCtx()), fonte, { android: this.android }), {
+      web: linkApertura("web", fonte, { android: false }),
+    });
   }
 
   // ------------------------------------------------------------------ interni ----
@@ -371,6 +381,7 @@ export class Sessione {
     this.coda = new Coda(brani, { ripeti: "no" });
     if (da) this.coda.salta(da.id);
     this.saltati = saltati;
+    this.erroriDiFila = 0;
     this.lettore.ferma();
     this.esterno = null;
     this.emetti({ tipo: "coda", nuova: true });
@@ -379,6 +390,7 @@ export class Sessione {
 
   suona(b) {
     if (!b) return this.partenza;
+    this.erroriDiFila = 0;
     this.partenza = this.suonaDaFile(b, new Set());
     return this.partenza;
   }
@@ -388,17 +400,41 @@ export class Sessione {
   async suonaDaFile(b, falliti) {
     try {
       await this.lettore.suona(b, { album: this.sorgente?.nome || "Jukebox", icona: this.icona });
+      this.erroriDiFila = 0;
     } catch (err) {
       if (err?.name === "NotAllowedError") {
         this.avvisa("Premi ▶ per far partire la musica."); // il browser vuole un tocco prima dell'audio
       } else {
-        this.avvisa(err?.message || "Non riesco a suonare questo brano.", "err");
-        falliti.add(b.id);
-        const prossimo =
-          this.coda && comandi.dopoFine(this.coda, b.id, (x) => !falliti.has(x.id) && this.puoSuonare(x));
-        if (prossimo && !falliti.has(prossimo.id)) return this.suonaDaFile(prossimo, falliti);
+        return this.fileNonSuonabile(b, err?.message || "errore sconosciuto", falliti);
       }
     }
+    this.emetti({ tipo: "coda" });
+  }
+
+  // Il file di un brano si è rotto mentre suonava (l'evento viene dal lettore).
+  erroreAudio(b, motivo) {
+    if (!this.coda || this.motore !== "file") return;
+    this.partenza = this.fileNonSuonabile(b, motivo, new Set());
+  }
+
+  // Un file che non si suona: lo dice, lo segna nella diagnostica e passa al prossimo. Dopo
+  // MAX_ERRORI_AUDIO_DI_FILA errori di fila si ferma e lo dice.
+  async fileNonSuonabile(b, motivo, falliti) {
+    falliti.add(b.id);
+    this.erroriDiFila++;
+    registra("audio", `«${titoloCompleto(b)}» (${b.id}): ${motivo}`);
+    if (this.erroriDiFila >= MAX_ERRORI_AUDIO_DI_FILA) {
+      this.lettore.ferma();
+      this.avvisa(
+        `Ho trovato ${this.erroriDiFila} file che non si riescono a suonare di fila: mi fermo. Controlla la musica sul telefono.`,
+        "err",
+      );
+      this.emetti({ tipo: "coda" });
+      return;
+    }
+    this.avvisa(`Non riesco a suonare «${titoloCompleto(b)}»: passo al prossimo.`, "err");
+    const prossimo = this.coda && comandi.dopoFine(this.coda, b.id, (x) => !falliti.has(x.id) && this.puoSuonare(x));
+    if (prossimo && !falliti.has(prossimo.id)) return this.suonaDaFile(prossimo, falliti);
     this.emetti({ tipo: "coda" });
   }
 
@@ -410,7 +446,9 @@ export class Sessione {
     this.lettore.ferma();
     this.esterno = b;
     this.emetti({ tipo: "coda" });
-    this.apri(linkApertura(motore, fonte, { android: this.android }));
+    this.apri(linkApertura(motore, fonte, { android: this.android }), {
+      web: linkApertura("web", fonte, { android: false }),
+    });
   }
 
   // A fine brano: il selezionato se nel frattempo ne è stato scelto un altro, altrimenti il

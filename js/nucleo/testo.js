@@ -46,3 +46,12 @@ export function durataFmt(sec) {
   const s = Math.round(sec % 60);
   return `${m}:${String(s).padStart(2, "0")}`;
 }
+
+/**
+ * Una data "2026-10-24" (o con l'ora dopo) come "24/10/2026". Se non è in quella forma resta com'è.
+ * @param {string | undefined} testo
+ */
+export function dataBreve(testo) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(testo ?? "");
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : (testo ?? "");
+}

@@ -5,6 +5,7 @@
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
+import { azzera, elenco } from "../js/nucleo/diagnostica.js";
 import { SECONDI_PER_RIPARTIRE, Sessione } from "../js/nucleo/sessione.js";
 
 /** Un lettore che non suona nulla ma si comporta come audio/lettore.js. */
@@ -28,6 +29,8 @@ class LettoreFinto {
     this.onStato = null;
     /** @type {((comando: string) => void) | null} */
     this.onComando = null;
+    /** @type {((brano: any, motivo: string) => void) | null} */
+    this.onErrore = null;
   }
   async suona(brano, info) {
     this.suonati.push(brano.id);
@@ -69,6 +72,12 @@ class LettoreFinto {
   // Un tasto della schermata di blocco o delle cuffie.
   premi(comando) {
     this.onComando?.(comando);
+  }
+  // Il file smette di leggersi a metà brano (il lettore vero si ferma e lo dice alla sessione).
+  guasta(motivo = "file danneggiato") {
+    const b = this.brano;
+    this.ferma();
+    this.onErrore?.(b, motivo);
   }
 }
 
@@ -442,7 +451,11 @@ describe("app esterne", () => {
     const { s, avvisi } = prepara({ file: [] });
     const soloFile = brano("q", [["lo", "q.mp3"]]);
     assert.equal(s.suonaLista([soloFile], soloFile, "Brano singolo"), false);
-    assert.equal(avvisi().at(-1).testo, "Nessuna fonte disponibile per questo brano.");
+    assert.equal(
+      avvisi().at(-1).testo,
+      "È un file del PC che non è sul telefono: serve la musica sul telefono.",
+      "dice perché: il brano esiste solo come file del PC",
+    );
   });
 });
 
@@ -456,18 +469,84 @@ describe("file che non si riescono a suonare", () => {
     lettore.finisci();
     await s.partenza;
     assert.equal(lettore.brano.id, "c");
-    assert.deepEqual(avvisi().at(-1), { tipo: "avviso", testo: "File rovinato: b", gravita: "err" });
+    assert.deepEqual(avvisi().at(-1), {
+      tipo: "avviso",
+      testo: "Non riesco a suonare «Titolo b»: passo al prossimo.",
+      gravita: "err",
+    });
   });
 
-  test("tutti rovinati con ripeti tutti: ognuno si prova una volta sola, poi ci si ferma", async () => {
-    const { s, lettore } = prepara();
+  test("il file difettoso finisce nella diagnostica, con il motivo", async () => {
+    azzera();
+    const { s, lettore } = prepara({ rotti: ["b"] });
+    s.suonaLista(LISTA, trova("a"), "Ricerca");
+    await s.partenza;
+    lettore.finisci();
+    await s.partenza;
+    const [voce] = elenco();
+    assert.equal(voce.origine, "audio");
+    assert.match(voce.testo, /«Titolo b» \(b\): .*File rovinato: b/);
+  });
+
+  test("tutti rovinati: ognuno si prova una volta sola, e dopo 3 di fila ci si ferma e lo si dice", async () => {
+    const { s, lettore, avvisi } = prepara();
     s.suonaLista(LISTA, trova("a"), "Ricerca");
     await s.partenza;
     s.ripeti("tutti");
     for (const b of LISTA) lettore.rotti.add(b.id);
     lettore.finisci();
     await s.partenza;
-    assert.deepEqual(lettore.suonati, ["a", "b", "c", "d", "e", "a"]);
+    assert.deepEqual(lettore.suonati, ["a", "b", "c", "d"], "dopo il terzo fallito (b, c, d) non ne prova altri");
+    assert.equal(s.stato().lettore, "fermo");
+    assert.match(avvisi().at(-1).testo, /3 file che non si riescono a suonare di fila: mi fermo/);
+    assert.equal(avvisi().at(-1).gravita, "err");
+  });
+
+  test("con ripeti tutti e due soli file rovinati ognuno si prova una volta e basta", async () => {
+    const { s, lettore } = prepara();
+    const due = [trova("a"), trova("b")];
+    s.suonaLista(due, trova("a"), "Ricerca");
+    await s.partenza;
+    s.ripeti("tutti");
+    lettore.rotti.add("a");
+    lettore.rotti.add("b");
+    lettore.finisci();
+    await s.partenza;
+    assert.deepEqual(lettore.suonati, ["a", "b", "a"], "a era in corso, poi b e a falliscono: nessun giro infinito");
+  });
+
+  test("un file che si rompe a metà brano: avvisa e passa al prossimo", async () => {
+    const { s, lettore, avvisi } = prepara();
+    s.suonaLista(LISTA, trova("a"), "Ricerca");
+    await s.partenza;
+    lettore.guasta("file danneggiato");
+    await s.partenza;
+    assert.equal(lettore.brano.id, "b");
+    assert.equal(avvisi().at(-1).testo, "Non riesco a suonare «Titolo a»: passo al prossimo.");
+  });
+
+  test("il conto dei file rotti riparte quando un brano parte bene; a 3 di fila ci si ferma", async () => {
+    const { s, lettore, avvisi } = prepara();
+    s.suonaLista(LISTA, trova("a"), "Ricerca");
+    await s.partenza;
+    lettore.guasta(); // a si rompe: errore 1, parte b
+    await s.partenza;
+    lettore.guasta(); // b si rompe: errore 1 (b era partito bene: il conto ricomincia)
+    await s.partenza;
+    assert.equal(lettore.brano.id, "c", "un brano partito bene azzera il conto: si va avanti");
+    lettore.rotti.add("d");
+    lettore.rotti.add("e");
+    lettore.guasta(); // c si rompe (1), d non parte (2), e non parte (3): stop
+    await s.partenza;
+    assert.equal(s.stato().lettore, "fermo");
+    assert.match(avvisi().at(-1).testo, /mi fermo/);
+  });
+
+  test("un file rotto in un motore esterno non fa nulla (l'audio non è del Jukebox)", async () => {
+    const { s, lettore } = prepara({ file: [] });
+    s.suonaLista(LISTA, trova("a"), "Ricerca");
+    lettore.onErrore?.(trova("a"), "x");
+    assert.deepEqual(lettore.suonati, []);
   });
 
   test("con ripeti uno un file rovinato non si riprova all'infinito", async () => {

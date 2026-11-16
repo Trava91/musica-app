@@ -103,7 +103,7 @@ function apriAggiungiAPlaylist(app, b) {
   }
   $("#agg-nuova").addEventListener("click", async () => {
     chiudi();
-    const nuova = await nuovaManuale(app, { domanda: "Nome della nuova playlist:", brani: [b.id] });
+    const nuova = await nuovaManuale(app, { titolo: "Nuova playlist con questo brano", brani: [b.id] });
     if (nuova) mostraAvviso(`Playlist "${nuova.nome}" creata.`, "ok");
   });
   apriFinestra("aggiungi-overlay");

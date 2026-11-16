@@ -5,6 +5,7 @@
 
 import { GitHubApi, ApiError } from "./github.js";
 import { leggiConfig, MAX_TENTATIVI_SALVATAGGIO } from "../config.js";
+import { scrivi } from "../memoria.js";
 import { validaPlaylist } from "../nucleo/valida.js";
 
 const FILE = "playlist.json";
@@ -27,8 +28,9 @@ function daCacheLocale() {
   return VUOTO();
 }
 
+// true se la copia è stata scritta (se no l'errore è già nella diagnostica, con l'avviso).
 function salvaCacheLocale(dati) {
-  localStorage.setItem(LS_CACHE, JSON.stringify(dati));
+  return scrivi(LS_CACHE, JSON.stringify(dati));
 }
 
 // Con la sorgente "url" (anteprima sul PC) non c'è un repo in cui scrivere: le
@@ -55,7 +57,7 @@ export async function carica() {
   if (soloLocale()) return controlla(daCacheLocale());
   try {
     const { data, sha } = await api().getFile(FILE);
-    localStorage.setItem(LS_SHA, sha);
+    scrivi(LS_SHA, sha);
     salvaCacheLocale(data);
     return controlla(data);
   } catch (err) {
@@ -76,7 +78,10 @@ export async function carica() {
 export async function salva(modifica) {
   if (soloLocale()) {
     const nuovo = { schema: 1, playlist: modifica(daCacheLocale().playlist.slice()) };
-    salvaCacheLocale(nuovo);
+    // Qui la copia locale È il salvataggio: se non si scrive, la modifica andrebbe persa in silenzio.
+    if (!salvaCacheLocale(nuovo)) {
+      throw new ApiError("Lo spazio del telefono è finito: la playlist non è stata salvata.", { kind: "memoria" });
+    }
     return controlla(nuovo);
   }
   const gh = api();
@@ -101,7 +106,7 @@ export async function salva(modifica) {
     const nuovo = { schema: 1, playlist: modifica(attuale.playlist.slice()) };
     try {
       const nuovoSha = await gh.putFile(FILE, nuovo, sha, "playlist: aggiornamento dal Jukebox");
-      localStorage.setItem(LS_SHA, nuovoSha);
+      scrivi(LS_SHA, nuovoSha);
       salvaCacheLocale(nuovo);
       return controlla(nuovo);
     } catch (err) {

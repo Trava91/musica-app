@@ -2,7 +2,7 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { durataFmt, normalizza, sottotitolo, titoloCompleto } from "../js/nucleo/testo.js";
+import { dataBreve, durataFmt, normalizza, sottotitolo, titoloCompleto } from "../js/nucleo/testo.js";
 
 test("normalizza: accenti", () => {
   assert.equal(normalizza("Ünïcode Tëst"), "unicode test");
@@ -38,4 +38,11 @@ test("durataFmt: minuti e secondi, secondi a due cifre, dato mancante", () => {
   assert.equal(durataFmt(0), "0:00");
   assert.equal(durataFmt(65), "1:05");
   assert.equal(durataFmt(undefined), "");
+});
+
+test("dataBreve: una data ISO diventa gg/mm/aaaa (anche con l'ora), il resto resta com'è", () => {
+  assert.equal(dataBreve("2026-10-24"), "24/10/2026");
+  assert.equal(dataBreve("2026-10-24T08:30:00"), "24/10/2026");
+  assert.equal(dataBreve("ieri"), "ieri");
+  assert.equal(dataBreve(undefined), "");
 });

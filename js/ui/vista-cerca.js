@@ -5,6 +5,7 @@
 import { ATTESA_RICERCA_MS, RIGHE_PER_PAGINA } from "../config.js";
 import * as cercaMod from "../nucleo/cerca.js";
 import { vociSelezionate } from "../nucleo/generi.js";
+import { FILTRI_DEFAULT } from "../nucleo/stato.js";
 import { $, debounce, vaiA } from "./base.js";
 import { apriFiltri } from "./foglio-filtri.js";
 import { mostraLista } from "./riga-brano.js";
@@ -40,6 +41,13 @@ export function collegaCerca(app) {
     if (cambiati.includes("ctx")) aggiornaPillMotore(app);
     if (s.scheda === "cerca" && cambiati.some((k) => DIPENDENZE.includes(k))) disegnaCerca(app);
   });
+}
+
+// "Togli i filtri": svuota il campo di ricerca e rimette i filtri come all'inizio (l'ordine resta).
+function togliFiltri(app) {
+  $("#cerca-testo").value = "";
+  pagina = RIGHE_PER_PAGINA;
+  app.stato.cambia({ filtri: { ...FILTRI_DEFAULT } });
 }
 
 function contaFiltriAttivi(f) {
@@ -79,7 +87,15 @@ export function disegnaCerca(app) {
   $("#arco-sotto").textContent = `${totale.n.toLocaleString("it-IT")} dischi in raccolta`;
   const mostrati = risultati.slice(0, pagina);
   const nome = testo.trim() ? `Ricerca «${testo.trim()}»` : vociScelte.length === 1 ? vociScelte[0].nome : "Ricerca";
-  mostraLista(app, $("#cerca-risultati"), mostrati, { lista: risultati, nome });
+  // Nessun risultato: se c'è un testo o dei filtri si può toglierli con un tocco.
+  const restringe = nAttivi > 0 || testo.trim() !== "";
+  const vuoto = restringe
+    ? {
+        testo: testo.trim() ? `Nessun disco per «${testo.trim()}».` : "Nessun disco con questi filtri.",
+        azione: { etichetta: "Togli i filtri", fai: () => togliFiltri(app) },
+      }
+    : "Il catalogo non ha dischi da mostrare.";
+  mostraLista(app, $("#cerca-risultati"), mostrati, { lista: risultati, nome }, { vuoto });
   $("#cerca-altri").hidden = risultati.length <= mostrati.length;
 }
 
