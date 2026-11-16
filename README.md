@@ -2,9 +2,9 @@
 
 PWA (web app installabile) per cercare e filtrare il tuo catalogo musicale, creare
 playlist a più filtri e riprodurle senza passare dalle altre app. Stato attuale:
-**M1** — ricerca, playlist intelligenti/manuali, riproduzione tramite NewPipe e
-l'app Spotify gratuita. Le tappe successive (file sul telefono a schermo spento,
-assistente DJ, Spotify Premium, ricerca ovunque) sono nel piano
+**M1 e M2** — ricerca, playlist intelligenti/manuali, file sul telefono suonati dal
+Jukebox (anche a schermo spento), NewPipe e l'app Spotify gratuita per gli altri
+brani. Le tappe successive (assistente DJ, Spotify Premium, ricerca ovunque) sono nel piano
 [`plans/2026-09-28-app-musica-telefono.md`](../../../plans/2026-09-28-app-musica-telefono.md).
 
 Stesso schema di [`03-burocrazia/app`](../../../03-burocrazia/app/): file statici
@@ -19,25 +19,32 @@ app/
 ├── manifest.webmanifest    manifest PWA
 ├── sw.js                   service worker (app shell offline)
 ├── css/styles.css          stile jukebox anni '50, blu notte con neon
+├── anteprima/              pagina di anteprima dello stile hi-fi (restauro, fase 3; non fa parte dell'app)
+├── package.json, biome.json, pyproject.toml, tsconfig.json   attrezzi di sviluppo (npm run verifica)
 ├── fonts/                  Yellowtail, Oswald, Courier Prime (offline, licenze in LICENZE.md)
 ├── js/
 │   ├── main.js              onboarding token, avvio, impostazioni, service worker
-│   ├── ui.js                render di tutte le schermate
-│   ├── config.js            da dove arrivano i dati + preferenze (motori, NewPipe)
-│   ├── api.js                client GitHub Contents API (getFile/getSha/getRaw/putFile)
-│   ├── dati.js               carica catalogo.json (sha, cache, offline)
-│   ├── playlist.js           legge/scrive playlist.json (lock ottimistico)
-│   ├── valida.js              controlla catalogo e playlist in lettura: scarta o corregge in memoria (logica pura)
-│   ├── cerca.js               ricerca e filtri (logica pura)
-│   ├── regole.js              valutazione delle playlist intelligenti (logica pura)
-│   ├── dj.js                  Camelot/BPM/percorso armonico (logica pura)
-│   ├── motori.js              chi suona ogni brano (logica pura)
-│   ├── link.js                 link intent:// verso NewPipe/Spotify, ricerche esterne
-│   ├── coda.js                 la coda di riproduzione (posizione, avanti/indietro/casuale)
-│   ├── comandi.js              tasto grande, ⏮ ⏭, cosa parte a fine brano (logica pura)
-│   ├── generi.js               generi raggruppati per la vista (Tech house, Disco)
-│   ├── file.js                 l'audio sul telefono (Cache Storage, id brano → file)
-│   └── lettore.js              lettore interno: <audio> + Media Session (schermo spento)
+│   ├── config.js            da dove arrivano i dati, preferenze, tempi e soglie, VERSIONE
+│   ├── nucleo/              LOGICA PURA: niente schermo, niente rete (lo controlla test/dipendenze.test.mjs)
+│   │   ├── testo.js           normalizza, titolo con versione, artista con feat., durata
+│   │   ├── casuale.js         generatore casuale ripetibile
+│   │   ├── filtri.js          l'unico motore di filtri (ricerca e playlist)
+│   │   ├── cerca.js           ricerca e ordinamenti
+│   │   ├── regole.js          valutazione delle playlist intelligenti
+│   │   ├── valida.js          controlla catalogo e playlist in lettura: scarta o corregge in memoria
+│   │   ├── dj.js              Camelot/BPM/percorso armonico
+│   │   ├── motori.js          chi suona ogni brano
+│   │   ├── link.js            link intent:// verso NewPipe/Spotify, ricerche esterne
+│   │   ├── coda.js            la coda di riproduzione (posizione, avanti/indietro/casuale)
+│   │   ├── comandi.js         tasto grande, ⏮ ⏭, cosa parte a fine brano
+│   │   └── generi.js          generi raggruppati per la vista (Tech house, Disco)
+│   ├── dati/                DATI: da dove arrivano e dove vanno
+│   │   ├── github.js          client GitHub Contents API (getFile/getSha/getRaw/putFile)
+│   │   ├── catalogo.js        carica catalogo.json (sha, cache, offline)
+│   │   ├── playlist.js        legge/scrive playlist.json (lock ottimistico)
+│   │   └── file-audio.js      l'audio sul telefono (Cache Storage, id brano → file)
+│   ├── audio/lettore.js     lettore interno: <audio> + Media Session (schermo spento)
+│   └── ui/ui.js             render di tutte le schermate (si divide alla fase 5 del restauro)
 ├── strumenti/
 │   ├── esporta.py            genera app-dati/catalogo.json da liste/dati/catalogo.sqlite
 │   ├── prepara.py            procura l'audio delle playlist per il telefono e dell'archivio (M2)
@@ -149,7 +156,8 @@ a Nicolò (creazione repo, push e attivazione di Pages sono azioni esterne).
 5. Sul telefono apri l'URL → **Installa app** (o "Aggiungi a Home") → incolla il PAT.
 
 Aggiornamenti: `git push` → Pages rideploya. Per invalidare la cache dell'app
-shell, **bump** `CACHE = "jukebox-vN"` in [`sw.js`](sw.js).
+shell, **bump** `CACHE = "jukebox-vN"` in [`sw.js`](sw.js) e lo stesso numero in
+`VERSIONE` di [`js/config.js`](js/config.js) (un test controlla che coincidano).
 
 ## Musica sul telefono (M2): le playlist vanno avanti da sole
 
@@ -267,15 +275,15 @@ in NewPipe (da verificare/aggiornare dopo la prova reale): azione di apertura de
 link su "Lettore in background", così il brano parte subito senza altri tocchi.
 
 **Limite noto:** NewPipe non accetta una playlist temporanea in un solo link
-(niente `watch_videos?video_ids=…`). "Manda i prossimi 10" apre solo il primo con
-un tocco; gli altri si mandano uno alla volta dalla lista "Prossimi in coda". Una
-vera coda automatica arriva con la M3 (una playlist "non in elenco" sul tuo
-canale YouTube, che NewPipe apre e suona tutta).
+(niente `watch_videos?video_ids=…`). Il Jukebox apre un brano alla volta: si passa
+al successivo con ⏭. Una vera coda automatica
+arriva con la M3 (una playlist "non in elenco" sul tuo canale YouTube, che NewPipe
+apre e suona tutta).
 
 ## Contratto dati (v1)
 
 `app-dati/catalogo.json`, generato da `strumenti/esporta.py`, letto da
-`js/dati.js`. **Se cambia un campo, aggiorna insieme lo script e `dati.js`/`cerca.js`**
+`js/dati/catalogo.js`. **Se cambia un campo, aggiorna insieme lo script, `dati/catalogo.js` e `nucleo/cerca.js`**
 (la forma esatta è documentata in testa a `esporta.py`). In sintesi: un oggetto
 per versione con campi abbreviati (`a` artista, `t` titolo, `v` versione, `k` tipo,
 `g` indice del macro-genere, `b`/`c`/`e` BPM/Camelot/energia, `s` le fonti
@@ -285,7 +293,7 @@ In più `rinominati: {id vecchio: id nuovo}` (dal 05/10/2026, vedi sopra).
 
 `app-dati/playlist.json` (scritto dall'app, non da `esporta.py`): `{schema:1,
 playlist:[{id, nome, tipo:"intelligente"|"manuale", regole|brani, ordine, seme,
-limite}]}`. Il formato completo delle regole è documentato in testa a `js/regole.js`.
+limite}]}`. Il formato completo delle regole è documentato in testa a `js/nucleo/regole.js`.
 
 ## Limiti noti di questa versione (M2)
 
@@ -294,7 +302,7 @@ limite}]}`. Il formato completo delle regole è documentato in testa a `js/regol
   "Suona" dice quanti sono).
 - Spotify: solo l'app gratuita (apre il brano scelto, con pubblicità). Il motore
   "Spotify Premium" comparirà con M5, al prossimo periodo Premium di Nicolò.
-- "Manda i prossimi 10" a NewPipe apre solo il primo automaticamente (vedi sopra).
+- Con NewPipe (e le altre app esterne) la coda non va avanti da sola: si passa al prossimo brano con ⏭ (vedi sopra).
 - Le playlist intelligenti con `soloSchermoSpento` restano vuote finché non ci
   sono file (M2) o Spotify Premium (M5): senza nessuno dei due motori continui
   configurati, nessun brano qualifica.
