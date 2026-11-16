@@ -24,12 +24,32 @@ const NOMI_MOTORE = {
   web: "Apri sul web",
 };
 // Dove suona il brano, per il mini lettore e la scheda Suona.
-const NOMI_DOVE = { file: "nel Jukebox", "spotify-premium": "in Spotify", newpipe: "in NewPipe", "spotify-app": "in Spotify", web: "sul web" };
-const NOMI_TIPO = { originale: "originale", remix: "remix", edit: "edit", extended: "extended", live: "live", set: "set" };
+const NOMI_DOVE = {
+  file: "nel Jukebox",
+  "spotify-premium": "in Spotify",
+  newpipe: "in NewPipe",
+  "spotify-app": "in Spotify",
+  web: "sul web",
+};
+const NOMI_TIPO = {
+  originale: "originale",
+  remix: "remix",
+  edit: "edit",
+  extended: "extended",
+  live: "live",
+  set: "set",
+};
 const NOMI_PIATT = { sp: "Spotify", yt: "YouTube", sc: "SoundCloud", lo: "File sul telefono" };
 const SIGLA_PIATT = { sp: "SP", yt: "YT", sc: "SC", lo: "FILE" };
 const NOMI_ORDINE_CERCA = { artista: "artista", recenti: "recenti", bpm: "BPM" };
-const NOMI_ORDINE_PL = { artista: "per artista", casuale: "casuale", "bpm-su": "BPM crescente", "bpm-giu": "BPM decrescente", armonico: "percorso armonico", recenti: "recenti" };
+const NOMI_ORDINE_PL = {
+  artista: "per artista",
+  casuale: "casuale",
+  "bpm-su": "BPM crescente",
+  "bpm-giu": "BPM decrescente",
+  armonico: "percorso armonico",
+  recenti: "recenti",
+};
 const SVG_PLAY = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg>`;
 const SVG_PAUSA = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>`;
 const ICONA_PNG = new URL("icons/icon-512.png", document.baseURI).href;
@@ -67,11 +87,16 @@ export function showToast(msg, type = "", opts = {}) {
   }
   t.className = "toast" + (type ? " " + type : "");
   t.hidden = false;
-  toastTimer = setTimeout(() => { t.hidden = true; }, opts.duration || 3200);
+  toastTimer = setTimeout(() => {
+    t.hidden = true;
+  }, opts.duration || 3200);
 }
 
 function esc(s) {
-  return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  return String(s ?? "").replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+  );
 }
 function titoloCompleto(b) {
   let t = b.t || "(senza titolo)";
@@ -85,12 +110,16 @@ function sottotitolo(b) {
 }
 function durataFmt(sec) {
   if (sec === undefined) return "";
-  const m = Math.floor(sec / 60), s = Math.round(sec % 60);
+  const m = Math.floor(sec / 60),
+    s = Math.round(sec % 60);
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 function debounce(fn, ms) {
   let t;
-  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), ms);
+  };
 }
 
 // Sul telefono Android i link intent:// aprono NewPipe/Spotify; sul PC (anteprima)
@@ -114,7 +143,7 @@ export class UI {
     this.ctx = { fileIds: new Set(), spotify: "non-configurato", usaNewPipe: true, soloJukebox: false, priorita: [] };
     this.coda = null;
     this.playlistAttiva = null;
-    this.esterno = null;    // ultimo brano mandato a un'app esterna (NewPipe, Spotify)
+    this.esterno = null; // ultimo brano mandato a un'app esterna (NewPipe, Spotify)
     this.motoreCoda = null; // il motore con cui suona la coda attuale ("file" = lettore interno)
     this.prossimiMostrati = 30; // quanti brani di "A seguire" si vedono (cresce con "Mostra altri")
     this.lettore = new Lettore({
@@ -126,8 +155,17 @@ export class UI {
 
   init() {
     $$(".tab").forEach((btn) => btn.addEventListener("click", () => this.switchTab(btn.dataset.tab)));
-    $("#cerca-testo").addEventListener("input", debounce(() => { this.paginaRisultati = 100; this.renderCerca(); }, 120));
-    $("#cerca-altri").addEventListener("click", () => { this.paginaRisultati += 100; this.renderCerca(); });
+    $("#cerca-testo").addEventListener(
+      "input",
+      debounce(() => {
+        this.paginaRisultati = 100;
+        this.renderCerca();
+      }, 120),
+    );
+    $("#cerca-altri").addEventListener("click", () => {
+      this.paginaRisultati += 100;
+      this.renderCerca();
+    });
     $("#cerca-filtri-btn").addEventListener("click", () => this.apriFiltri());
     $("#rapido-generi").addEventListener("click", () => this.switchTab("generi"));
     $("#rapido-ordine").addEventListener("click", () => {
@@ -142,7 +180,10 @@ export class UI {
     // 4 s riparte dall'inizio); con le app esterne apre il brano nuovo nell'app.
     const salta = (dir) => {
       if (!this.coda) return;
-      if (this.motoreCoda === "file") { this.comandoBlocco(dir > 0 ? "avanti" : "indietro"); return; }
+      if (this.motoreCoda === "file") {
+        this.comandoBlocco(dir > 0 ? "avanti" : "indietro");
+        return;
+      }
       comandi.spostaSelezione(this.coda, dir);
       this.renderRiproduzione();
       this.premiTastoGrande();
@@ -151,12 +192,22 @@ export class UI {
     $("#rip-indietro").addEventListener("click", () => salta(-1));
     $("#rip-principale").addEventListener("click", () => this.premiTastoGrande());
     $("#rip-in-corso").addEventListener("click", () => {
-      if (this.coda && this.lettore.brano) { this.coda.salta(this.lettore.brano.id); this.renderRiproduzione(); }
+      if (this.coda && this.lettore.brano) {
+        this.coda.salta(this.lettore.brano.id);
+        this.renderRiproduzione();
+      }
     });
-    $("#rip-posizione").addEventListener("input", (e) => { this.trascinando = true; $("#rip-tempo").textContent = durataFmt(Number(e.target.value)); });
-    $("#rip-posizione").addEventListener("change", (e) => { this.trascinando = false; this.lettore.cerca(Number(e.target.value)); });
+    $("#rip-posizione").addEventListener("input", (e) => {
+      this.trascinando = true;
+      $("#rip-tempo").textContent = durataFmt(Number(e.target.value));
+    });
+    $("#rip-posizione").addEventListener("change", (e) => {
+      this.trascinando = false;
+      this.lettore.cerca(Number(e.target.value));
+    });
     $("#mini-pausa").addEventListener("click", () => {
-      if (this.lettore.stato === "suona") this.lettore.pausa(); else this.lettore.riprendi();
+      if (this.lettore.stato === "suona") this.lettore.pausa();
+      else this.lettore.riprendi();
     });
     $("#imp-file-aggiungi").addEventListener("click", () => $("#imp-file-input").click());
     $("#imp-file-input").addEventListener("change", (e) => this.importaFile(e.target));
@@ -180,14 +231,23 @@ export class UI {
       this.renderRiproduzione();
     });
     $("#mini-apri").addEventListener("click", () => this.switchTab("riproduzione"));
-    $("#prossimi-altri").addEventListener("click", () => { this.prossimiMostrati += 30; this.renderRiproduzione(); });
-    $$(".overlay").forEach((ov) => ov.addEventListener("click", (e) => { if (e.target === ov) ov.hidden = true; }));
+    $("#prossimi-altri").addEventListener("click", () => {
+      this.prossimiMostrati += 30;
+      this.renderRiproduzione();
+    });
+    $$(".overlay").forEach((ov) =>
+      ov.addEventListener("click", (e) => {
+        if (e.target === ov) ov.hidden = true;
+      }),
+    );
   }
 
   switchTab(tab) {
     this.tab = tab;
     $$(".tab").forEach((b) => b.classList.toggle("attivo", b.dataset.tab === tab));
-    $$(".schermo").forEach((s) => { s.hidden = s.dataset.schermo !== tab; });
+    $$(".schermo").forEach((s) => {
+      s.hidden = s.dataset.schermo !== tab;
+    });
     if (tab === "cerca") this.renderCerca();
     if (tab === "generi") this.renderGeneri();
     if (tab === "playlist") this.renderPlaylist();
@@ -231,20 +291,34 @@ export class UI {
   // la posizione della voce; selezionata se tutti i suoi indici sono nella lista.
   chipGeneri(indici) {
     const scelte = new Set(generi.vociSelezionate(this.voci, indici).map((v) => v.nome));
-    return this.voci.map((v, i) => `<label class="chip"><input type="checkbox" data-campo="macro" value="${i}" ${scelte.has(v.nome) ? "checked" : ""}><span>${esc(v.nome)}</span></label>`).join("");
+    return this.voci
+      .map(
+        (v, i) =>
+          `<label class="chip"><input type="checkbox" data-campo="macro" value="${i}" ${scelte.has(v.nome) ? "checked" : ""}><span>${esc(v.nome)}</span></label>`,
+      )
+      .join("");
   }
   leggiChipGeneri(el) {
     return $$('input[data-campo="macro"]:checked', el).flatMap((i) => this.voci[Number(i.value)].indici);
   }
-  setPlaylists(elenco) { this.playlists = elenco; }
+  setPlaylists(elenco) {
+    this.playlists = elenco;
+  }
 
   aggiornaPillMotore() {
     const p = $("#stato-motore");
     if (!p) return;
-    if (!ANDROID) { p.textContent = "Anteprima PC · link web"; return; }
-    p.textContent = this.ctx.soloJukebox ? "Solo Jukebox"
-      : this.ctx.spotify === "premium" ? "Spotify Premium"
-      : this.ctx.usaNewPipe ? "NewPipe attivo" : "Spotify gratis";
+    if (!ANDROID) {
+      p.textContent = "Anteprima PC · link web";
+      return;
+    }
+    p.textContent = this.ctx.soloJukebox
+      ? "Solo Jukebox"
+      : this.ctx.spotify === "premium"
+        ? "Spotify Premium"
+        : this.ctx.usaNewPipe
+          ? "NewPipe attivo"
+          : "Spotify gratis";
   }
 
   // ---------------- Cerca ----------------
@@ -257,18 +331,26 @@ export class UI {
     $("#cerca-filtri-badge").textContent = nAttivi;
     $("#cerca-riepilogo").textContent = `${risultati.length.toLocaleString("it-IT")} dischi`;
     const effettivo = this.ordineRisultati || (testo.trim() ? "rilevanza" : "artista");
-    $("#cerca-ordine-testo").textContent = effettivo === "rilevanza" ? "per pertinenza" : `ordine per ${NOMI_ORDINE_CERCA[effettivo]}`;
-    $("#rapido-ordine").textContent = `Ordine: ${this.ordineRisultati ? NOMI_ORDINE_CERCA[this.ordineRisultati] : "auto"}`;
+    $("#cerca-ordine-testo").textContent =
+      effettivo === "rilevanza" ? "per pertinenza" : `ordine per ${NOMI_ORDINE_CERCA[effettivo]}`;
+    $("#rapido-ordine").textContent =
+      `Ordine: ${this.ordineRisultati ? NOMI_ORDINE_CERCA[this.ordineRisultati] : "auto"}`;
     $("#rapido-ordine").classList.toggle("accesa", !!this.ordineRisultati);
     const vociScelte = generi.vociSelezionate(this.voci, this.filtri.macro);
-    $("#rapido-generi-testo").textContent = vociScelte.length === 1 ? vociScelte[0].nome : vociScelte.length > 1 ? `${vociScelte.length} generi` : "Generi";
+    $("#rapido-generi-testo").textContent =
+      vociScelte.length === 1 ? vociScelte[0].nome : vociScelte.length > 1 ? `${vociScelte.length} generi` : "Generi";
     $("#rapido-generi").classList.toggle("accesa", vociScelte.length > 0);
     $("#cerca-filtri-btn").classList.toggle("accesa", nAttivi > 0);
-    if (!this._totaleScelti) this._totaleScelti = cercaMod.cerca(this.catalogo.brani, "", { soloScelti: true, tipo: "canzoni" }).length;
+    if (!this._totaleScelti)
+      this._totaleScelti = cercaMod.cerca(this.catalogo.brani, "", { soloScelti: true, tipo: "canzoni" }).length;
     $("#arco-sotto").textContent = `${this._totaleScelti.toLocaleString("it-IT")} dischi in raccolta`;
     const mostrati = risultati.slice(0, this.paginaRisultati);
     $("#cerca-risultati").innerHTML = mostrati.map((b, i) => this.rigaBrano(b, i)).join("");
-    const nomeRicerca = testo.trim() ? `Ricerca «${testo.trim()}»` : vociScelte.length === 1 ? vociScelte[0].nome : "Ricerca";
+    const nomeRicerca = testo.trim()
+      ? `Ricerca «${testo.trim()}»`
+      : vociScelte.length === 1
+        ? vociScelte[0].nome
+        : "Ricerca";
     this.agganciaClicRighe($("#cerca-risultati"), mostrati, { lista: risultati, nome: nomeRicerca });
     $("#cerca-altri").hidden = risultati.length <= mostrati.length;
   }
@@ -291,10 +373,9 @@ export class UI {
   // l'artista, riga di dati. Il corpo apre la scheda, il tasto tondo suona.
   rigaBrano(b, i = 0, { grande = false, play = true } = {}) {
     const piatt = [...new Set(b.s.map(([c]) => SIGLA_PIATT[c] || c))].join(" ");
-    const meta = [
-      b.b ? `${Math.round(b.b)} BPM` : "", b.c || "",
-      this.nomeGenere(b.g), b.y || "", piatt,
-    ].filter(Boolean).join(" · ");
+    const meta = [b.b ? `${Math.round(b.b)} BPM` : "", b.c || "", this.nomeGenere(b.g), b.y || "", piatt]
+      .filter(Boolean)
+      .join(" · ");
     const inCorso = b.id === this.idInCorso();
     const spento = this.ctx.soloJukebox && !this.ctx.fileIds.has(b.id); // "Solo Jukebox": non è sul telefono
     return `<div class="striscia${grande ? " grande" : ""}${inCorso ? " in-corso" : ""}${spento ? " senza-file" : ""}" data-id="${esc(b.id)}">
@@ -315,14 +396,22 @@ export class UI {
   agganciaClicRighe(container, elenco, contesto = {}) {
     $$(".striscia", container).forEach((el) => {
       const brano = () => elenco.find((x) => x.id === el.dataset.id) || this.trovaBranoId(el.dataset.id);
-      $(".striscia-corpo", el)?.addEventListener("click", () => { const b = brano(); if (b) this.apriFoglioBrano(b, contesto); });
-      $(".striscia-play", el)?.addEventListener("click", () => { const b = brano(); if (b) this.tastoRiga(b, contesto.coda ? null : (contesto.lista || elenco), contesto.nome); });
+      $(".striscia-corpo", el)?.addEventListener("click", () => {
+        const b = brano();
+        if (b) this.apriFoglioBrano(b, contesto);
+      });
+      $(".striscia-play", el)?.addEventListener("click", () => {
+        const b = brano();
+        if (b) this.tastoRiga(b, contesto.coda ? null : contesto.lista || elenco, contesto.nome);
+      });
     });
   }
 
   // ---------------- Cosa sta suonando, ovunque ----------------
   // Il brano che si sente: quello del lettore interno, o l'ultimo mandato a un'app esterna.
-  idInCorso() { return this.lettore.brano?.id || this.esterno?.id || null; }
+  idInCorso() {
+    return this.lettore.brano?.id || this.esterno?.id || null;
+  }
 
   iconaInCorso() {
     if (this.lettore.brano && this.lettore.stato !== "suona") return SVG_PLAY;
@@ -354,11 +443,17 @@ export class UI {
   // salta lì. Altrove: suona da quel brano in poi la lista in cui sta.
   tastoRiga(b, lista, nome) {
     if (b.id === this.idInCorso()) {
-      if (!this.lettore.brano) { const { motore, fonte } = motori.motoreBrano(b, this.ctx); this.apriConMotore(motore, fonte); return; }
-      if (this.lettore.stato === "suona") this.lettore.pausa(); else this.lettore.riprendi();
+      if (!this.lettore.brano) {
+        const { motore, fonte } = motori.motoreBrano(b, this.ctx);
+        this.apriConMotore(motore, fonte);
+        return;
+      }
+      if (this.lettore.stato === "suona") this.lettore.pausa();
+      else this.lettore.riprendi();
       return;
     }
-    if (!lista) { // riga della coda attuale
+    if (!lista) {
+      // riga della coda attuale
       this.coda.salta(b.id);
       this.premiTastoGrande();
       return;
@@ -374,18 +469,26 @@ export class UI {
     if (this.ctx.soloJukebox && !this.ctx.fileIds.has(b.id)) {
       const i = lista.findIndex((x) => x.id === b.id);
       const dopo = lista.slice(i + 1).find((x) => this.ctx.fileIds.has(x.id));
-      if (!dopo) { showToast("Questo brano non è sul telefono.", "err"); return; }
+      if (!dopo) {
+        showToast("Questo brano non è sul telefono.", "err");
+        return;
+      }
       showToast(`"${titoloCompleto(b)}" non è sul telefono: parto da "${titoloCompleto(dopo)}".`, "");
       b = dopo;
     }
     const { motore } = motori.motoreBrano(b, this.ctx);
-    if (!motore) { showToast("Nessuna fonte disponibile per questo brano.", "err"); return; }
+    if (!motore) {
+      showToast("Nessuna fonte disponibile per questo brano.", "err");
+      return;
+    }
     const brani = motore === "file" ? lista.filter((x) => this.ctx.fileIds.has(x.id)) : lista;
     this.avviaCoda({ id: "lista", nome }, brani, motore, { da: b, saltati: lista.length - brani.length });
     if (motore !== "file") this.premiTastoGrande(); // apre l'app esterna sul brano
   }
 
-  trovaBranoId(id) { return this.catalogo?.brani.find((b) => b.id === id); }
+  trovaBranoId(id) {
+    return this.catalogo?.brani.find((b) => b.id === id);
+  }
 
   // ---------------- Generi ----------------
   renderGeneri() {
@@ -396,9 +499,17 @@ export class UI {
     // Tasti in ordine di quantità, come una pulsantiera: i generi più pieni in alto.
     // Acceso = il filtro attivo è esattamente quella voce.
     const ordine = this.voci
-      .map((v, i) => ({ nome: v.nome, i, conta: v.indici.reduce((s, x) => s + conteggi[x], 0), acceso: v.indici.length === scelti.length && v.indici.every((x) => scelti.includes(x)) }))
+      .map((v, i) => ({
+        nome: v.nome,
+        i,
+        conta: v.indici.reduce((s, x) => s + conteggi[x], 0),
+        acceso: v.indici.length === scelti.length && v.indici.every((x) => scelti.includes(x)),
+      }))
       .sort((a, b) => b.conta - a.conta);
-    const tasto = (g, pos) => `<button class="tasto-genere${g.acceso ? " acceso" : ""}" type="button" data-idx="${g.i}" aria-pressed="${g.acceso}">
+    const tasto = (
+      g,
+      pos,
+    ) => `<button class="tasto-genere${g.acceso ? " acceso" : ""}" type="button" data-idx="${g.i}" aria-pressed="${g.acceso}">
         <span class="tasto-nome">${esc(g.nome)}</span>
         <span class="tasto-sotto"><span class="codice-mini">${codiceSelezione(pos)}</span>${n(g.conta)} dischi</span>
       </button>`;
@@ -410,7 +521,10 @@ export class UI {
       </button>` + ordine.map(tasto).join("");
     $$(".tasto-genere", $("#generi-lista")).forEach((el) => {
       el.addEventListener("click", () => {
-        this.filtri = { ...this.filtri, macro: el.dataset.idx === "tutti" ? [] : [...this.voci[Number(el.dataset.idx)].indici] };
+        this.filtri = {
+          ...this.filtri,
+          macro: el.dataset.idx === "tutti" ? [] : [...this.voci[Number(el.dataset.idx)].indici],
+        };
         this.paginaRisultati = 100;
         this.switchTab("cerca");
       });
@@ -422,13 +536,19 @@ export class UI {
     const overlay = $("#foglio-overlay");
     const el = $("#foglio-brano");
     const { motore } = motori.motoreBrano(b, this.ctx);
-    const fontiRighe = b.s.map(([cod, rif]) => {
-      const azione = cod === "lo"
-        ? `<span class="muted small">${esc(rif)}</span>`
-        : `<button class="btn-secondary btn-apri" data-cod="${esc(cod)}" data-rif="${esc(rif)}">Apri</button>`;
-      return `<div class="riga-fonte"><span><span class="sigla-piatt">${esc(SIGLA_PIATT[cod] || cod)}</span>${esc(NOMI_PIATT[cod] || cod)}</span>${azione}</div>`;
-    }).join("");
-    const altriArtista = cercaMod.perArtista(this.catalogo.brani, b._normA).filter((x) => x.id !== b.id).slice(0, 8);
+    const fontiRighe = b.s
+      .map(([cod, rif]) => {
+        const azione =
+          cod === "lo"
+            ? `<span class="muted small">${esc(rif)}</span>`
+            : `<button class="btn-secondary btn-apri" data-cod="${esc(cod)}" data-rif="${esc(rif)}">Apri</button>`;
+        return `<div class="riga-fonte"><span><span class="sigla-piatt">${esc(SIGLA_PIATT[cod] || cod)}</span>${esc(NOMI_PIATT[cod] || cod)}</span>${azione}</div>`;
+      })
+      .join("");
+    const altriArtista = cercaMod
+      .perArtista(this.catalogo.brani, b._normA)
+      .filter((x) => x.id !== b.id)
+      .slice(0, 8);
 
     el.innerHTML = `
       <div class="foglio-intestazione">
@@ -447,22 +567,33 @@ export class UI {
       <div class="foglio-sezione"><h3>Dove si trova</h3>${fontiRighe}</div>
       ${altriArtista.length ? `<div class="foglio-sezione"><h3>Altri di ${esc(b.a)}</h3><div class="lista" id="foglio-altri-artista"></div></div>` : ""}
     `;
-    $("#foglio-chiudi").addEventListener("click", () => { overlay.hidden = true; });
+    $("#foglio-chiudi").addEventListener("click", () => {
+      overlay.hidden = true;
+    });
     $("#foglio-suona").addEventListener("click", () => {
       $("#foglio-overlay").hidden = true;
       if (contesto.coda) this.tastoRiga(b, null);
       else this.suonaDaLista(contesto.lista || [b], b, contesto.nome || "Brano singolo");
     });
     $("#foglio-aggiungi").addEventListener("click", () => this.apriAggiungiAPlaylist(b));
-    $$(".btn-apri", el).forEach((btn) => btn.addEventListener("click", () => {
-      const fonte = [btn.dataset.cod, btn.dataset.rif];
-      const motore = fonte[0] === "sp" ? "spotify-app"
-        : (fonte[0] === "yt" || fonte[0] === "sc") && this.ctx.usaNewPipe !== false ? "newpipe" : "web";
-      apriLink(link.linkApertura(motore, fonte, { android: ANDROID }));
-    }));
+    $$(".btn-apri", el).forEach((btn) =>
+      btn.addEventListener("click", () => {
+        const fonte = [btn.dataset.cod, btn.dataset.rif];
+        const motore =
+          fonte[0] === "sp"
+            ? "spotify-app"
+            : (fonte[0] === "yt" || fonte[0] === "sc") && this.ctx.usaNewPipe !== false
+              ? "newpipe"
+              : "web";
+        apriLink(link.linkApertura(motore, fonte, { android: ANDROID }));
+      }),
+    );
     if (altriArtista.length) {
       $("#foglio-altri-artista").innerHTML = altriArtista.map((x, i) => this.rigaBrano(x, i)).join("");
-      this.agganciaClicRighe($("#foglio-altri-artista"), altriArtista, { lista: altriArtista, nome: `Brani di ${b.a}` });
+      this.agganciaClicRighe($("#foglio-altri-artista"), altriArtista, {
+        lista: altriArtista,
+        nome: `Brani di ${b.a}`,
+      });
     }
     overlay.hidden = false;
   }
@@ -474,7 +605,8 @@ export class UI {
     const b = this.coda?.corrente;
     this.lettore.ferma();
     this.esterno = b || null;
-    if (this.coda) this.renderRiproduzione(); else this.aggiornaStatoLettore();
+    if (this.coda) this.renderRiproduzione();
+    else this.aggiornaStatoLettore();
     apriLink(link.linkApertura(motore, fonte, { android: ANDROID }));
   }
 
@@ -485,19 +617,25 @@ export class UI {
     const manuali = this.playlists.filter((p) => p.tipo === "manuale");
     el.innerHTML = `
       <div class="foglio-intestazione"><h2>Aggiungi a…</h2><button class="foglio-chiudi" id="agg-chiudi">✕</button></div>
-      ${manuali.length
-        ? `<div class="lista">${manuali.map((p) => `<button class="riga" data-id="${esc(p.id)}"><div class="riga-testo"><div class="riga-titolo">${esc(p.nome)}</div><div class="riga-sotto">${(p.brani || []).length} brani</div></div></button>`).join("")}</div>`
-        : `<p class="muted">Non hai ancora playlist manuali.</p>`}
+      ${
+        manuali.length
+          ? `<div class="lista">${manuali.map((p) => `<button class="riga" data-id="${esc(p.id)}"><div class="riga-testo"><div class="riga-titolo">${esc(p.nome)}</div><div class="riga-sotto">${(p.brani || []).length} brani</div></div></button>`).join("")}</div>`
+          : `<p class="muted">Non hai ancora playlist manuali.</p>`
+      }
       <button class="btn-secondary btn-blocco" id="agg-nuova">+ Nuova playlist manuale con questo brano</button>
     `;
-    $("#agg-chiudi").addEventListener("click", () => { overlay.hidden = true; });
-    $$(".riga", el).forEach((r) => r.addEventListener("click", async () => {
-      const p = manuali.find((x) => x.id === r.dataset.id);
-      if (!p.brani.includes(b.id)) p.brani.push(b.id);
-      await this.salvaPlaylistSingola(p);
-      showToast(`Aggiunto a "${p.nome}".`, "ok");
+    $("#agg-chiudi").addEventListener("click", () => {
       overlay.hidden = true;
-    }));
+    });
+    $$(".riga", el).forEach((r) =>
+      r.addEventListener("click", async () => {
+        const p = manuali.find((x) => x.id === r.dataset.id);
+        if (!p.brani.includes(b.id)) p.brani.push(b.id);
+        await this.salvaPlaylistSingola(p);
+        showToast(`Aggiunto a "${p.nome}".`, "ok");
+        overlay.hidden = true;
+      }),
+    );
     $("#agg-nuova").addEventListener("click", async () => {
       overlay.hidden = true;
       const nome = window.prompt("Nome della nuova playlist:");
@@ -513,7 +651,8 @@ export class UI {
     try {
       await playlist.salvaUna(p);
       const i = this.playlists.findIndex((x) => x.id === p.id);
-      if (i >= 0) this.playlists[i] = p; else this.playlists.push(p);
+      if (i >= 0) this.playlists[i] = p;
+      else this.playlists.push(p);
     } catch (err) {
       showToast(err?.message || "Salvataggio non riuscito.", "err");
       throw err;
@@ -524,7 +663,12 @@ export class UI {
     const nome = window.prompt("Nome della playlist:");
     if (!nome) return;
     const nuova = { id: playlist.nuovoId(nome), nome, tipo: "manuale", brani: [] };
-    this.salvaPlaylistSingola(nuova).then(() => { this.renderPlaylist(); showToast("Playlist creata.", "ok"); }).catch(() => {});
+    this.salvaPlaylistSingola(nuova)
+      .then(() => {
+        this.renderPlaylist();
+        showToast("Playlist creata.", "ok");
+      })
+      .catch(() => {});
   }
 
   // ---------------- Playlist ----------------
@@ -533,12 +677,18 @@ export class UI {
     const n = this.playlists.length;
     $("#playlist-sotto").textContent = n ? `${n} playlist · quelle coi filtri si aggiornano da sole` : "";
     const fasce = ["f-rosso", "f-blu", "f-ambra"];
-    $("#playlist-lista").innerHTML = this.playlists.map((p, i) => {
-      const elenco = regole.valuta(p, this.catalogo.brani, this.ctx);
-      const piano = motori.pianoRiproduzione(elenco, this.ctx);
-      const consigliato = piano.consigliato ? NOMI_MOTORE[piano.consigliato].toLowerCase() : "nessuna fonte disponibile";
-      const etichette = this.riassuntoRegole(p).map((t) => `<span class="etichetta-regola">${esc(t)}</span>`).join("");
-      return `<div class="cartellino" data-id="${esc(p.id)}">
+    $("#playlist-lista").innerHTML =
+      this.playlists
+        .map((p, i) => {
+          const elenco = regole.valuta(p, this.catalogo.brani, this.ctx);
+          const piano = motori.pianoRiproduzione(elenco, this.ctx);
+          const consigliato = piano.consigliato
+            ? NOMI_MOTORE[piano.consigliato].toLowerCase()
+            : "nessuna fonte disponibile";
+          const etichette = this.riassuntoRegole(p)
+            .map((t) => `<span class="etichetta-regola">${esc(t)}</span>`)
+            .join("");
+          return `<div class="cartellino" data-id="${esc(p.id)}">
         <button class="cartellino-testa ${fasce[i % 3]}" type="button" aria-label="Apri la playlist ${esc(p.nome)}">
           <span class="codice-mini">P${i + 1}</span><span>${esc(p.nome)}</span>
         </button>
@@ -548,7 +698,8 @@ export class UI {
           ${elenco.length ? `<button class="play-neon" type="button" aria-label="Avvia ${esc(p.nome)}">${SVG_PLAY}</button>` : ""}
         </div>
       </div>`;
-    }).join("") || `<p class="vuoto muted">Nessuna playlist ancora. Creane una con i pulsanti qui sopra.</p>`;
+        })
+        .join("") || `<p class="vuoto muted">Nessuna playlist ancora. Creane una con i pulsanti qui sopra.</p>`;
     $$(".cartellino", $("#playlist-lista")).forEach((el) => {
       const p = this.playlists.find((x) => x.id === el.dataset.id);
       $(".cartellino-testa", el).addEventListener("click", () => this.apriDettaglioPlaylist(p));
@@ -563,13 +714,14 @@ export class UI {
   riassuntoRegole(p) {
     if (p.tipo === "manuale") return ["scelti a mano"];
     const r = p.regole || {};
-    const intervallo = (x, unita = "") => x ? `${x[0] ?? "…"}–${x[1] ?? "…"}${unita}` : "";
+    const intervallo = (x, unita = "") => (x ? `${x[0] ?? "…"}–${x[1] ?? "…"}${unita}` : "");
     const t = [
       ...generi.vociSelezionate(this.voci, r.macro).map((v) => v.nome),
       ...(r.piattaforme || []).map((c) => NOMI_PIATT[c] || c),
       ...(r.tipi || []),
       r.testo ? `"${r.testo}"` : "",
-      intervallo(r.bpm, " BPM"), intervallo(r.anno),
+      intervallo(r.bpm, " BPM"),
+      intervallo(r.anno),
       r.camelot?.length ? r.camelot.join(" ") : "",
       r.artisti?.length ? `${r.artisti.length} artisti` : "",
       r.soloSchermoSpento ? "schermo spento" : "",
@@ -584,7 +736,9 @@ export class UI {
     const el = $("#foglio-brano");
     const elenco = regole.valuta(p, this.catalogo.brani, this.ctx);
     const piano = motori.pianoRiproduzione(elenco, this.ctx);
-    const righePiano = piano.gruppi.map((g) => `${esc(NOMI_MOTORE[g.motore] || g.motore)}: ${g.n}${g.continuo ? " (schermo spento)" : ""}`).join(" · ");
+    const righePiano = piano.gruppi
+      .map((g) => `${esc(NOMI_MOTORE[g.motore] || g.motore)}: ${g.n}${g.continuo ? " (schermo spento)" : ""}`)
+      .join(" · ");
     const pronti = elenco.filter((b) => this.ctx.fileIds.has(b.id)).length;
     el.innerHTML = `
       <div class="foglio-intestazione"><h2>${esc(p.nome)}</h2><button class="foglio-chiudi" id="foglio-chiudi">✕</button></div>
@@ -603,39 +757,71 @@ export class UI {
       </div>
       <div class="foglio-sezione"><h3>Brani</h3><div class="lista" id="pl-elenco"></div></div>
     `;
-    $("#foglio-chiudi").addEventListener("click", () => { overlay.hidden = true; });
-    $("#pl-avvia").addEventListener("click", () => { overlay.hidden = true; this.avviaPlaylist(p, elenco, piano); });
+    $("#foglio-chiudi").addEventListener("click", () => {
+      overlay.hidden = true;
+    });
+    $("#pl-avvia").addEventListener("click", () => {
+      overlay.hidden = true;
+      this.avviaPlaylist(p, elenco, piano);
+    });
     $("#pl-telefono").addEventListener("change", async (e) => {
       const aggiornata = { ...p };
-      if (e.target.checked) aggiornata.telefono = true; else delete aggiornata.telefono;
+      if (e.target.checked) aggiornata.telefono = true;
+      else delete aggiornata.telefono;
       try {
         await this.salvaPlaylistSingola(aggiornata);
         p = aggiornata;
-        showToast(e.target.checked ? "Segnata per il telefono: il PC la preparerà." : "Non più segnata per il telefono.", "ok");
+        showToast(
+          e.target.checked ? "Segnata per il telefono: il PC la preparerà." : "Non più segnata per il telefono.",
+          "ok",
+        );
         this.renderPlaylist();
-      } catch { e.target.checked = !e.target.checked; }
+      } catch {
+        e.target.checked = !e.target.checked;
+      }
     });
     $("#pl-libera")?.addEventListener("click", async () => {
       // Toglie i file di questa playlist che non servono ad altre playlist tenute sul telefono.
-      const altre = new Set(this.playlists.filter((x) => x.id !== p.id && x.telefono)
-        .flatMap((x) => regole.valuta(x, this.catalogo.brani, this.ctx).map((b) => b.id)));
-      const via = elenco.map((b) => b.id).filter((id) => this.ctx.fileIds.has(id) && !altre.has(id) && id !== this.lettore.brano?.id);
-      if (!via.length) { showToast("Questi brani servono anche ad altre playlist sul telefono.", ""); return; }
-      if (!window.confirm(`Togliere dal telefono ${via.length} brani (${(file.byte(via) / 1048576).toFixed(0)} MB)?`)) return;
+      const altre = new Set(
+        this.playlists
+          .filter((x) => x.id !== p.id && x.telefono)
+          .flatMap((x) => regole.valuta(x, this.catalogo.brani, this.ctx).map((b) => b.id)),
+      );
+      const via = elenco
+        .map((b) => b.id)
+        .filter((id) => this.ctx.fileIds.has(id) && !altre.has(id) && id !== this.lettore.brano?.id);
+      if (!via.length) {
+        showToast("Questi brani servono anche ad altre playlist sul telefono.", "");
+        return;
+      }
+      if (!window.confirm(`Togliere dal telefono ${via.length} brani (${(file.byte(via) / 1048576).toFixed(0)} MB)?`))
+        return;
       await file.rimuovi(via);
       this.ctx.fileIds = file.ids();
-      overlay.hidden = true; this.renderPlaylist();
+      overlay.hidden = true;
+      this.renderPlaylist();
       showToast(`${via.length} brani tolti dal telefono.`, "ok");
     });
     if (p.tipo === "intelligente") {
-      $("#pl-modifica").addEventListener("click", () => { overlay.hidden = true; this.apriCostruttore(p); });
+      $("#pl-modifica").addEventListener("click", () => {
+        overlay.hidden = true;
+        this.apriCostruttore(p);
+      });
       $("#pl-congela").addEventListener("click", async () => {
-        const congelata = { id: playlist.nuovoId(p.nome + " congelata"), nome: p.nome + " (congelata)", tipo: "manuale", brani: elenco.map((b) => b.id) };
+        const congelata = {
+          id: playlist.nuovoId(p.nome + " congelata"),
+          nome: p.nome + " (congelata)",
+          tipo: "manuale",
+          brani: elenco.map((b) => b.id),
+        };
         try {
           await this.salvaPlaylistSingola(congelata);
           showToast("Copia congelata creata.", "ok");
-          overlay.hidden = true; this.renderPlaylist();
-        } catch { /* già segnalato dal toast in salvaPlaylistSingola */ }
+          overlay.hidden = true;
+          this.renderPlaylist();
+        } catch {
+          /* già segnalato dal toast in salvaPlaylistSingola */
+        }
       });
     }
     $("#pl-duplica").addEventListener("click", async () => {
@@ -643,19 +829,28 @@ export class UI {
       try {
         await this.salvaPlaylistSingola(copia);
         showToast("Playlist duplicata.", "ok");
-        overlay.hidden = true; this.renderPlaylist();
-      } catch { /* già segnalato */ }
+        overlay.hidden = true;
+        this.renderPlaylist();
+      } catch {
+        /* già segnalato */
+      }
     });
     $("#pl-elimina").addEventListener("click", async () => {
       if (!window.confirm(`Eliminare "${p.nome}"? Non si può annullare.`)) return;
       try {
         await playlist.elimina(p.id);
         this.playlists = this.playlists.filter((x) => x.id !== p.id);
-        overlay.hidden = true; this.renderPlaylist();
+        overlay.hidden = true;
+        this.renderPlaylist();
         showToast("Playlist eliminata.", "ok");
-      } catch (err) { showToast(err?.message || "Eliminazione non riuscita.", "err"); }
+      } catch (err) {
+        showToast(err?.message || "Eliminazione non riuscita.", "err");
+      }
     });
-    $("#pl-elenco").innerHTML = elenco.slice(0, 200).map((b, i) => this.rigaBrano(b, i)).join("");
+    $("#pl-elenco").innerHTML = elenco
+      .slice(0, 200)
+      .map((b, i) => this.rigaBrano(b, i))
+      .join("");
     this.agganciaClicRighe($("#pl-elenco"), elenco, { lista: elenco, nome: p.nome });
     overlay.hidden = false;
   }
@@ -664,13 +859,29 @@ export class UI {
   apriCostruttore(pEsistente) {
     const overlay = $("#costruttore-overlay");
     const el = $("#costruttore");
-    const p = pEsistente ? JSON.parse(JSON.stringify(pEsistente)) : {
-      id: null, nome: "", tipo: "intelligente",
-      regole: { soloScelti: true, tipi: [], macro: [], piattaforme: [], raccolte: [], artisti: [], escludiArtisti: [] },
-      ordine: "artista", seme: Math.floor(Math.random() * 1e9), limite: null,
-    };
-    const piattChip = (cod, nome) => `<label class="chip"><input type="checkbox" data-campo="piattaforme" value="${cod}" ${p.regole.piattaforme?.includes(cod) ? "checked" : ""}><span>${esc(nome)}</span></label>`;
-    const tipoChip = (k, nome) => `<label class="chip"><input type="checkbox" data-campo="tipi" value="${k}" ${p.regole.tipi?.includes(k) ? "checked" : ""}><span>${esc(nome)}</span></label>`;
+    const p = pEsistente
+      ? JSON.parse(JSON.stringify(pEsistente))
+      : {
+          id: null,
+          nome: "",
+          tipo: "intelligente",
+          regole: {
+            soloScelti: true,
+            tipi: [],
+            macro: [],
+            piattaforme: [],
+            raccolte: [],
+            artisti: [],
+            escludiArtisti: [],
+          },
+          ordine: "artista",
+          seme: Math.floor(Math.random() * 1e9),
+          limite: null,
+        };
+    const piattChip = (cod, nome) =>
+      `<label class="chip"><input type="checkbox" data-campo="piattaforme" value="${cod}" ${p.regole.piattaforme?.includes(cod) ? "checked" : ""}><span>${esc(nome)}</span></label>`;
+    const tipoChip = (k, nome) =>
+      `<label class="chip"><input type="checkbox" data-campo="tipi" value="${k}" ${p.regole.tipi?.includes(k) ? "checked" : ""}><span>${esc(nome)}</span></label>`;
 
     el.innerHTML = `
       <div class="foglio-intestazione"><h2>${pEsistente ? "Modifica playlist" : "Nuova playlist intelligente"}</h2><button class="foglio-chiudi" id="cost-chiudi">✕</button></div>
@@ -720,9 +931,17 @@ export class UI {
     `;
 
     const leggiRegoleForm = () => {
-      const num = (id) => { const v = $(id, el).value; return v === "" ? undefined : Number(v); };
-      const range = (min, max) => (min === undefined && max === undefined) ? undefined : [min, max];
-      const righe = (id) => $(id, el).value.split("\n").map((s) => s.trim()).filter(Boolean).map((s) => cercaMod.normalizza(s));
+      const num = (id) => {
+        const v = $(id, el).value;
+        return v === "" ? undefined : Number(v);
+      };
+      const range = (min, max) => (min === undefined && max === undefined ? undefined : [min, max]);
+      const righe = (id) =>
+        $(id, el)
+          .value.split("\n")
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .map((s) => cercaMod.normalizza(s));
       return {
         soloScelti: $("#cost-solo-scelti", el).checked,
         soloSchermoSpento: $("#cost-solo-schermo", el).checked,
@@ -733,7 +952,10 @@ export class UI {
         bpm: range(num("#cost-bpm-min"), num("#cost-bpm-max")),
         anno: range(num("#cost-anno-min"), num("#cost-anno-max")),
         energia: range(num("#cost-en-min"), num("#cost-en-max")),
-        camelot: $("#cost-camelot", el).value.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
+        camelot: $("#cost-camelot", el)
+          .value.split(",")
+          .map((s) => s.trim().toUpperCase())
+          .filter(Boolean),
         artisti: righe("#cost-artisti"),
         escludiArtisti: righe("#cost-escludi"),
       };
@@ -746,13 +968,22 @@ export class UI {
     $$("input, select, textarea", el).forEach((campo) => campo.addEventListener("input", aggiornaConteggio));
     aggiornaConteggio();
 
-    $("#cost-chiudi").addEventListener("click", () => { overlay.hidden = true; });
-    $("#cost-annulla").addEventListener("click", () => { overlay.hidden = true; });
+    $("#cost-chiudi").addEventListener("click", () => {
+      overlay.hidden = true;
+    });
+    $("#cost-annulla").addEventListener("click", () => {
+      overlay.hidden = true;
+    });
     $("#cost-salva").addEventListener("click", async () => {
       const nome = $("#cost-nome", el).value.trim();
-      if (!nome) { showToast("Dai un nome alla playlist.", "err"); return; }
+      if (!nome) {
+        showToast("Dai un nome alla playlist.", "err");
+        return;
+      }
       const nuova = {
-        id: p.id || playlist.nuovoId(nome), nome, tipo: "intelligente",
+        id: p.id || playlist.nuovoId(nome),
+        nome,
+        tipo: "intelligente",
         regole: leggiRegoleForm(),
         ordine: $("#cost-ordine", el).value,
         seme: p.seme,
@@ -763,7 +994,9 @@ export class UI {
         overlay.hidden = true;
         this.renderPlaylist();
         showToast("Playlist salvata.", "ok");
-      } catch { /* già segnalato */ }
+      } catch {
+        /* già segnalato */
+      }
     });
 
     overlay.hidden = false;
@@ -774,9 +1007,13 @@ export class UI {
     const overlay = $("#filtri-overlay");
     const el = $("#filtri-pannello");
     const f = this.filtri;
-    const piattChip = (cod, nome) => `<label class="chip"><input type="checkbox" data-campo="piattaforme" value="${cod}" ${f.piattaforme?.includes(cod) ? "checked" : ""}><span>${esc(nome)}</span></label>`;
+    const piattChip = (cod, nome) =>
+      `<label class="chip"><input type="checkbox" data-campo="piattaforme" value="${cod}" ${f.piattaforme?.includes(cod) ? "checked" : ""}><span>${esc(nome)}</span></label>`;
     const opzRaccolta = this.catalogo.raccolte
-      .map((r, i) => `<option value="${i}" ${f.raccolta === i ? "selected" : ""}>${esc(r[0])} (${esc(NOMI_PIATT[r[2]] || r[2])})</option>`)
+      .map(
+        (r, i) =>
+          `<option value="${i}" ${f.raccolta === i ? "selected" : ""}>${esc(r[0])} (${esc(NOMI_PIATT[r[2]] || r[2])})</option>`,
+      )
       .join("");
 
     el.innerHTML = `
@@ -786,7 +1023,7 @@ export class UI {
       <div class="campo-riga"><label for="filt-raccolta">Raccolta</label><select id="filt-raccolta"><option value="">Tutte</option>${opzRaccolta}</select></div>
       <div class="campo-riga"><span class="etichetta">Tipo</span>
         <select id="filt-tipo">
-          <option value="canzoni" ${(!f.tipo || f.tipo === "canzoni") ? "selected" : ""}>Canzoni</option>
+          <option value="canzoni" ${!f.tipo || f.tipo === "canzoni" ? "selected" : ""}>Canzoni</option>
           <option value="set" ${f.tipo === "set" ? "selected" : ""}>Set e mix</option>
           <option value="tutti" ${f.tipo === "tutti" ? "selected" : ""}>Tutti</option>
         </select>
@@ -809,10 +1046,15 @@ export class UI {
         <button class="btn-secondary" id="filt-azzera">Azzera</button>
       </div>
     `;
-    $("#filt-chiudi").addEventListener("click", () => { overlay.hidden = true; });
+    $("#filt-chiudi").addEventListener("click", () => {
+      overlay.hidden = true;
+    });
     $("#filt-applica").addEventListener("click", () => {
-      const num = (id) => { const v = $(id, el).value; return v === "" ? undefined : Number(v); };
-      const range = (min, max) => (min === undefined && max === undefined) ? undefined : [min, max];
+      const num = (id) => {
+        const v = $(id, el).value;
+        return v === "" ? undefined : Number(v);
+      };
+      const range = (min, max) => (min === undefined && max === undefined ? undefined : [min, max]);
       this.filtri = {
         soloScelti: $("#filt-solo-scelti", el).checked,
         tipo: $("#filt-tipo", el).value,
@@ -821,7 +1063,10 @@ export class UI {
         raccolta: $("#filt-raccolta", el).value === "" ? undefined : Number($("#filt-raccolta", el).value),
         bpm: range(num("#filt-bpm-min"), num("#filt-bpm-max")),
         anno: range(num("#filt-anno-min"), num("#filt-anno-max")),
-        camelot: $("#filt-camelot", el).value.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
+        camelot: $("#filt-camelot", el)
+          .value.split(",")
+          .map((s) => s.trim().toUpperCase())
+          .filter(Boolean),
       };
       this.ordineRisultati = $("#filt-ordine", el).value || undefined;
       this.paginaRisultati = 100;
@@ -843,7 +1088,10 @@ export class UI {
   // e contiene solo i brani che hanno il file; con gli altri motori il tasto
   // grande apre l'app esterna, un brano alla volta.
   avviaPlaylist(p, elenco, piano) {
-    if (!elenco.length) { showToast("Playlist vuota.", "err"); return; }
+    if (!elenco.length) {
+      showToast("Playlist vuota.", "err");
+      return;
+    }
     const motore = piano.consigliato;
     const brani = motore === "file" ? elenco.filter((b) => this.ctx.fileIds.has(b.id)) : elenco;
     this.avviaCoda(p, brani, motore, { saltati: elenco.length - brani.length });
@@ -866,7 +1114,9 @@ export class UI {
     else this.aggiornaStatoLettore();
   }
 
-  puoSuonare(b) { return this.ctx.fileIds.has(b.id); }
+  puoSuonare(b) {
+    return this.ctx.fileIds.has(b.id);
+  }
 
   async suonaBrano(b) {
     if (!b) return;
@@ -890,14 +1140,20 @@ export class UI {
     if (!this.coda || this.motoreCoda !== "file") return;
     const prossimo = comandi.dopoFine(this.coda, b?.id, (x) => this.puoSuonare(x));
     if (prossimo) this.suonaBrano(prossimo);
-    else { this.lettore.ferma(); this.renderRiproduzione(); }
+    else {
+      this.lettore.ferma();
+      this.renderRiproduzione();
+    }
   }
 
   // Tasti precedente/successivo della schermata di blocco o delle cuffie: lì ci
   // si aspetta che il brano cambi subito.
   comandoBlocco(c) {
     if (!this.coda || this.motoreCoda !== "file") return;
-    if (c === "indietro" && this.lettore.posizione > 4) { this.lettore.cerca(0); return; }
+    if (c === "indietro" && this.lettore.posizione > 4) {
+      this.lettore.cerca(0);
+      return;
+    }
     const b = comandi.spostaSelezione(this.coda, c === "avanti" ? 1 : -1);
     if (b) this.suonaBrano(b);
   }
@@ -906,7 +1162,12 @@ export class UI {
     const sel = this.coda?.corrente;
     if (!sel) return { azione: "nessuna", icona: "play", etichetta: "" };
     const { motore } = motori.motoreBrano(sel, this.ctx);
-    return comandi.tastoPrincipale({ motore, selezionato: sel.id, inCorso: this.lettore.brano?.id || null, stato: this.lettore.stato });
+    return comandi.tastoPrincipale({
+      motore,
+      selezionato: sel.id,
+      inCorso: this.lettore.brano?.id || null,
+      stato: this.lettore.stato,
+    });
   }
 
   premiTastoGrande() {
@@ -957,13 +1218,20 @@ export class UI {
   renderRiproduzione() {
     const vuoto = $("#riproduzione-vuoto");
     const contenuto = $("#riproduzione-contenuto");
-    if (!this.coda || !this.playlistAttiva) { vuoto.hidden = false; contenuto.hidden = true; this.aggiornaMiniLettore(); return; }
-    vuoto.hidden = true; contenuto.hidden = false;
+    if (!this.coda || !this.playlistAttiva) {
+      vuoto.hidden = false;
+      contenuto.hidden = true;
+      this.aggiornaMiniLettore();
+      return;
+    }
+    vuoto.hidden = true;
+    contenuto.hidden = false;
 
     $("#riproduzione-nome").textContent = this.playlistAttiva.nome;
-    $("#riproduzione-piano").textContent = this.motoreCoda === "file"
-      ? `Nel Jukebox · ${this.coda.ordine.length} brani · schermo spento ok${this.saltati && this.playlistAttiva.id !== "lista" ? ` · ${this.saltati} non ancora sul telefono` : ""}`
-      : `Si apre ${NOMI_DOVE[this.motoreCoda] || "in un'app esterna"} · ${this.coda.ordine.length} brani · un brano alla volta`;
+    $("#riproduzione-piano").textContent =
+      this.motoreCoda === "file"
+        ? `Nel Jukebox · ${this.coda.ordine.length} brani · schermo spento ok${this.saltati && this.playlistAttiva.id !== "lista" ? ` · ${this.saltati} non ancora sul telefono` : ""}`
+        : `Si apre ${NOMI_DOVE[this.motoreCoda] || "in un'app esterna"} · ${this.coda.ordine.length} brani · un brano alla volta`;
 
     const sel = this.coda.corrente;
     if (!sel) {
@@ -976,10 +1244,15 @@ export class UI {
         <span class="ed-foro"></span>
         <span class="ed-titolo">${esc(sel.t || "")}</span>
         <span class="ed-anno">45 giri${sel.y ? " · " + esc(sel.y) : ""}</span>`;
-      $("#riproduzione-corrente").innerHTML = this.rigaBrano(sel, Math.max(this.coda.indice, 0), { grande: true, play: false });
+      $("#riproduzione-corrente").innerHTML = this.rigaBrano(sel, Math.max(this.coda.indice, 0), {
+        grande: true,
+        play: false,
+      });
       this.agganciaClicRighe($("#riproduzione-corrente"), [sel], { coda: true });
-      $("#riproduzione-azioni").innerHTML = this.motoreCoda !== "file"
-        ? `<span class="muted small">Con le app esterne la coda non va avanti da sola: per farlo, tieni la playlist sul telefono.</span>` : "";
+      $("#riproduzione-azioni").innerHTML =
+        this.motoreCoda !== "file"
+          ? `<span class="muted small">Con le app esterne la coda non va avanti da sola: per farlo, tieni la playlist sul telefono.</span>`
+          : "";
     }
 
     $("#rip-casuale").setAttribute("aria-pressed", String(!!this.coda.casuale));
@@ -993,9 +1266,12 @@ export class UI {
     const altri = $("#prossimi-altri");
     altri.hidden = tutti.length <= prossimi.length;
     if (!altri.hidden) altri.textContent = `Mostra altri (${(tutti.length - prossimi.length).toLocaleString("it-IT")})`;
-    $("#prossimi-info").textContent = this.coda.casuale ? "ordine casuale" : (NOMI_ORDINE_PL[this.playlistAttiva.ordine] || "");
-    $("#riproduzione-prossimi").innerHTML = prossimi.map((b, i) => this.rigaBrano(b, (Math.max(this.coda.indice, 0)) + i + 1)).join("")
-      || `<p class="vuoto muted">Nessun altro brano in coda.</p>`;
+    $("#prossimi-info").textContent = this.coda.casuale
+      ? "ordine casuale"
+      : NOMI_ORDINE_PL[this.playlistAttiva.ordine] || "";
+    $("#riproduzione-prossimi").innerHTML =
+      prossimi.map((b, i) => this.rigaBrano(b, Math.max(this.coda.indice, 0) + i + 1)).join("") ||
+      `<p class="vuoto muted">Nessun altro brano in coda.</p>`;
     this.agganciaClicRighe($("#riproduzione-prossimi"), prossimi, { coda: true });
     this.aggiornaStatoLettore();
   }
@@ -1008,10 +1284,22 @@ export class UI {
     const stato = $("#imp-file-avanzamento");
     const idValidi = new Set(this.catalogo.brani.map((b) => b.id));
     try {
-      const esito = await file.importa(files, idValidi, (fatti, tot) => { stato.textContent = `Copio nel Jukebox: ${fatti} di ${tot}…`; });
-      showToast(`${esito.aggiunti} brani aggiunti${esito.gia ? `, ${esito.gia} c'erano già` : ""}${esito.sconosciuti.length ? `, ${esito.sconosciuti.length} file non riconosciuti` : ""}. Ora puoi cancellare la cartella Download/Jukebox.`, "ok", { duration: 7000 });
+      const esito = await file.importa(files, idValidi, (fatti, tot) => {
+        stato.textContent = `Copio nel Jukebox: ${fatti} di ${tot}…`;
+      });
+      showToast(
+        `${esito.aggiunti} brani aggiunti${esito.gia ? `, ${esito.gia} c'erano già` : ""}${esito.sconosciuti.length ? `, ${esito.sconosciuti.length} file non riconosciuti` : ""}. Ora puoi cancellare la cartella Download/Jukebox.`,
+        "ok",
+        { duration: 7000 },
+      );
     } catch (err) {
-      showToast(err?.name === "QuotaExceededError" ? "Spazio finito sul telefono: libera spazio e riprova." : (err?.message || "Importazione non riuscita."), "err", { duration: 7000 });
+      showToast(
+        err?.name === "QuotaExceededError"
+          ? "Spazio finito sul telefono: libera spazio e riprova."
+          : err?.message || "Importazione non riuscita.",
+        "err",
+        { duration: 7000 },
+      );
     }
     stato.textContent = "";
     this.ctx.fileIds = file.ids();
@@ -1025,14 +1313,19 @@ export class UI {
     try {
       const st = await navigator.storage?.estimate?.();
       if (st?.quota) libero = ` · spazio ancora disponibile: ${((st.quota - st.usage) / 1073741824).toFixed(1)} GB`;
-    } catch { /* stima non disponibile */ }
-    $("#imp-file-info").textContent = n ? `${n.toLocaleString("it-IT")} brani sul telefono (${mb} MB)${libero}` : `Nessun brano sul telefono${libero}`;
+    } catch {
+      /* stima non disponibile */
+    }
+    $("#imp-file-info").textContent = n
+      ? `${n.toLocaleString("it-IT")} brani sul telefono (${mb} MB)${libero}`
+      : `Nessun brano sul telefono${libero}`;
     $("#imp-file-svuota").hidden = !n;
   }
 
   // ---------------- Impostazioni ----------------
   renderImpostazioni(cfg, infoCache) {
-    $("#imp-repo").textContent = cfg.tipo === "url" ? `file locale (${cfg.url}) — anteprima` : `${cfg.owner}/${cfg.repo}`;
+    $("#imp-repo").textContent =
+      cfg.tipo === "url" ? `file locale (${cfg.url}) — anteprima` : `${cfg.owner}/${cfg.repo}`;
     $("#imp-cambia-token").textContent = cfg.tipo === "url" ? "Esci dall'anteprima (usa GitHub)" : "Cambia token";
     $("#imp-dati-info").textContent = infoCache
       ? `${infoCache.brani.toLocaleString("it-IT")} brani in cache, costruito il ${infoCache.costruitoIl || "?"}`
@@ -1046,23 +1339,29 @@ export class UI {
 
   renderOrdineMotori() {
     const lista = $("#imp-ordine-motori");
-    lista.innerHTML = this.ctx.priorita.map((m, i) => `
+    lista.innerHTML = this.ctx.priorita
+      .map(
+        (m, i) => `
       <li data-m="${esc(m)}">
         <span>${esc(NOMI_MOTORE[m] || m)}</span>
         <span class="frecce">
           <button data-dir="su" ${i === 0 ? "disabled" : ""} aria-label="Sposta su">↑</button>
           <button data-dir="giu" ${i === this.ctx.priorita.length - 1 ? "disabled" : ""} aria-label="Sposta giù">↓</button>
         </span>
-      </li>`).join("");
-    $$("button[data-dir]", lista).forEach((btn) => btn.addEventListener("click", () => {
-      const li = btn.closest("li");
-      const idx = this.ctx.priorita.indexOf(li.dataset.m);
-      const dir = btn.dataset.dir === "su" ? -1 : 1;
-      const nuovo = [...this.ctx.priorita];
-      [nuovo[idx], nuovo[idx + dir]] = [nuovo[idx + dir], nuovo[idx]];
-      this.ctx.priorita = nuovo;
-      salvaPreferenzaMotori(nuovo);
-      this.renderOrdineMotori();
-    }));
+      </li>`,
+      )
+      .join("");
+    $$("button[data-dir]", lista).forEach((btn) =>
+      btn.addEventListener("click", () => {
+        const li = btn.closest("li");
+        const idx = this.ctx.priorita.indexOf(li.dataset.m);
+        const dir = btn.dataset.dir === "su" ? -1 : 1;
+        const nuovo = [...this.ctx.priorita];
+        [nuovo[idx], nuovo[idx + dir]] = [nuovo[idx + dir], nuovo[idx]];
+        this.ctx.priorita = nuovo;
+        salvaPreferenzaMotori(nuovo);
+        this.renderOrdineMotori();
+      }),
+    );
   }
 }

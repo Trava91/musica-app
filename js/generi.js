@@ -8,7 +8,7 @@
 
 export const RAGGRUPPATI = {
   "Tech house": ["Tech house", "Deep e melodic", "Chicago e acid", "Techno", "Minimal"],
-  "Disco": ["Disco e funky house", "Disco, funk e soul"],
+  Disco: ["Disco e funky house", "Disco, funk e soul"],
 };
 
 /**
@@ -23,8 +23,14 @@ export function vociGeneri(macro) {
   const perGruppo = {};
   macro.forEach((nome, i) => {
     const gruppo = gruppoDi[nome];
-    if (!gruppo) { voci.push({ nome, indici: [i] }); return; }
-    if (!perGruppo[gruppo]) { perGruppo[gruppo] = { nome: gruppo, indici: [] }; voci.push(perGruppo[gruppo]); }
+    if (!gruppo) {
+      voci.push({ nome, indici: [i] });
+      return;
+    }
+    if (!perGruppo[gruppo]) {
+      perGruppo[gruppo] = { nome: gruppo, indici: [] };
+      voci.push(perGruppo[gruppo]);
+    }
     perGruppo[gruppo].indici.push(i);
   });
   return voci;

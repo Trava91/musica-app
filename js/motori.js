@@ -62,7 +62,8 @@ export function pianoRiproduzione(elenco, ctx = {}) {
     const { motore, fonte: f } = motoreBrano(b, ctx);
     sceltoPerBrano.set(b.id, motore);
     if (!motore) continue;
-    if (!perMotore.has(motore)) perMotore.set(motore, { motore, n: 0, continuo: MOTORI_CONTINUI.has(motore), brani: [] });
+    if (!perMotore.has(motore))
+      perMotore.set(motore, { motore, n: 0, continuo: MOTORI_CONTINUI.has(motore), brani: [] });
     const g = perMotore.get(motore);
     g.n++;
     g.brani.push({ brano: b, fonte: f });

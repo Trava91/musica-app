@@ -39,23 +39,29 @@ const SHELL = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())
+    caches
+      .open(CACHE)
+      .then((c) => c.addAll(SHELL))
+      .then(() => self.skipWaiting()),
   );
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE && k.startsWith("jukebox-v")).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(keys.filter((k) => k !== CACHE && k.startsWith("jukebox-v")).map((k) => caches.delete(k))),
+      )
+      .then(() => self.clients.claim()),
   );
 });
 
 self.addEventListener("fetch", (event) => {
   const req = event.request;
-  if (req.method !== "GET") return;                        // scritture: solo rete
+  if (req.method !== "GET") return; // scritture: solo rete
   const url = new URL(req.url);
-  if (url.origin !== self.location.origin) return;         // api.github.com e Deezer: passano alla rete
+  if (url.origin !== self.location.origin) return; // api.github.com e Deezer: passano alla rete
   // Solo i file dell'app: in anteprima il catalogo sta fuori dallo scope
   // (../app-dati/) e lo mette in cache dati.js per conto suo.
   if (!url.pathname.startsWith(new URL(self.registration.scope).pathname)) return;
@@ -71,6 +77,6 @@ self.addEventListener("fetch", (event) => {
         }
         return resp;
       })
-      .catch(() => caches.match(req).then((c) => c || caches.match("index.html")))
+      .catch(() => caches.match(req).then((c) => c || caches.match("index.html"))),
   );
 });

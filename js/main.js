@@ -1,9 +1,15 @@
 // main.js — wiring: onboarding del token, primo avvio, impostazioni, service worker.
 
 import {
-  leggiConfig, salvaConfig, configPronta, rimuoviToken,
-  leggiPreferenzaMotori, leggiPreferenzaNewPipe, salvaPreferenzaNewPipe,
-  leggiPreferenzaSoloJukebox, salvaPreferenzaSoloJukebox,
+  leggiConfig,
+  salvaConfig,
+  configPronta,
+  rimuoviToken,
+  leggiPreferenzaMotori,
+  leggiPreferenzaNewPipe,
+  salvaPreferenzaNewPipe,
+  leggiPreferenzaSoloJukebox,
+  salvaPreferenzaSoloJukebox,
 } from "./config.js";
 import { GitHubApi, ApiError } from "./api.js";
 import * as dati from "./dati.js";
@@ -45,7 +51,10 @@ async function onOnboardingSubmit(e) {
   const token = $("#onb-token").value.trim();
   const owner = $("#onb-owner").value.trim() || undefined;
   const repo = $("#onb-repo").value.trim() || undefined;
-  if (!token) { setFeedback("Inserisci il token.", "err"); return; }
+  if (!token) {
+    setFeedback("Inserisci il token.", "err");
+    return;
+  }
 
   $("#onb-submit").disabled = true;
   setFeedback("Verifico il token…");
@@ -90,7 +99,10 @@ async function bootApp() {
     ui.switchTab("cerca");
   } catch (err) {
     showToast(err?.message || "Caricamento fallito.", "err");
-    if (err instanceof ApiError && err.kind === "auth") { fillOnboarding(); show("onboarding"); }
+    if (err instanceof ApiError && err.kind === "auth") {
+      fillOnboarding();
+      show("onboarding");
+    }
   } finally {
     $("#spinner").hidden = true;
   }
@@ -139,7 +151,10 @@ function wireImpostazioni() {
       salvaConfig({ tipo: "github-privato" });
       await dati.svuotaCache();
       if (configPronta()) await bootApp();
-      else { fillOnboarding(); show("onboarding"); }
+      else {
+        fillOnboarding();
+        show("onboarding");
+      }
       return;
     }
     if (!window.confirm("Rimuovere il token salvato su questo telefono?")) return;
@@ -161,7 +176,9 @@ document.querySelector('[data-tab="impostazioni"]').addEventListener("click", re
 // --- service worker -------------------------------------------------------------
 function registraServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
-  navigator.serviceWorker.register("sw.js").catch(() => { /* offline al primo avvio: non è un errore da mostrare */ });
+  navigator.serviceWorker.register("sw.js").catch(() => {
+    /* offline al primo avvio: non è un errore da mostrare */
+  });
 }
 
 // --- avvio -----------------------------------------------------------------------

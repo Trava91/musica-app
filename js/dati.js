@@ -24,12 +24,16 @@ function entro(promessa, ms, ripiego) {
 async function daCache() {
   if (!("caches" in globalThis)) return null;
   try {
-    return await entro((async () => {
-      const c = await caches.open(CACHE_NOME);
-      const resp = await c.match(CACHE_CHIAVE);
-      const dati = resp ? await resp.json() : null;
-      return Array.isArray(dati?.brani) ? dati : null; // una cache senza brani non è un catalogo
-    })(), 5000, null);
+    return await entro(
+      (async () => {
+        const c = await caches.open(CACHE_NOME);
+        const resp = await c.match(CACHE_CHIAVE);
+        const dati = resp ? await resp.json() : null;
+        return Array.isArray(dati?.brani) ? dati : null; // una cache senza brani non è un catalogo
+      })(),
+      5000,
+      null,
+    );
   } catch {
     return null;
   }
@@ -39,7 +43,8 @@ async function daCache() {
 // offline non ci sarà il catalogo.
 function salvaInCache(testo) {
   if (!("caches" in globalThis)) return;
-  caches.open(CACHE_NOME)
+  caches
+    .open(CACHE_NOME)
     .then((c) => c.put(CACHE_CHIAVE, new Response(testo, { headers: { "Content-Type": "application/json" } })))
     .catch((err) => console.warn("Cache del catalogo non salvata:", err));
 }
@@ -47,7 +52,13 @@ function salvaInCache(testo) {
 function preparaCatalogo(dati) {
   preparaIndice(dati.brani, dati.raccolte);
   // rinominati: id vecchio → id nuovo (vedi strumenti/esporta.py), per i file e le playlist salvati.
-  return { brani: dati.brani, macro: dati.macro, raccolte: dati.raccolte, costruitoIl: dati.costruito_il, rinominati: dati.rinominati || {} };
+  return {
+    brani: dati.brani,
+    macro: dati.macro,
+    raccolte: dati.raccolte,
+    costruitoIl: dati.costruito_il,
+    rinominati: dati.rinominati || {},
+  };
 }
 
 // Sorgente "url": niente token né sha. Online scarica, offline ripiega sulla cache.
@@ -55,7 +66,10 @@ async function caricaDaUrl(cfg) {
   try {
     const resp = await fetch(cfg.url, { cache: "no-store" });
     if (!resp.ok) {
-      throw new ApiError(`File dati non trovato (${resp.status}): ${cfg.url}`, { status: resp.status, kind: "notfound" });
+      throw new ApiError(`File dati non trovato (${resp.status}): ${cfg.url}`, {
+        status: resp.status,
+        kind: "notfound",
+      });
     }
     const testo = await resp.text();
     await salvaInCache(testo);
@@ -90,7 +104,7 @@ async function caricaDaGitHub(cfg, forza) {
     const testo = await gh.getRaw(cfg.file, { json: false });
     const dati = JSON.parse(testo);
     if (!Array.isArray(dati?.brani)) {
-      throw new ApiError("GitHub non ha mandato il catalogo: riprova con \"Aggiorna dati ora\".", { kind: "network" });
+      throw new ApiError('GitHub non ha mandato il catalogo: riprova con "Aggiorna dati ora".', { kind: "network" });
     }
     await salvaInCache(testo);
     localStorage.setItem(LS_SHA, shaRemoto);

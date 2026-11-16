@@ -66,7 +66,9 @@ export function leggiPreferenzaMotori() {
   try {
     const v = JSON.parse(localStorage.getItem(LS.motori));
     if (Array.isArray(v) && v.length) return v;
-  } catch { /* localStorage vuoto o corrotto: usa il default */ }
+  } catch {
+    /* localStorage vuoto o corrotto: usa il default */
+  }
   return [...MOTORI_DEFAULT];
 }
 

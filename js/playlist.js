@@ -21,7 +21,9 @@ function daCacheLocale() {
   try {
     const v = JSON.parse(localStorage.getItem(LS_CACHE));
     if (v && Array.isArray(v.playlist)) return v;
-  } catch { /* cache assente o corrotta */ }
+  } catch {
+    /* cache assente o corrotta */
+  }
   return VUOTO();
 }
 
@@ -115,8 +117,12 @@ export function elimina(id) {
 
 // Un id leggibile e improbabile da ripetere, per una nuova playlist.
 export function nuovoId(nome) {
-  const slug = (nome || "playlist")
-    .toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "playlist";
+  const slug =
+    (nome || "playlist")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "playlist";
   return `${slug}-${Date.now().toString(36)}`;
 }

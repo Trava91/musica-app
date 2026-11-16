@@ -10,12 +10,26 @@
 const CACHE = "jukebox-audio";
 const LS = "jukebox.file.indice";
 const chiave = (id) => new URL(`audio/${id}`, globalThis.location?.href || "http://localhost/").href;
-const MIME = { m4a: "audio/mp4", mp4: "audio/mp4", aac: "audio/aac", mp3: "audio/mpeg", webm: "audio/webm", opus: "audio/ogg", ogg: "audio/ogg", flac: "audio/flac", wav: "audio/wav" };
+const MIME = {
+  m4a: "audio/mp4",
+  mp4: "audio/mp4",
+  aac: "audio/aac",
+  mp3: "audio/mpeg",
+  webm: "audio/webm",
+  opus: "audio/ogg",
+  ogg: "audio/ogg",
+  flac: "audio/flac",
+  wav: "audio/wav",
+};
 
 let indice = leggiIndice();
 
 function leggiIndice() {
-  try { return JSON.parse(localStorage.getItem(LS)) || {}; } catch { return {}; }
+  try {
+    return JSON.parse(localStorage.getItem(LS)) || {};
+  } catch {
+    return {};
+  }
 }
 function salvaIndice() {
   localStorage.setItem(LS, JSON.stringify(indice));
@@ -39,10 +53,16 @@ export async function verifica() {
   const presenti = new Set((await c.keys()).map((r) => decodeURIComponent(r.url.split("/audio/").pop())));
   let cambiato = false;
   for (const id of Object.keys(indice)) {
-    if (!presenti.has(id)) { delete indice[id]; cambiato = true; }
+    if (!presenti.has(id)) {
+      delete indice[id];
+      cambiato = true;
+    }
   }
   for (const id of presenti) {
-    if (!indice[id]) { indice[id] = [0, ""]; cambiato = true; }
+    if (!indice[id]) {
+      indice[id] = [0, ""];
+      cambiato = true;
+    }
   }
   if (cambiato) salvaIndice();
   return ids();

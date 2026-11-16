@@ -79,13 +79,20 @@ function mescolaDeterministico(elenco, seme) {
 
 function ordina(elenco, ordine, seme) {
   switch (ordine) {
-    case "casuale": return mescolaDeterministico(elenco, seme);
-    case "bpm-su": return elenco.slice().sort((a, b) => (a.b ?? Infinity) - (b.b ?? Infinity));
-    case "bpm-giu": return elenco.slice().sort((a, b) => (b.b ?? -Infinity) - (a.b ?? -Infinity));
-    case "armonico": return percorsoArmonico(elenco);
-    case "recenti": return elenco.slice().sort((a, b) => (b.q || "").localeCompare(a.q || ""));
-    case "artista": return elenco.slice().sort((a, b) => a._normA.localeCompare(b._normA) || a._normT.localeCompare(b._normT));
-    default: return elenco.slice().sort((a, b) => a._normA.localeCompare(b._normA) || a._normT.localeCompare(b._normT));
+    case "casuale":
+      return mescolaDeterministico(elenco, seme);
+    case "bpm-su":
+      return elenco.slice().sort((a, b) => (a.b ?? Infinity) - (b.b ?? Infinity));
+    case "bpm-giu":
+      return elenco.slice().sort((a, b) => (b.b ?? -Infinity) - (a.b ?? -Infinity));
+    case "armonico":
+      return percorsoArmonico(elenco);
+    case "recenti":
+      return elenco.slice().sort((a, b) => (b.q || "").localeCompare(a.q || ""));
+    case "artista":
+      return elenco.slice().sort((a, b) => a._normA.localeCompare(b._normA) || a._normT.localeCompare(b._normT));
+    default:
+      return elenco.slice().sort((a, b) => a._normA.localeCompare(b._normA) || a._normT.localeCompare(b._normT));
   }
 }
 
@@ -101,7 +108,8 @@ export function rimappaPlaylist(p, rinominati = {}) {
   const nuovi = (ids) => [...new Set(ids.map((id) => rinominati[id] || id))];
   let r = p;
   if (p.brani?.some((id) => rinominati[id])) r = { ...r, brani: nuovi(p.brani) };
-  if (p.regole?.escludiBrani?.some((id) => rinominati[id])) r = { ...r, regole: { ...p.regole, escludiBrani: nuovi(p.regole.escludiBrani) } };
+  if (p.regole?.escludiBrani?.some((id) => rinominati[id]))
+    r = { ...r, regole: { ...p.regole, escludiBrani: nuovi(p.regole.escludiBrani) } };
   return r;
 }
 

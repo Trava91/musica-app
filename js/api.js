@@ -15,7 +15,7 @@ export class ApiError extends Error {
     this.name = "ApiError";
     this.status = status;
     this.conflict = conflict; // sha stale → il chiamante fa retry
-    this.kind = kind;         // "auth" | "notfound" | "conflict" | "network" | "generic"
+    this.kind = kind; // "auth" | "notfound" | "conflict" | "network" | "generic"
   }
 }
 
@@ -43,8 +43,8 @@ export class GitHubApi {
 
   _headers(extra = {}) {
     return {
-      "Authorization": `Bearer ${this.token}`,
-      "Accept": "application/vnd.github+json",
+      Authorization: `Bearer ${this.token}`,
+      Accept: "application/vnd.github+json",
       "X-GitHub-Api-Version": "2022-11-28",
       ...extra,
     };
@@ -56,10 +56,15 @@ export class GitHubApi {
 
   async _toError(resp, fallback) {
     let detail = "";
-    try { detail = (await resp.json())?.message || ""; } catch { /* corpo non-JSON */ }
+    try {
+      detail = (await resp.json())?.message || "";
+    } catch {
+      /* corpo non-JSON */
+    }
     const msg = detail ? `${fallback}: ${detail}` : fallback;
     if (resp.status === 401) return new ApiError("Token errato o scaduto.", { status: 401, kind: "auth" });
-    if (resp.status === 403) return new ApiError("Accesso negato (permessi del token?).", { status: 403, kind: "auth" });
+    if (resp.status === 403)
+      return new ApiError("Accesso negato (permessi del token?).", { status: 403, kind: "auth" });
     if (resp.status === 404) return new ApiError("Repo o file non trovato.", { status: 404, kind: "notfound" });
     if (resp.status === 409 || resp.status === 412) {
       return new ApiError("Conflitto: il file è cambiato.", { status: resp.status, conflict: true, kind: "conflict" });
@@ -72,7 +77,8 @@ export class GitHubApi {
     let resp;
     try {
       resp = await fetch(`${this._contentsUrl(path)}?ref=${encodeURIComponent(this.branch)}`, {
-        headers: this._headers(), cache: "no-store",
+        headers: this._headers(),
+        cache: "no-store",
       });
     } catch {
       throw new ApiError("Rete assente.", { kind: "network" });
@@ -88,7 +94,8 @@ export class GitHubApi {
     let resp;
     try {
       resp = await fetch(`${this._contentsUrl(path)}?ref=${encodeURIComponent(this.branch)}`, {
-        headers: this._headers(), cache: "no-store",
+        headers: this._headers(),
+        cache: "no-store",
       });
     } catch {
       throw new ApiError("Rete assente.", { kind: "network" });
@@ -105,7 +112,8 @@ export class GitHubApi {
     let resp;
     try {
       resp = await fetch(`${this._contentsUrl(path)}?ref=${encodeURIComponent(this.branch)}&grezzo=${Date.now()}`, {
-        headers: this._headers({ "Accept": "application/vnd.github.raw+json" }), cache: "no-store",
+        headers: this._headers({ Accept: "application/vnd.github.raw+json" }),
+        cache: "no-store",
       });
     } catch {
       throw new ApiError("Rete assente.", { kind: "network" });

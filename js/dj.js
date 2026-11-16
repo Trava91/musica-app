@@ -22,14 +22,15 @@ function distanzaCiclica(a, b) {
 // Quanto due tonalità Camelot vanno bene in sequenza: 3 uguale, 2 adiacente o
 // relativa (maggiore/minore), 1 "+2" o diagonale, 0 altrimenti (o dati mancanti).
 export function livelloChiave(a, b) {
-  const ca = camelot(a), cb = camelot(b);
+  const ca = camelot(a),
+    cb = camelot(b);
   if (!ca || !cb) return 0;
   if (ca.n === cb.n && ca.l === cb.l) return 3;
   const dist = distanzaCiclica(ca.n, cb.n);
-  if (ca.l === cb.l && dist === 1) return 2;      // adiacente
-  if (ca.n === cb.n && ca.l !== cb.l) return 2;    // relativa
-  if (ca.l === cb.l && dist === 2) return 1;       // +2
-  if (ca.l !== cb.l && dist === 1) return 1;       // diagonale
+  if (ca.l === cb.l && dist === 1) return 2; // adiacente
+  if (ca.n === cb.n && ca.l !== cb.l) return 2; // relativa
+  if (ca.l === cb.l && dist === 2) return 1; // +2
+  if (ca.l !== cb.l && dist === 1) return 1; // diagonale
   return 0;
 }
 
@@ -69,9 +70,8 @@ export function percorsoArmonico(brani, { inizio } = {}) {
   if (!conDati.length) return senzaDati;
 
   const rimasti = new Set(conDati);
-  let corrente = inizio && rimasti.has(inizio)
-    ? inizio
-    : conDati.reduce((min, b) => (b.b < min.b ? b : min), conDati[0]);
+  let corrente =
+    inizio && rimasti.has(inizio) ? inizio : conDati.reduce((min, b) => (b.b < min.b ? b : min), conDati[0]);
   rimasti.delete(corrente);
   const percorso = [corrente];
 
@@ -83,12 +83,20 @@ export function percorsoArmonico(brani, { inizio } = {}) {
       const livello = livelloChiave(corrente.c, cand.c);
       if (scarto > TOLLERANZA_BPM || livello < 1) continue;
       const bonusSalita = cand.b >= corrente.b ? 0.05 : 0;
-      const p = 0.5 * (livello / 3) + 0.4 * (1 - scarto / TOLLERANZA_BPM + bonusSalita) + 0.1 * energiaVerso(corrente.e, cand.e);
-      if (p > migliorPunteggio) { migliorPunteggio = p; migliore = cand; }
+      const p =
+        0.5 * (livello / 3) +
+        0.4 * (1 - scarto / TOLLERANZA_BPM + bonusSalita) +
+        0.1 * energiaVerso(corrente.e, cand.e);
+      if (p > migliorPunteggio) {
+        migliorPunteggio = p;
+        migliore = cand;
+      }
     }
     if (!migliore) {
       // Nessuno è compatibile: si riparte dal più vicino per BPM, anche se il salto è brusco.
-      migliore = [...rimasti].reduce((best, cand) => (Math.abs(cand.b - corrente.b) < Math.abs(best.b - corrente.b) ? cand : best));
+      migliore = [...rimasti].reduce((best, cand) =>
+        Math.abs(cand.b - corrente.b) < Math.abs(best.b - corrente.b) ? cand : best,
+      );
     }
     percorso.push(migliore);
     rimasti.delete(migliore);

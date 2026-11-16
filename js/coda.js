@@ -13,7 +13,7 @@ function mulberry32(seme) {
 }
 
 function mescola(elenco, seme) {
-  const rand = mulberry32(seme ?? (Date.now() >>> 0));
+  const rand = mulberry32(seme ?? Date.now() >>> 0);
   const a = elenco.slice();
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1));

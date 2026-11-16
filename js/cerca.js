@@ -9,7 +9,8 @@
 
 export function normalizza(s) {
   return (s || "")
-    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
     .replace(/&/g, " and ")
     .replace(/[^a-z0-9]+/g, " ")
@@ -94,7 +95,7 @@ function comparatore(ordine) {
   switch (ordine) {
     case "artista":
       // I brani senza artista (titoli ancora da sistemare nel catalogo) vanno in fondo.
-      return (a, b) => (!a._normA - !b._normA) || a._normA.localeCompare(b._normA) || a._normT.localeCompare(b._normT);
+      return (a, b) => !a._normA - !b._normA || a._normA.localeCompare(b._normA) || a._normT.localeCompare(b._normT);
     case "recenti":
       return (a, b) => (b.q || "").localeCompare(a.q || "");
     case "bpm":

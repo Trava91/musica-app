@@ -28,7 +28,8 @@ export function tastoPrincipale({ motore, selezionato, inCorso, stato }) {
   if (!selezionato) return { azione: "nessuna", icona: "play", etichetta: "" };
   if (motore === "file") {
     if (selezionato === inCorso && stato === "suona") return { azione: "pausa", icona: "pausa", etichetta: "Pausa" };
-    if (selezionato === inCorso && stato === "pausa") return { azione: "riprendi", icona: "play", etichetta: "Riprendi" };
+    if (selezionato === inCorso && stato === "pausa")
+      return { azione: "riprendi", icona: "play", etichetta: "Riprendi" };
     return { azione: "suona", icona: "play", etichetta: inCorso && stato === "suona" ? "Suona questo" : "Suona" };
   }
   if (ESTERNI[motore]) return { azione: "apri", icona: "play", etichetta: ESTERNI[motore] };

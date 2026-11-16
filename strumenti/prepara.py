@@ -169,6 +169,7 @@ def query(brano: dict) -> str:
 
 # ------------------------------------------------------------------- utilità --
 
+
 def leggi_json(p: Path, vuoto):
     try:
         return json.loads(p.read_text(encoding="utf-8"))
@@ -209,9 +210,11 @@ def descr(b: dict) -> str:
 
 # ---------------------------------------------------------------- procurare --
 
+
 def prepara_rete():
     """yt-dlp e ytmusicapi, col truststore di Windows (l'antivirus ispeziona il TLS)."""
     import truststore
+
     truststore.inject_into_ssl()
 
 
@@ -219,8 +222,11 @@ def durata_file(f: Path) -> float | None:
     """Durata vera del file audio (ffprobe), None se non si può sapere."""
     if not shutil.which("ffprobe"):
         return None
-    r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", str(f)],
-                       capture_output=True, text=True)
+    r = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", str(f)],
+        capture_output=True,
+        text=True,
+    )
     try:
         return float(r.stdout.strip())
     except ValueError:
@@ -242,13 +248,17 @@ def scarica_yt_dlp(url: str, id_brano: str, durata_attesa: float | None = None) 
     """Scarica l'audio di `url` come <id>.<ext>. Se il brano aveva già un file
     (per es. un vecchio .m4a), lo sostituisce solo a scaricamento riuscito."""
     import yt_dlp
+
     da_youtube = "youtube.com" in url or "youtu.be" in url
     prima = file_del_brano(id_brano)
     opzioni = {
         "format": FORMATO_YOUTUBE if da_youtube else FORMATO_ALTRI,
         "outtmpl": str(AUDIO / f"{id_brano}.%(ext)s"),
-        "quiet": True, "no_warnings": True, "noprogress": True,
-        "retries": 3, "fragment_retries": 3,
+        "quiet": True,
+        "no_warnings": True,
+        "noprogress": True,
+        "retries": 3,
+        "fragment_retries": 3,
         "js_runtimes": {"node": {}},
     }
     # YouTube ogni tanto risponde 403 a caso: un secondo tentativo dopo una pausa
@@ -284,11 +294,16 @@ def scarica_yt_dlp(url: str, id_brano: str, durata_attesa: float | None = None) 
 def cerca_su_youtube_music(brano: dict, ytm) -> dict | None:
     for filtro in ("songs", "videos"):
         risultati = ytm.search(query(brano), filter=filtro, limit=8)
-        candidati = [{
-            "videoId": r.get("videoId"), "title": r.get("title"),
-            "artists": [a["name"] for a in r.get("artists") or []],
-            "duration_seconds": r.get("duration_seconds"),
-        } for r in risultati if r.get("videoId")]
+        candidati = [
+            {
+                "videoId": r.get("videoId"),
+                "title": r.get("title"),
+                "artists": [a["name"] for a in r.get("artists") or []],
+                "duration_seconds": r.get("duration_seconds"),
+            }
+            for r in risultati
+            if r.get("videoId")
+        ]
         scelta = scegli(brano, candidati)
         if scelta:
             c, p = scelta
@@ -309,14 +324,19 @@ def procura(brano: dict, abbinamenti: dict, ytm_fn) -> str:
     # YouTube e SoundCloud: il link del catalogo. Se il video è sparito, vietato
     # ai minori o protetto da DRM (alcuni brani SoundCloud), si ripiega sulla ricerca su YouTube Music come per Spotify.
     errore = None
-    for cod, url, nome in (("yt", f"https://www.youtube.com/watch?v={fonti.get('yt')}", "YouTube"), ("sc", fonti.get("sc"), "SoundCloud")):
+    for cod, url, nome in (
+        ("yt", f"https://www.youtube.com/watch?v={fonti.get('yt')}", "YouTube"),
+        ("sc", fonti.get("sc"), "SoundCloud"),
+    ):
         if cod in fonti:
             try:
                 scarica_yt_dlp(url, brano["id"], brano.get("d"))
                 return nome
             except Exception as e:
                 errore = e
-    if errore and not re.search(r"unavailable|confirm your age|removed|private|not available|anteprima|DRM", str(errore), re.I):
+    if errore and not re.search(
+        r"unavailable|confirm your age|removed|private|not available|anteprima|DRM", str(errore), re.I
+    ):
         raise errore
     # Solo Spotify (o link sparito): lo cerco su YouTube Music.
     ab = abbinamenti.get(brano["id"])
@@ -350,17 +370,23 @@ def da_rifare_in_opus(brano: dict, registro: dict, abbinamenti: dict) -> bool:
     sola: se YouTube non ha l'Opus di quel video ridà l'm4a, e il registro lo
     ricorda (opus_cercato) per non riscaricarlo a ogni giro."""
     f = file_audio(brano["id"])
-    return (bool(f) and f.suffix.lower() == ".m4a" and origine(brano, registro, abbinamenti).startswith("YouTube")
-            and not registro.get(brano["id"], {}).get("opus_cercato"))
+    return (
+        bool(f)
+        and f.suffix.lower() == ".m4a"
+        and origine(brano, registro, abbinamenti).startswith("YouTube")
+        and not registro.get(brano["id"], {}).get("opus_cercato")
+    )
 
 
 # ------------------------------------------------------------- durante un giro --
+
 
 def tieni_sveglio() -> None:
     """Chiede a Windows di non andare in standby finché questo programma gira
     (lo schermo può spegnersi). La richiesta muore col processo: niente da chiudere."""
     try:
         import ctypes
+
         ctypes.windll.kernel32.SetThreadExecutionState(0x80000000 | 0x00000001)  # ES_CONTINUOUS | ES_SYSTEM_REQUIRED
     except Exception:
         pass  # non Windows: niente da fare
@@ -421,14 +447,18 @@ def manutenzione(a, brani: dict, macro: list[str], registro: dict, abbinamenti: 
         for vecchio, nuovo in esito["riagganciati"][:20]:
             print(f"  {vecchio} → {nuovo}  {descr(brani[nuovo])}")
         spostati = len(esito["orfani"]) + len(esito["doppioni"])
-        print(f"Spostati in audio/_orfani/: {spostati} file ({esito['mb_orfani']:.0f} MB) — "
-              f"{len(esito['orfani'])} senza più un brano, {len(esito['doppioni'])} doppioni di brani uniti. "
-              "Non ho cancellato niente: la cancellazione la decidi tu.")
+        print(
+            f"Spostati in audio/_orfani/: {spostati} file ({esito['mb_orfani']:.0f} MB) — "
+            f"{len(esito['orfani'])} senza più un brano, {len(esito['doppioni'])} doppioni di brani uniti. "
+            "Non ho cancellato niente: la cancellazione la decidi tu."
+        )
     if a.riallinea or a.metadati:
         esito = A.aggiorna_metadati(AUDIO, brani, macro, registro, forza=a.forza)
-        print(f"Metadati: {esito['aggiornati']} riscritti, {esito['a_posto']} già a posto"
-              + (f", {esito['non_supportati']} in formati senza metadati" if esito["non_supportati"] else "")
-              + (f", {esito['senza_brano']} senza brano (usa --riallinea)" if esito["senza_brano"] else ""))
+        print(
+            f"Metadati: {esito['aggiornati']} riscritti, {esito['a_posto']} già a posto"
+            + (f", {esito['non_supportati']} in formati senza metadati" if esito["non_supportati"] else "")
+            + (f", {esito['senza_brano']} senza brano (usa --riallinea)" if esito["senza_brano"] else "")
+        )
         for i, errore in esito["errori"][:10]:
             print(f"  errore su {i}: {errore}")
     finisci_giro(brani, macro, registro)
@@ -445,6 +475,7 @@ def archivio_in_ordine(tutti: list[dict], playlist: list[dict]) -> list[str]:
     def priorita(b):
         cod = {s[0] for s in b["s"]}
         return (0 if b["id"] in in_playlist else 1, 0 if cod & {"lo", "yt", "sc"} else 1)
+
     return [b["id"] for b in sorted(scelti, key=priorita)]
 
 
@@ -456,14 +487,17 @@ def tutti_per_telefono(tutti: list[dict], macro: list[str], playlist: list[dict]
     """I brani scelti da tenere sul telefono senza passare da una playlist:
     quelli dell'archivio (niente set), tranne i generi in GENERI_SOLO_PC."""
     per_id = {b["id"]: b for b in tutti}
+
     def fuori(b):
         if any(cod == "lo" and rif.startswith("locali/techno-house/") for cod, rif in b["s"]):
             return True  # la cassa dei DJ set, anche se il genere manca
         return b.get("g") is not None and macro[b["g"]] in GENERI_SOLO_PC
+
     return [i for i in archivio_in_ordine(tutti, playlist) if not fuori(per_id[i])]
 
 
 # --------------------------------------------------------------------- main --
+
 
 def main() -> int:
     for flusso in (sys.stdout, sys.stderr):
@@ -477,12 +511,21 @@ def main() -> int:
     ap.add_argument("--reinvia", action="store_true", help="ricopia sul telefono anche i file già inviati")
     ap.add_argument("--pulisci", action="store_true", help="svuota Download/Jukebox sul telefono e basta")
     ap.add_argument("--archivio", action="store_true", help="tutti i brani scelti del catalogo, solo sul PC")
-    ap.add_argument("--tutti", action="store_true", help="tutti i brani scelti tranne la tech house, anche sul telefono (senza playlist)")
-    ap.add_argument("--minuti",type=float, default=0, help="ferma il giro dopo circa N minuti")
+    ap.add_argument(
+        "--tutti",
+        action="store_true",
+        help="tutti i brani scelti tranne la tech house, anche sul telefono (senza playlist)",
+    )
+    ap.add_argument("--minuti", type=float, default=0, help="ferma il giro dopo circa N minuti")
     ap.add_argument("--riprova", action="store_true", help="ricerca anche i brani già cercati e non trovati")
     ap.add_argument("--metadati", action="store_true", help="riscrive i metadati dei file che li hanno vecchi")
     ap.add_argument("--forza", action="store_true", help="con --metadati: riscrive i metadati di tutti i file")
-    ap.add_argument("--riallinea", "--orfani", action="store_true", help="riaggancia i file agli id nuovi, sposta gli orfani in _orfani/")
+    ap.add_argument(
+        "--riallinea",
+        "--orfani",
+        action="store_true",
+        help="riaggancia i file agli id nuovi, sposta gli orfani in _orfani/",
+    )
     ap.add_argument("--indice", action="store_true", help="rigenera solo indice e collegamenti")
     a = ap.parse_args()
 
@@ -524,8 +567,13 @@ def lavora(a, adb) -> int:
     if not (DATI / "playlist.json").exists():
         print("Nessuna playlist salvata nel repo dati.")
         return 1
-    uscita = subprocess.run(["node", str(APP / "strumenti" / "valuta.mjs"), str(DATI / "catalogo.json"), str(DATI / "playlist.json")],
-                            capture_output=True, text=True, encoding="utf-8", check=True).stdout
+    uscita = subprocess.run(
+        ["node", str(APP / "strumenti" / "valuta.mjs"), str(DATI / "catalogo.json"), str(DATI / "playlist.json")],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=True,
+    ).stdout
     playlist = json.loads(uscita)
 
     if a.archivio:
@@ -566,16 +614,22 @@ def lavora(a, adb) -> int:
         pronti = [i for i in ids if file_audio(i)]
         gb = sum(file_audio(i).stat().st_size for i in pronti) / 1073741824
         print(f"Archivio sul PC: {len(pronti)} di {len(ids)} brani scelti ({gb:.1f} GB)")
-        print(f"Da procurare: {len(mancanti)} (circa {durata_min / 1024:.1f} GB), di cui {len(rifare)} da rifare in Opus · già cercati e non trovati: {len(introvabili)}")
+        print(
+            f"Da procurare: {len(mancanti)} (circa {durata_min / 1024:.1f} GB), di cui {len(rifare)} da rifare in Opus · già cercati e non trovati: {len(introvabili)}"
+        )
         if mancanti:
-            print(f"A circa 5 brani al minuto: {len(mancanti) / 5 / 60:.0f} ore di scaricamento, cioè {len(mancanti) / 150:.0f} giri da 30 minuti")
+            print(
+                f"A circa 5 brani al minuto: {len(mancanti) / 5 / 60:.0f} ore di scaricamento, cioè {len(mancanti) / 150:.0f} giri da 30 minuti"
+            )
     else:
         print(f"Playlist: {', '.join(p['nome'] for p in scelte) or 'tutti i brani scelti tranne la tech house'}")
-        print(f"Brani: {len(ids)} · già pronti sul PC: {len(ids) - len(mancanti) - len(introvabili)} · da procurare: {len(mancanti)} (circa {durata_min:.0f} MB), di cui {len(rifare)} da rifare in Opus")
+        print(
+            f"Brani: {len(ids)} · già pronti sul PC: {len(ids) - len(mancanti) - len(introvabili)} · da procurare: {len(mancanti)} (circa {durata_min:.0f} MB), di cui {len(rifare)} da rifare in Opus"
+        )
     if a.prova:
         return 0
     if a.max:
-        mancanti = mancanti[:a.max]
+        mancanti = mancanti[: a.max]
     if a.solo_invio:
         mancanti = []
 
@@ -587,6 +641,7 @@ def lavora(a, adb) -> int:
         nonlocal ytm
         if ytm is None:
             from ytmusicapi import YTMusic
+
             ytm = YTMusic()
         return ytm
 
@@ -598,7 +653,9 @@ def lavora(a, adb) -> int:
     rifiuti_di_fila = 0  # "conferma di non essere un bot": YouTube ci ha fermati per troppi scaricamenti
     for n, i in enumerate(mancanti, 1):
         if a.minuti and time.time() - inizio > a.minuti * 60:
-            print(f"\nTempo scaduto ({a.minuti:.0f} minuti): mi fermo qui, il prossimo giro riparte da dove sono arrivato.")
+            print(
+                f"\nTempo scaduto ({a.minuti:.0f} minuti): mi fermo qui, il prossimo giro riparte da dove sono arrivato."
+            )
             break
         fatti = n
         b = brani[i]
@@ -639,13 +696,22 @@ def lavora(a, adb) -> int:
         gb = sum(file_audio(i).stat().st_size for i in pronti) / 1073741824
         print(f"\nGiro finito: {fatti - len(falliti)} brani scaricati in {(time.time() - inizio) / 60:.0f} minuti.")
         print(f"Archivio sul PC: {len(pronti)} di {len(ids)} brani scelti ({gb:.1f} GB).")
-        annota_giro({
-            "inizio": inizio_iso, "fine": A.adesso(), "minuti": round((time.time() - inizio) / 60),
-            "scaricati": fatti - len(falliti), "falliti": len(falliti),
-            "anti_bot": sum("not a bot" in m for _, m in falliti), "errori_403": sum("403" in m for _, m in falliti),
-            "rete": sum("Unable to download API page" in m or "HTTPSConnection" in m for _, m in falliti),
-            "fermato_anti_bot": fermato_anti_bot, "archivio": len(pronti), "totale": len(ids), "gb": round(gb, 1),
-        })
+        annota_giro(
+            {
+                "inizio": inizio_iso,
+                "fine": A.adesso(),
+                "minuti": round((time.time() - inizio) / 60),
+                "scaricati": fatti - len(falliti),
+                "falliti": len(falliti),
+                "anti_bot": sum("not a bot" in m for _, m in falliti),
+                "errori_403": sum("403" in m for _, m in falliti),
+                "rete": sum("Unable to download API page" in m or "HTTPSConnection" in m for _, m in falliti),
+                "fermato_anti_bot": fermato_anti_bot,
+                "archivio": len(pronti),
+                "totale": len(ids),
+                "gb": round(gb, 1),
+            }
+        )
     if falliti:
         print(f"\nNon procurati ({len(falliti)}): restano suonabili con Spotify/NewPipe.")
         anti_bot = sum("not a bot" in m for _, m in falliti)
@@ -653,9 +719,13 @@ def lavora(a, adb) -> int:
             if "not a bot" not in motivo:
                 print(f"  - {descr(b)}: {motivo}")
         if anti_bot:
-            print(f"  - {anti_bot} fermati dal controllo anti-bot di YouTube: si riprovano al prossimo giro, fra qualche ora")
+            print(
+                f"  - {anti_bot} fermati dal controllo anti-bot di YouTube: si riprovano al prossimo giro, fra qualche ora"
+            )
         if any("403" in m for _, m in falliti):
-            print('  Errore 403: YouTube è cambiato o fa i capricci. Aggiorna yt-dlp e rilancia (riprende da dove era):')
+            print(
+                "  Errore 403: YouTube è cambiato o fa i capricci. Aggiorna yt-dlp e rilancia (riprende da dove era):"
+            )
             print('  python -m pip install -U "yt-dlp[default]"')
 
     finisci_giro(brani, macro, registro)
@@ -666,25 +736,41 @@ def lavora(a, adb) -> int:
         print("\nTelefono non collegato: i file sono pronti sul PC. Collegalo (debug USB) e rilancia per copiarli.")
         return 0
     inviati = leggi_json(INVIATI, {})
-    da_inviare = [f for i in ids if (f := file_audio(i))
-                  and (a.reinvia or inviati.get(i) != registro.get(i, {}).get("scaricato"))]
+    da_inviare = [
+        f for i in ids if (f := file_audio(i)) and (a.reinvia or inviati.get(i) != registro.get(i, {}).get("scaricato"))
+    ]
     if not da_inviare:
         print("\nSul telefono non c'è niente di nuovo da copiare.")
         return 0
     subprocess.run([adb, "shell", "mkdir", "-p", CARTELLA_TELEFONO], check=True)
     for k in range(0, len(da_inviare), 40):
-        blocco = da_inviare[k:k + 40]
+        blocco = da_inviare[k : k + 40]
         subprocess.run([adb, "push", *map(str, blocco), CARTELLA_TELEFONO], check=True, capture_output=True)
         for f in blocco:
             inviati[f.stem] = registro.get(f.stem, {}).get("scaricato", "")
         scrivi_json(INVIATI, inviati)
         print(f"Copiati sul telefono: {min(k + 40, len(da_inviare))} di {len(da_inviare)}")
     # Fa comparire subito i file nel selettore di Android.
-    subprocess.run([adb, "shell", "content", "call", "--uri", "content://media/", "--method", "scan_volume", "--arg", "external_primary"],
-                   capture_output=True)
+    subprocess.run(
+        [
+            adb,
+            "shell",
+            "content",
+            "call",
+            "--uri",
+            "content://media/",
+            "--method",
+            "scan_volume",
+            "--arg",
+            "external_primary",
+        ],
+        capture_output=True,
+    )
     mb = sum(f.stat().st_size for f in da_inviare) / 1048576
     print(f"\nFatto: {len(da_inviare)} file ({mb:.0f} MB) in Download/Jukebox.")
-    print("Nel Jukebox: Altro → Musica sul telefono → Aggiungi file dal telefono → apri Download/Jukebox → Seleziona tutto.")
+    print(
+        "Nel Jukebox: Altro → Musica sul telefono → Aggiungi file dal telefono → apri Download/Jukebox → Seleziona tutto."
+    )
     return 0
 
 

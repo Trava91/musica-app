@@ -24,15 +24,27 @@ const fixture = JSON.parse(readFileSync(join(__dirname, "fixture.json"), "utf-8"
 cerca.preparaIndice(fixture.brani, fixture.raccolte);
 const brani = fixture.brani;
 
-let pass = 0, fail = 0;
+let pass = 0,
+  fail = 0;
 function eq(name, got, exp) {
-  const g = JSON.stringify(got), e = JSON.stringify(exp);
-  if (g === e) { pass++; console.log(`✓ ${name}`); }
-  else { fail++; console.error(`✗ ${name}\n   atteso: ${e}\n   avuto:  ${g}`); }
+  const g = JSON.stringify(got),
+    e = JSON.stringify(exp);
+  if (g === e) {
+    pass++;
+    console.log(`✓ ${name}`);
+  } else {
+    fail++;
+    console.error(`✗ ${name}\n   atteso: ${e}\n   avuto:  ${g}`);
+  }
 }
 function ok(name, cond) {
-  if (cond) { pass++; console.log(`✓ ${name}`); }
-  else { fail++; console.error(`✗ ${name} — condizione falsa`); }
+  if (cond) {
+    pass++;
+    console.log(`✓ ${name}`);
+  } else {
+    fail++;
+    console.error(`✗ ${name} — condizione falsa`);
+  }
 }
 
 // ============================================================ cerca.js =====
@@ -41,65 +53,116 @@ eq("normalizza: accenti", cerca.normalizza("Ünïcode Tëst"), "unicode test");
 eq("normalizza: e commerciale", cerca.normalizza("Rock & Roll"), "rock and roll");
 eq("normalizza: punteggiatura", cerca.normalizza("Prova, Uno! (Remix)"), "prova uno remix");
 
-eq("cerca: query multi-parola per prefisso su artista",
-  cerca.cerca(brani, "dj test", undefined, "rilevanza").map((b) => b.id).sort(),
-  ["f01", "f02", "f03"].sort());
+eq(
+  "cerca: query multi-parola per prefisso su artista",
+  cerca
+    .cerca(brani, "dj test", undefined, "rilevanza")
+    .map((b) => b.id)
+    .sort(),
+  ["f01", "f02", "f03"].sort(),
+);
 
-eq("cerca: artista esatto > prefisso in titolo > solo nell'indice",
+eq(
+  "cerca: artista esatto > prefisso in titolo > solo nell'indice",
   cerca.cerca(brani, "esempio completo", undefined, "rilevanza").map((b) => b.id),
-  ["f11", "f13", "f12"]);
+  ["f11", "f13", "f12"],
+);
 
 ok("cerca: tipo default esclude i set", !cerca.cerca(brani, "", {}, "artista").some((b) => b.id === "f06"));
-eq("cerca: tipo 'set' include solo i set", cerca.cerca(brani, "", { tipo: "set" }, "artista").map((b) => b.id), ["f06"]);
+eq(
+  "cerca: tipo 'set' include solo i set",
+  cerca.cerca(brani, "", { tipo: "set" }, "artista").map((b) => b.id),
+  ["f06"],
+);
 
-ok("cerca: soloScelti di default esclude l'esplorazione", !cerca.cerca(brani, "", {}, "artista").some((b) => b.id === "f08"));
-ok("cerca: soloScelti:false include l'esplorazione", cerca.cerca(brani, "", { soloScelti: false }, "artista").some((b) => b.id === "f08"));
+ok(
+  "cerca: soloScelti di default esclude l'esplorazione",
+  !cerca.cerca(brani, "", {}, "artista").some((b) => b.id === "f08"),
+);
+ok(
+  "cerca: soloScelti:false include l'esplorazione",
+  cerca.cerca(brani, "", { soloScelti: false }, "artista").some((b) => b.id === "f08"),
+);
 
-eq("cerca: filtro BPM 120-130",
-  cerca.cerca(brani, "", { bpm: [120, 130] }, "bpm").map((b) => b.id).sort(),
-  ["f01", "f02", "f03", "f07", "f10", "f19", "f24"].sort());
+eq(
+  "cerca: filtro BPM 120-130",
+  cerca
+    .cerca(brani, "", { bpm: [120, 130] }, "bpm")
+    .map((b) => b.id)
+    .sort(),
+  ["f01", "f02", "f03", "f07", "f10", "f19", "f24"].sort(),
+);
 
-eq("cerca: filtro macro Tech house esclude l'esplorazione",
-  cerca.cerca(brani, "", { macro: [0] }, "artista").map((b) => b.id).sort(),
-  ["f01", "f02", "f03"].sort());
+eq(
+  "cerca: filtro macro Tech house esclude l'esplorazione",
+  cerca
+    .cerca(brani, "", { macro: [0] }, "artista")
+    .map((b) => b.id)
+    .sort(),
+  ["f01", "f02", "f03"].sort(),
+);
 
-eq("perArtista: originali prima dei remix, poi alfabetico",
+eq(
+  "perArtista: originali prima dei remix, poi alfabetico",
   cerca.perArtista(brani, cerca.normalizza("DJ Testino")).map((b) => b.id),
-  ["f03", "f01", "f02"]);
+  ["f03", "f01", "f02"],
+);
 
 eq("conteggiMacro: Tech house esclude l'esplorazione di default", cerca.conteggiMacro(brani, {}).conteggi[0], 3);
 
 // ============================================================ regole.js ====
 
-eq("regole: AND tra campi, OR dentro macro",
-  regole.valuta({ tipo: "intelligente", regole: { macro: [0, 1], bpm: [120, 130] }, ordine: "artista" }, brani)
-    .map((b) => b.id).sort(),
-  ["f01", "f02", "f03", "f10", "f19", "f24"].sort());
+eq(
+  "regole: AND tra campi, OR dentro macro",
+  regole
+    .valuta({ tipo: "intelligente", regole: { macro: [0, 1], bpm: [120, 130] }, ordine: "artista" }, brani)
+    .map((b) => b.id)
+    .sort(),
+  ["f01", "f02", "f03", "f10", "f19", "f24"].sort(),
+);
 
-eq("regole: escludiArtisti",
-  regole.valuta({
-    tipo: "intelligente",
-    regole: { macro: [0, 1], bpm: [120, 130], escludiArtisti: [cerca.normalizza("DJ Testino")] },
-    ordine: "artista",
-  }, brani).map((b) => b.id).sort(),
-  ["f10", "f19", "f24"].sort());
+eq(
+  "regole: escludiArtisti",
+  regole
+    .valuta(
+      {
+        tipo: "intelligente",
+        regole: { macro: [0, 1], bpm: [120, 130], escludiArtisti: [cerca.normalizza("DJ Testino")] },
+        ordine: "artista",
+      },
+      brani,
+    )
+    .map((b) => b.id)
+    .sort(),
+  ["f10", "f19", "f24"].sort(),
+);
 
-eq("regole: filtro anno",
+eq(
+  "regole: filtro anno",
   regole.valuta({ tipo: "intelligente", regole: { anno: [1990, 2000] }, ordine: "artista" }, brani).map((b) => b.id),
-  ["f15"]);
+  ["f15"],
+);
 
-eq("regole: soloScelti:false include l'esplorazione",
-  regole.valuta({ tipo: "intelligente", regole: { macro: [0], soloScelti: false }, ordine: "artista" }, brani)
-    .map((b) => b.id).sort(),
-  ["f01", "f02", "f03", "f08"].sort());
+eq(
+  "regole: soloScelti:false include l'esplorazione",
+  regole
+    .valuta({ tipo: "intelligente", regole: { macro: [0], soloScelti: false }, ordine: "artista" }, brani)
+    .map((b) => b.id)
+    .sort(),
+  ["f01", "f02", "f03", "f08"].sort(),
+);
 
-eq("regole: soloSchermoSpento senza file né Premium esclude tutto",
-  regole.valuta({ tipo: "intelligente", regole: { soloSchermoSpento: true }, ordine: "artista" }, brani, {}).length, 0);
+eq(
+  "regole: soloSchermoSpento senza file né Premium esclude tutto",
+  regole.valuta({ tipo: "intelligente", regole: { soloSchermoSpento: true }, ordine: "artista" }, brani, {}).length,
+  0,
+);
 
 {
   const ctx = { fileIds: new Set(["f07"]), spotify: "premium" };
   const ris = new Set(
-    regole.valuta({ tipo: "intelligente", regole: { soloSchermoSpento: true }, ordine: "artista" }, brani, ctx)
+    regole
+      .valuta({ tipo: "intelligente", regole: { soloSchermoSpento: true }, ordine: "artista" }, brani, ctx)
       .map((b) => b.id),
   );
   ok("soloSchermoSpento: file abbinato incluso (f07)", ris.has("f07"));
@@ -108,24 +171,35 @@ eq("regole: soloSchermoSpento senza file né Premium esclude tutto",
   ok("soloSchermoSpento: l'esplorazione resta esclusa (f08)", !ris.has("f08"));
 }
 
-eq("regole: ordine armonico non perde brani",
-  regole.valuta({ tipo: "intelligente", regole: { macro: [0, 1], bpm: [120, 130] }, ordine: "armonico" }, brani)
-    .map((b) => b.id).sort(),
-  ["f01", "f02", "f03", "f10", "f19", "f24"].sort());
+eq(
+  "regole: ordine armonico non perde brani",
+  regole
+    .valuta({ tipo: "intelligente", regole: { macro: [0, 1], bpm: [120, 130] }, ordine: "armonico" }, brani)
+    .map((b) => b.id)
+    .sort(),
+  ["f01", "f02", "f03", "f10", "f19", "f24"].sort(),
+);
 
 {
   const pl = { tipo: "intelligente", regole: { macro: [0] }, ordine: "casuale", seme: 42 };
-  eq("regole: casuale con lo stesso seme dà lo stesso ordine",
+  eq(
+    "regole: casuale con lo stesso seme dà lo stesso ordine",
     regole.valuta(pl, brani).map((b) => b.id),
-    regole.valuta(pl, brani).map((b) => b.id));
+    regole.valuta(pl, brani).map((b) => b.id),
+  );
 }
 
-eq("regole: il limite tronca l'elenco",
-  regole.valuta({ tipo: "intelligente", regole: {}, ordine: "artista", limite: 2 }, brani).length, 2);
+eq(
+  "regole: il limite tronca l'elenco",
+  regole.valuta({ tipo: "intelligente", regole: {}, ordine: "artista", limite: 2 }, brani).length,
+  2,
+);
 
-eq("regole: playlist manuale mantiene l'ordine e ignora gli id mancanti",
+eq(
+  "regole: playlist manuale mantiene l'ordine e ignora gli id mancanti",
   regole.valuta({ tipo: "manuale", brani: ["f05", "f01", "id-inesistente"] }, brani).map((b) => b.id),
-  ["f05", "f01"]);
+  ["f05", "f01"],
+);
 
 // ================================================================ dj.js ====
 
@@ -152,21 +226,34 @@ ok("scartoBpm 128→136 oltre la soglia", dj.scartoBpm(128, 136) > dj.TOLLERANZA
     { id: "c6", _normA: "catena", _normT: "senza dati a" },
   ];
   const percorso = dj.percorsoArmonico(catena);
-  eq("percorsoArmonico: nessun brano perso", percorso.map((b) => b.id).sort(), ["c1", "c2", "c3", "c4", "c5", "c6"].sort());
+  eq(
+    "percorsoArmonico: nessun brano perso",
+    percorso.map((b) => b.id).sort(),
+    ["c1", "c2", "c3", "c4", "c5", "c6"].sort(),
+  );
 
   const conDati = percorso.filter((b) => b.b !== undefined);
   const senzaDati = percorso.filter((b) => b.b === undefined);
-  ok("percorsoArmonico: i brani con dati vengono prima di quelli senza",
-    Math.max(...conDati.map((b) => percorso.indexOf(b))) < Math.min(...senzaDati.map((b) => percorso.indexOf(b))));
+  ok(
+    "percorsoArmonico: i brani con dati vengono prima di quelli senza",
+    Math.max(...conDati.map((b) => percorso.indexOf(b))) < Math.min(...senzaDati.map((b) => percorso.indexOf(b))),
+  );
 
   let compatibili = true;
   for (let i = 1; i < conDati.length; i++) {
-    if (dj.scartoBpm(conDati[i - 1].b, conDati[i].b) > dj.TOLLERANZA_BPM || dj.livelloChiave(conDati[i - 1].c, conDati[i].c) < 1) {
+    if (
+      dj.scartoBpm(conDati[i - 1].b, conDati[i].b) > dj.TOLLERANZA_BPM ||
+      dj.livelloChiave(conDati[i - 1].c, conDati[i].c) < 1
+    ) {
       compatibili = false;
     }
   }
   ok("percorsoArmonico: passi consecutivi compatibili (dati costruiti apposta)", compatibili);
-  eq("percorsoArmonico: i brani senza dati vanno in coda in ordine alfabetico", senzaDati.map((b) => b.id), ["c6", "c5"]);
+  eq(
+    "percorsoArmonico: i brani senza dati vanno in coda in ordine alfabetico",
+    senzaDati.map((b) => b.id),
+    ["c6", "c5"],
+  );
 }
 
 // ============================================================ motori.js ====
@@ -175,20 +262,44 @@ ok("scartoBpm 128→136 oltre la soglia", dj.scartoBpm(128, 136) > dj.TOLLERANZA
   const bFile = { id: "m1", s: [["lo", "percorso/uno.mp3"]] };
   const bSp = { id: "m2", s: [["sp", "spX"]] };
   const bYt = { id: "m3", s: [["yt", "ytX"]] };
-  const bMulti = { id: "m4", s: [["sp", "spY"], ["yt", "ytY"]] };
+  const bMulti = {
+    id: "m4",
+    s: [
+      ["sp", "spY"],
+      ["yt", "ytY"],
+    ],
+  };
 
-  eq("motoreBrano: il file sul telefono vince su tutto",
-    motori.motoreBrano(bFile, { fileIds: new Set(["m1"]), spotify: "premium" }).motore, "file");
-  eq("motoreBrano: il file vale per id anche se il brano non era un file locale",
-    motori.motoreBrano(bSp, { fileIds: new Set(["m2"]) }).fonte, ["file", "m2"]);
-  eq("motoreBrano: con Premium suona da Spotify",
-    motori.motoreBrano(bMulti, { spotify: "premium" }).motore, "spotify-premium");
-  eq("motoreBrano: senza Premium, un brano solo YouTube va a NewPipe",
-    motori.motoreBrano(bYt, { spotify: "senza" }).motore, "newpipe");
-  eq("motoreBrano: senza Premium, un brano solo Spotify apre l'app gratis",
-    motori.motoreBrano(bSp, { spotify: "senza" }).motore, "spotify-app");
-  eq("motoreBrano: senza NewPipe, un brano YouTube va sul web",
-    motori.motoreBrano(bYt, { spotify: "senza", usaNewPipe: false }).motore, "web");
+  eq(
+    "motoreBrano: il file sul telefono vince su tutto",
+    motori.motoreBrano(bFile, { fileIds: new Set(["m1"]), spotify: "premium" }).motore,
+    "file",
+  );
+  eq(
+    "motoreBrano: il file vale per id anche se il brano non era un file locale",
+    motori.motoreBrano(bSp, { fileIds: new Set(["m2"]) }).fonte,
+    ["file", "m2"],
+  );
+  eq(
+    "motoreBrano: con Premium suona da Spotify",
+    motori.motoreBrano(bMulti, { spotify: "premium" }).motore,
+    "spotify-premium",
+  );
+  eq(
+    "motoreBrano: senza Premium, un brano solo YouTube va a NewPipe",
+    motori.motoreBrano(bYt, { spotify: "senza" }).motore,
+    "newpipe",
+  );
+  eq(
+    "motoreBrano: senza Premium, un brano solo Spotify apre l'app gratis",
+    motori.motoreBrano(bSp, { spotify: "senza" }).motore,
+    "spotify-app",
+  );
+  eq(
+    "motoreBrano: senza NewPipe, un brano YouTube va sul web",
+    motori.motoreBrano(bYt, { spotify: "senza", usaNewPipe: false }).motore,
+    "web",
+  );
 
   const piano = motori.pianoRiproduzione([bFile, bSp, bYt, bMulti], { fileIds: new Set(["m1"]), spotify: "senza" });
   const contaMotore = (m) => piano.gruppi.find((g) => g.motore === m)?.n || 0;
@@ -199,12 +310,18 @@ ok("scartoBpm 128→136 oltre la soglia", dj.scartoBpm(128, 136) > dj.TOLLERANZA
   eq("pianoRiproduzione: nessun brano escluso", piano.esclusi.length, 0);
 
   const solo = { fileIds: new Set(["m1"]), spotify: "premium", soloJukebox: true };
-  eq("motoreBrano: Solo Jukebox, il file suona",
-    motori.motoreBrano(bFile, solo).motore, "file");
-  eq("motoreBrano: Solo Jukebox, senza file nessun motore (niente app esterne)",
-    motori.motoreBrano(bMulti, solo).motore, null);
+  eq("motoreBrano: Solo Jukebox, il file suona", motori.motoreBrano(bFile, solo).motore, "file");
+  eq(
+    "motoreBrano: Solo Jukebox, senza file nessun motore (niente app esterne)",
+    motori.motoreBrano(bMulti, solo).motore,
+    null,
+  );
   const pianoSolo = motori.pianoRiproduzione([bFile, bSp, bYt, bMulti], solo);
-  eq("pianoRiproduzione: Solo Jukebox, solo il gruppo file", pianoSolo.gruppi.map((g) => g.motore), ["file"]);
+  eq(
+    "pianoRiproduzione: Solo Jukebox, solo il gruppo file",
+    pianoSolo.gruppi.map((g) => g.motore),
+    ["file"],
+  );
   eq("pianoRiproduzione: Solo Jukebox, gli altri sono esclusi", pianoSolo.esclusi.length, 3);
 }
 
@@ -223,7 +340,11 @@ ok("scartoBpm 128→136 oltre la soglia", dj.scartoBpm(128, 136) > dj.TOLLERANZA
 
 eq("urlWeb: spotify", link.urlWeb(["sp", "abc"]), "https://open.spotify.com/track/abc");
 eq("urlWeb: youtube", link.urlWeb(["yt", "xyz"]), "https://www.youtube.com/watch?v=xyz");
-eq("urlWeb: soundcloud è già un url completo", link.urlWeb(["sc", "https://soundcloud.com/a/b"]), "https://soundcloud.com/a/b");
+eq(
+  "urlWeb: soundcloud è già un url completo",
+  link.urlWeb(["sc", "https://soundcloud.com/a/b"]),
+  "https://soundcloud.com/a/b",
+);
 eq("urlWeb: un file locale non ha un indirizzo web", link.urlWeb(["lo", "percorso/x.mp3"]), null);
 
 {
@@ -231,14 +352,24 @@ eq("urlWeb: un file locale non ha un indirizzo web", link.urlWeb(["lo", "percors
   ok("cercaEsterno: beatport codifica gli spazi (%20, non spazi veri)", beat.includes("%20") && !beat.includes(" "));
 }
 
-ok("linkApertura: su Android NewPipe usa l'intent",
-  link.linkApertura("newpipe", ["yt", "xyz"], { android: true }).startsWith("intent://"));
-eq("linkApertura: sul PC NewPipe ripiega sul web",
-  link.linkApertura("newpipe", ["yt", "xyz"], { android: false }), "https://www.youtube.com/watch?v=xyz");
-ok("linkApertura: su Android l'app Spotify usa l'intent",
-  link.linkApertura("spotify-app", ["sp", "abc"], { android: true }).includes("package=com.spotify.music"));
-eq("linkApertura: sul PC Spotify ripiega sul web",
-  link.linkApertura("spotify-app", ["sp", "abc"], { android: false }), "https://open.spotify.com/track/abc");
+ok(
+  "linkApertura: su Android NewPipe usa l'intent",
+  link.linkApertura("newpipe", ["yt", "xyz"], { android: true }).startsWith("intent://"),
+);
+eq(
+  "linkApertura: sul PC NewPipe ripiega sul web",
+  link.linkApertura("newpipe", ["yt", "xyz"], { android: false }),
+  "https://www.youtube.com/watch?v=xyz",
+);
+ok(
+  "linkApertura: su Android l'app Spotify usa l'intent",
+  link.linkApertura("spotify-app", ["sp", "abc"], { android: true }).includes("package=com.spotify.music"),
+);
+eq(
+  "linkApertura: sul PC Spotify ripiega sul web",
+  link.linkApertura("spotify-app", ["sp", "abc"], { android: false }),
+  "https://open.spotify.com/track/abc",
+);
 eq("linkApertura: un file locale non ha un link", link.linkApertura("file", ["lo", "x.mp3"], { android: true }), null);
 
 // =============================================================== coda.js ===
@@ -266,10 +397,17 @@ eq("linkApertura: un file locale non ha un link", link.linkApertura("file", ["lo
 
   const codaA = new Coda(q, { casuale: true, seme: 7 });
   const codaB = new Coda(q, { casuale: true, seme: 7 });
-  eq("Coda: casuale con lo stesso seme dà lo stesso ordine",
-    codaA.ordine.map((b) => b.id), codaB.ordine.map((b) => b.id));
+  eq(
+    "Coda: casuale con lo stesso seme dà lo stesso ordine",
+    codaA.ordine.map((b) => b.id),
+    codaB.ordine.map((b) => b.id),
+  );
 
-  const conFile = [{ id: "p1", s: [["yt", "y1"]] }, { id: "p2", s: [["lo", "file2.mp3"]] }, { id: "p3", s: [["sp", "s3"]] }];
+  const conFile = [
+    { id: "p1", s: [["yt", "y1"]] },
+    { id: "p2", s: [["lo", "file2.mp3"]] },
+    { id: "p3", s: [["sp", "s3"]] },
+  ];
   const coda5 = new Coda(conFile);
   const disponibili = new Set(["file2.mp3"]);
   const predicato = (b) => b.s.some(([c, r]) => c === "lo" && disponibili.has(r));
@@ -279,27 +417,68 @@ eq("linkApertura: un file locale non ha un link", link.linkApertura("file", ["lo
 // ============================================================ generi.js ===
 
 {
-  const MACRO = ["Tech house", "Deep e melodic", "Disco e funky house", "Chicago e acid", "Techno", "Minimal", "Disco, funk e soul", "Jazz e blues"];
+  const MACRO = [
+    "Tech house",
+    "Deep e melodic",
+    "Disco e funky house",
+    "Chicago e acid",
+    "Techno",
+    "Minimal",
+    "Disco, funk e soul",
+    "Jazz e blues",
+  ];
   const voci = generi.vociGeneri(MACRO);
-  eq("vociGeneri: house/techno in una voce, disco in un'altra", voci.map((v) => v.nome), ["Tech house", "Disco", "Jazz e blues"]);
+  eq(
+    "vociGeneri: house/techno in una voce, disco in un'altra",
+    voci.map((v) => v.nome),
+    ["Tech house", "Disco", "Jazz e blues"],
+  );
   eq("vociGeneri: la voce Disco unisce disco house e disco/funk/soul", voci[1].indici, [2, 6]);
   eq("vociGeneri: la voce Tech house tiene tutti i suoi indici", voci[0].indici, [0, 1, 3, 4, 5]);
   eq("voceDi: Techno sta nella voce Tech house", generi.voceDi(voci, 4), 0);
   eq("voceDi: genere mancante", generi.voceDi(voci, undefined), -1);
-  eq("vociSelezionate: solo le voci complete", generi.vociSelezionate(voci, [0, 1, 3, 4, 5, 7]).map((v) => v.nome), ["Tech house", "Jazz e blues"]);
+  eq(
+    "vociSelezionate: solo le voci complete",
+    generi.vociSelezionate(voci, [0, 1, 3, 4, 5, 7]).map((v) => v.nome),
+    ["Tech house", "Jazz e blues"],
+  );
   eq("vociSelezionate: voce parziale esclusa", generi.vociSelezionate(voci, [4]).length, 0);
-  eq("vociGeneri: catalogo senza i membri del gruppo", generi.vociGeneri(["Rock"]).map((v) => v.nome), ["Rock"]);
+  eq(
+    "vociGeneri: catalogo senza i membri del gruppo",
+    generi.vociGeneri(["Rock"]).map((v) => v.nome),
+    ["Rock"],
+  );
 }
 
 // =========================================================== comandi.js ===
 
 {
   const T = comandi.tastoPrincipale;
-  eq("tasto: brano in corso che suona → pausa", T({ motore: "file", selezionato: "a", inCorso: "a", stato: "suona" }).azione, "pausa");
-  eq("tasto: brano in corso in pausa → riprendi", T({ motore: "file", selezionato: "a", inCorso: "a", stato: "pausa" }).azione, "riprendi");
-  eq("tasto: scelto un altro mentre suona → suona questo", T({ motore: "file", selezionato: "b", inCorso: "a", stato: "suona" }), { azione: "suona", icona: "play", etichetta: "Suona questo" });
-  eq("tasto: niente in corso → suona", T({ motore: "file", selezionato: "a", inCorso: null, stato: "fermo" }).etichetta, "Suona");
-  eq("tasto: motore esterno → apri l'app", T({ motore: "newpipe", selezionato: "a", inCorso: null, stato: "fermo" }), { azione: "apri", icona: "play", etichetta: "Manda a NewPipe" });
+  eq(
+    "tasto: brano in corso che suona → pausa",
+    T({ motore: "file", selezionato: "a", inCorso: "a", stato: "suona" }).azione,
+    "pausa",
+  );
+  eq(
+    "tasto: brano in corso in pausa → riprendi",
+    T({ motore: "file", selezionato: "a", inCorso: "a", stato: "pausa" }).azione,
+    "riprendi",
+  );
+  eq(
+    "tasto: scelto un altro mentre suona → suona questo",
+    T({ motore: "file", selezionato: "b", inCorso: "a", stato: "suona" }),
+    { azione: "suona", icona: "play", etichetta: "Suona questo" },
+  );
+  eq(
+    "tasto: niente in corso → suona",
+    T({ motore: "file", selezionato: "a", inCorso: null, stato: "fermo" }).etichetta,
+    "Suona",
+  );
+  eq("tasto: motore esterno → apri l'app", T({ motore: "newpipe", selezionato: "a", inCorso: null, stato: "fermo" }), {
+    azione: "apri",
+    icona: "play",
+    etichetta: "Manda a NewPipe",
+  });
   eq("tasto: niente selezionato", T({ motore: null, selezionato: null }).azione, "nessuna");
 
   const tre = [{ id: "a" }, { id: "b" }, { id: "c" }];
@@ -316,13 +495,16 @@ eq("linkApertura: un file locale non ha un link", link.linkApertura("file", ["lo
   eq("dopoFine: senza scelte parte il prossimo", comandi.dopoFine(c, "a", tutti).id, "b");
   eq("dopoFine: la coda si sposta sul prossimo", c.corrente.id, "b");
   c = new Coda(tre);
-  comandi.spostaSelezione(c, 1); comandi.spostaSelezione(c, 1); // mentre suona "a" scelgo "c"
+  comandi.spostaSelezione(c, 1);
+  comandi.spostaSelezione(c, 1); // mentre suona "a" scelgo "c"
   eq("dopoFine: parte il brano scelto con ⏭", comandi.dopoFine(c, "a", tutti).id, "c");
   c = new Coda(tre);
   eq("dopoFine: salta i brani che il lettore non sa suonare", comandi.dopoFine(c, "a", (b) => b.id !== "b").id, "c");
-  c = new Coda(tre); c.salta("c");
+  c = new Coda(tre);
+  c.salta("c");
   eq("dopoFine: a fine coda si ferma", comandi.dopoFine(c, "c", tutti), null);
-  c = new Coda(tre, { ripeti: "tutti" }); c.salta("c");
+  c = new Coda(tre, { ripeti: "tutti" });
+  c.salta("c");
   eq("dopoFine: con ripeti tutti ricomincia", comandi.dopoFine(c, "c", tutti).id, "a");
   c = new Coda(tre, { ripeti: "uno" });
   eq("dopoFine: con ripeti uno rifà lo stesso", comandi.dopoFine(c, "a", tutti).id, "a");
@@ -333,10 +515,21 @@ eq("linkApertura: un file locale non ha un link", link.linkApertura("file", ["lo
 {
   const R = { vecchio1: "nuovo1", vecchio2: "unito", vecchio3: "unito" };
   const man = { id: "m", tipo: "manuale", brani: ["vecchio1", "f01", "vecchio2", "vecchio3"] };
-  eq("rimappa: id vecchi → nuovi, doppioni uniti una volta sola", regole.rimappaPlaylist(man, R).brani, ["nuovo1", "f01", "unito"]);
-  eq("rimappa: esclusioni nelle playlist coi filtri", regole.rimappaPlaylist({ tipo: "intelligente", regole: { escludiBrani: ["vecchio1"] } }, R).regole.escludiBrani, ["nuovo1"]);
+  eq("rimappa: id vecchi → nuovi, doppioni uniti una volta sola", regole.rimappaPlaylist(man, R).brani, [
+    "nuovo1",
+    "f01",
+    "unito",
+  ]);
+  eq(
+    "rimappa: esclusioni nelle playlist coi filtri",
+    regole.rimappaPlaylist({ tipo: "intelligente", regole: { escludiBrani: ["vecchio1"] } }, R).regole.escludiBrani,
+    ["nuovo1"],
+  );
   ok("rimappa: nessun cambio → stessa playlist", regole.rimappaPlaylist(man, {}) === man);
-  ok("rimappa: tabella senza id della playlist → stessa playlist", regole.rimappaPlaylist({ tipo: "manuale", brani: ["f01"] }, R).brani[0] === "f01");
+  ok(
+    "rimappa: tabella senza id della playlist → stessa playlist",
+    regole.rimappaPlaylist({ tipo: "manuale", brani: ["f01"] }, R).brani[0] === "f01",
+  );
 }
 
 // ============================================================== file.js ===

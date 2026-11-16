@@ -21,11 +21,16 @@ export function intentSpotify(idTraccia) {
 // locali: non hanno un indirizzo web (sono sul telefono, li suona lettore.js).
 export function urlWeb([codice, rif]) {
   switch (codice) {
-    case "sp": return `https://open.spotify.com/track/${rif}`;
-    case "yt": return `https://www.youtube.com/watch?v=${rif}`;
-    case "sc": return rif; // già un URL completo (permalink SoundCloud)
-    case "lo": return null;
-    default: return null;
+    case "sp":
+      return `https://open.spotify.com/track/${rif}`;
+    case "yt":
+      return `https://www.youtube.com/watch?v=${rif}`;
+    case "sc":
+      return rif; // già un URL completo (permalink SoundCloud)
+    case "lo":
+      return null;
+    default:
+      return null;
   }
 }
 

@@ -25,8 +25,13 @@ export class Lettore {
 
     const a = this.audio;
     a.addEventListener("playing", () => this.imposta("suona"));
-    a.addEventListener("pause", () => { if (!a.ended) this.imposta("pausa"); });
-    a.addEventListener("ended", () => { this.imposta("fermo"); this.onFine?.(this.brano); });
+    a.addEventListener("pause", () => {
+      if (!a.ended) this.imposta("pausa");
+    });
+    a.addEventListener("ended", () => {
+      this.imposta("fermo");
+      this.onFine?.(this.brano);
+    });
     a.addEventListener("loadedmetadata", () => this.onStato?.());
     a.addEventListener("timeupdate", () => {
       const ora = Date.now();
@@ -38,23 +43,36 @@ export class Lettore {
 
     const ms = navigator.mediaSession;
     if (ms) {
-      const prova = (azione, fn) => { try { ms.setActionHandler(azione, fn); } catch { /* azione non supportata */ } };
+      const prova = (azione, fn) => {
+        try {
+          ms.setActionHandler(azione, fn);
+        } catch {
+          /* azione non supportata */
+        }
+      };
       prova("play", () => this.riprendi());
       prova("pause", () => this.pausa());
       prova("nexttrack", () => this.onComando?.("avanti"));
       prova("previoustrack", () => this.onComando?.("indietro"));
-      prova("seekto", (d) => { if (d.seekTime !== undefined) this.cerca(d.seekTime); });
+      prova("seekto", (d) => {
+        if (d.seekTime !== undefined) this.cerca(d.seekTime);
+      });
     }
   }
 
   imposta(stato) {
     this.stato = stato;
-    if (navigator.mediaSession) navigator.mediaSession.playbackState = stato === "suona" ? "playing" : stato === "pausa" ? "paused" : "none";
+    if (navigator.mediaSession)
+      navigator.mediaSession.playbackState = stato === "suona" ? "playing" : stato === "pausa" ? "paused" : "none";
     this.onStato?.();
   }
 
-  get posizione() { return this.audio.currentTime || 0; }
-  get durata() { return Number.isFinite(this.audio.duration) ? this.audio.duration : 0; }
+  get posizione() {
+    return this.audio.currentTime || 0;
+  }
+  get durata() {
+    return Number.isFinite(this.audio.duration) ? this.audio.duration : 0;
+  }
 
   /** Carica e suona un brano. info: {album, icona} per la schermata di blocco. */
   async suona(brano, { album = "Jukebox", icona } = {}) {
@@ -75,9 +93,16 @@ export class Lettore {
     await this.audio.play();
   }
 
-  pausa() { this.audio.pause(); }
-  riprendi() { if (this.brano) this.audio.play().catch(() => {}); }
-  cerca(secondi) { this.audio.currentTime = Math.max(0, Math.min(secondi, this.durata || secondi)); this.aggiornaPosizione(); }
+  pausa() {
+    this.audio.pause();
+  }
+  riprendi() {
+    if (this.brano) this.audio.play().catch(() => {});
+  }
+  cerca(secondi) {
+    this.audio.currentTime = Math.max(0, Math.min(secondi, this.durata || secondi));
+    this.aggiornaPosizione();
+  }
 
   ferma() {
     this.audio.pause();
@@ -93,7 +118,13 @@ export class Lettore {
     const ms = navigator.mediaSession;
     if (!ms?.setPositionState || !this.durata) return;
     try {
-      ms.setPositionState({ duration: this.durata, playbackRate: this.audio.playbackRate || 1, position: Math.min(this.posizione, this.durata) });
-    } catch { /* valori non ancora pronti */ }
+      ms.setPositionState({
+        duration: this.durata,
+        playbackRate: this.audio.playbackRate || 1,
+        position: Math.min(this.posizione, this.durata),
+      });
+    } catch {
+      /* valori non ancora pronti */
+    }
   }
 }
