@@ -4,12 +4,22 @@
 //
 // Uso: node strumenti/valuta.mjs <catalogo.json> <playlist.json>
 // Stampa: [{id, nome, telefono, brani: [id, ...]}, ...]
+//
+// Uso: node strumenti/valuta.mjs --gruppi
+// Stampa i generi che il Jukebox mostra fusi in una voce sola (RAGGRUPPATI in js/generi.js):
+// {"Tech house": ["Tech house", "Deep e melodic", ...], "Disco": [...]}. prepara.py li usa per
+// sapere quali brani restano sul PC con --tutti, invece di tenerne una copia a mano.
 
 import { readFileSync } from "node:fs";
 import { preparaIndice } from "../js/cerca.js";
+import { RAGGRUPPATI } from "../js/generi.js";
 import { valuta, rimappaPlaylist } from "../js/regole.js";
 
 const [percorsoCatalogo, percorsoPlaylist] = process.argv.slice(2);
+if (percorsoCatalogo === "--gruppi") {
+  process.stdout.write(JSON.stringify(RAGGRUPPATI));
+  process.exit(0);
+}
 const catalogo = JSON.parse(readFileSync(percorsoCatalogo, "utf-8"));
 const dati = JSON.parse(readFileSync(percorsoPlaylist, "utf-8"));
 preparaIndice(catalogo.brani, catalogo.raccolte);

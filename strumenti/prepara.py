@@ -479,19 +479,31 @@ def archivio_in_ordine(tutti: list[dict], playlist: list[dict]) -> list[str]:
     return [b["id"] for b in sorted(scelti, key=priorita)]
 
 
-# Con --tutti restano sul PC: è la voce "Tech house" del Jukebox (RAGGRUPPATI in js/generi.js).
-GENERI_SOLO_PC = {"Tech house", "Deep e melodic", "Chicago e acid", "Techno", "Minimal"}
+def generi_solo_pc() -> set[str]:
+    """I macro-generi della voce "Tech house" del Jukebox: con --tutti restano sul PC.
+    I gruppi li decide l'app (RAGGRUPPATI in js/generi.js) e si leggono da valuta.mjs."""
+    uscita = subprocess.run(
+        ["node", str(APP / "strumenti" / "valuta.mjs"), "--gruppi"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=True,
+    ).stdout
+    return set(json.loads(uscita)["Tech house"])
 
 
-def tutti_per_telefono(tutti: list[dict], macro: list[str], playlist: list[dict]) -> list[str]:
+def tutti_per_telefono(
+    tutti: list[dict], macro: list[str], playlist: list[dict], solo_pc: set[str] | None = None
+) -> list[str]:
     """I brani scelti da tenere sul telefono senza passare da una playlist:
-    quelli dell'archivio (niente set), tranne i generi in GENERI_SOLO_PC."""
+    quelli dell'archivio (niente set), tranne i generi di `solo_pc` (default: la voce Tech house)."""
+    solo_pc = generi_solo_pc() if solo_pc is None else solo_pc
     per_id = {b["id"]: b for b in tutti}
 
     def fuori(b):
         if any(cod == "lo" and rif.startswith("locali/techno-house/") for cod, rif in b["s"]):
             return True  # la cassa dei DJ set, anche se il genere manca
-        return b.get("g") is not None and macro[b["g"]] in GENERI_SOLO_PC
+        return b.get("g") is not None and macro[b["g"]] in solo_pc
 
     return [i for i in archivio_in_ordine(tutti, playlist) if not fuori(per_id[i])]
 

@@ -11,7 +11,7 @@ for _s in (sys.stdout, sys.stderr):
     _s.reconfigure(encoding="utf-8", errors="replace")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from prepara import scegli, titolo_base, query  # noqa: E402
+from prepara import generi_solo_pc, query, scegli, titolo_base, tutti_per_telefono  # noqa: E402
 
 esiti = []
 
@@ -121,6 +121,33 @@ eq(
     "query: artista, titolo e versione",
     query({"a": "Fatboy Slim", "t": "Eat Sleep Rave Repeat", "v": "Calvin Harris Remix Edit"}),
     "Fatboy Slim Eat Sleep Rave Repeat Calvin Harris Remix Edit",
+)
+
+# --tutti: i generi che restano sul PC arrivano da js/generi.js (via valuta.mjs --gruppi).
+eq(
+    "generi_solo_pc: la voce Tech house di js/generi.js",
+    generi_solo_pc(),
+    {"Tech house", "Deep e melodic", "Chicago e acid", "Techno", "Minimal"},
+)
+macro_finto = ["Tech house", "Disco e funky house", "Hip hop USA", "Techno"]
+brani_finti = [
+    {"id": "t1", "g": 0, "s": [["yt", "a"]]},  # tech house: resta sul PC
+    {"id": "t2", "g": 1, "s": [["yt", "b"]]},  # disco: va sul telefono
+    {"id": "t3", "g": 2, "s": [["sp", "c"]]},  # hip hop: va sul telefono
+    {"id": "t4", "g": 3, "s": [["yt", "d"]]},  # techno: resta sul PC
+    {"id": "t5", "s": [["yt", "e"]]},  # senza genere: va sul telefono
+    {"id": "t6", "g": 1, "s": [["lo", "locali/techno-house/set.mp3"]]},  # la cassa dei DJ set: resta
+    {"id": "t7", "g": 2, "k": "set", "s": [["yt", "f"]]},  # un set: non è nell'archivio
+]
+eq(
+    "tutti_per_telefono: tutto tranne la tech house, la cassa dei DJ set e i set",
+    sorted(tutti_per_telefono(brani_finti, macro_finto, [])),
+    ["t2", "t3", "t5"],
+)
+eq(
+    "tutti_per_telefono: i generi da tenere sul PC si possono passare da fuori",
+    sorted(tutti_per_telefono(brani_finti, macro_finto, [], solo_pc={"Hip hop USA"})),
+    ["t1", "t2", "t4", "t5"],
 )
 
 print(f"\n{sum(esiti)} PASS, {len(esiti) - sum(esiti)} FAIL")
