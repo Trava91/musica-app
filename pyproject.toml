@@ -1,0 +1,16 @@
+# Solo attrezzi di sviluppo (Ruff controlla e formatta gli script Python in strumenti/).
+# Non entra nell'app pubblicata.
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["node_modules"]
+
+[tool.ruff.lint]
+# Set classico (errori di sintassi, import e nomi inutilizzati). Fissato a mano:
+# il set predefinito di Ruff cambia da una versione all'altra e quello nuovo
+# chiederebbe di cambiare il comportamento degli script (except Exception, ecc.).
+select = ["E4", "E7", "E9", "F"]
+
+[tool.ruff.format]
+quote-style = "double"

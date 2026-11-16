@@ -1,0 +1,16 @@
+{
+  "name": "jukebox",
+  "private": true,
+  "type": "module",
+  "description": "Jukebox, PWA musicale. Questo file serve solo agli attrezzi di sviluppo: nell'app pubblicata non entra nulla.",
+  "scripts": {
+    "test": "node --test \"test/**/*.test.mjs\"",
+    "test:py": "python strumenti/test_esporta.py && python strumenti/test_prepara.py && python strumenti/test_archivio.py",
+    "lint": "biome check . && python -m ruff check strumenti",
+    "formatta": "biome format --write . && python -m ruff format strumenti",
+    "verifica": "npm run lint && npm run test && npm run test:py"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.8"
+  }
+}
