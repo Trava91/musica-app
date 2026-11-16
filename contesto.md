@@ -83,10 +83,11 @@ piano (aggancio a `aggiorna.py`), e solo a revisione chiusa.
 
 ## Stato
 
-- **Restauro in corso (dal 16/11/2026)** sul branch `restauro` (piano
+- **Restauro in corso (dal 16/11/2026)** (piano
   [`plans/2026-11-14-restauro-jukebox.md`](../../../plans/2026-11-14-restauro-jukebox.md)):
-  la versione online resta `main` fino a R1. La cartella ora è sul branch
-  `restauro`, quindi `prepara.py` e `valuta.mjs` girano da lì; il controllo che
+  la prima pubblicazione (R1, versione 16: codice nuovo, aspetto invariato) è in `main` e online
+  dal 16/11/2026; il lavoro sullo stile riparte sul branch `restauro-stile` fino a R2. La cartella
+  è su quel branch, quindi `prepara.py` e `valuta.mjs` girano da lì; il controllo che
   tutto torni è `python strumenti/prepara.py --prova` (stesse playlist di prima).
 - **M1 (28/09/2026):** ricerca e filtri, playlist coi filtri e a mano, motori,
   link verso NewPipe/Spotify, coda, 5 schede.
