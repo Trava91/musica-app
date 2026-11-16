@@ -26,6 +26,8 @@ const DEFAULT = {
   file: "catalogo.json",
 };
 
+import { MOTORI_DEFAULT } from "./nucleo/motori.js";
+
 // --- Tempi e soglie (prima sparsi nei file) -----------------------------------------------------
 export const ATTESA_RICERCA_MS = 120; // dopo l'ultimo tasto, prima di rifare la ricerca
 export const RIGHE_PER_PAGINA = 100; // risultati mostrati alla volta in Cerca ("Mostra altri" ne aggiunge altrettanti)
@@ -49,8 +51,7 @@ export const VERSIONE = 14;
 // I tipi di versione di un brano (campo k del catalogo), nell'ordine in cui si mostrano.
 export const TIPI_VERSIONE = ["originale", "remix", "edit", "extended", "live", "set"];
 
-// Ordine di default con cui motori.js sceglie chi suona un brano (scelta 3 del piano).
-export const MOTORI_DEFAULT = ["file", "spotify-premium", "newpipe", "spotify-app", "web"];
+export { MOTORI_DEFAULT }; // ordine di default con cui si sceglie chi suona un brano
 
 // `memoria` è dove si leggono le impostazioni: nell'app è localStorage, nei test una finta.
 /** @param {{ getItem: (chiave: string) => string | null }} [memoria] */

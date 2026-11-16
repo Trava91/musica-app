@@ -9,7 +9,9 @@
 //     soloJukebox: bool      solo i file sul telefono, mai le app esterne (default false)
 //     priorita: string[] }   ordine dei motori, da config.leggiPreferenzaMotori()
 
-import { MOTORI_DEFAULT } from "../config.js";
+// Ordine di default con cui si sceglie chi suona un brano (scelta 3 del piano dell'app). Sta qui, nella
+// logica pura, perché la logica pura non importa mai da fuori; config.js lo riesporta.
+export const MOTORI_DEFAULT = ["file", "spotify-premium", "newpipe", "spotify-app", "web"];
 
 // I motori che suonano SENZA che il Jukebox resti in primo piano (schermo spento
 // compreso). Sono l'unica scelta sensata per una playlist "solo schermo spento".
