@@ -26,7 +26,7 @@ richiede **Premium** per essere comandato da un'altra app. In più, con un'app
 esterna la coda non può andare avanti da sola: Android non avvisa il Jukebox
 quando un brano finisce.
 
-Motori di riproduzione (`js/motori.js`), in ordine di priorità per ogni brano:
+Motori di riproduzione (`js/nucleo/motori.js`), in ordine di priorità per ogni brano:
 1. **file** sul telefono → suona nel Jukebox stesso (`lettore.js`, Media
    Session): avanza da solo, pausa vera, schermo spento. **È la strada scelta da
    Nicolò il 02/10/2026** (strada A): i file li prepara il PC (vedi sotto).
@@ -57,15 +57,15 @@ Motori di riproduzione (`js/motori.js`), in ordine di priorità per ogni brano:
 
 `strumenti/esporta.py` (Python, autonomo, non importa da `liste/motore/`) legge
 **una copia** di `liste/dati/catalogo.sqlite` e scrive `app-dati/catalogo.json`
-nel contratto v1 documentato in testa allo script. `js/dati.js` lo legge con
+nel contratto v1 documentato in testa allo script. `js/dati/catalogo.js` lo legge con
 quella stessa forma (campi abbreviati: `a`/`t`/`v`/`k`/`g`/`b`/`c`/`e`/`s`/`r`/`x`/`q`,
 più la tabella `rinominati`).
 
 > **Se cambia un campo del contratto, va cambiato su ENTRAMBI i lati**:
-> `esporta.py` *e* `js/dati.js` (più `js/cerca.js`, che si aspetta quei nomi).
+> `esporta.py` *e* `js/dati/catalogo.js` (più `js/nucleo/cerca.js`, che si aspetta quei nomi).
 
 Per `playlist.json` il contratto è simmetrico ma **scritto dall'app stessa**
-(non da `esporta.py`): la forma è documentata in testa a `js/regole.js`.
+(non da `esporta.py`): la forma è documentata in testa a `js/nucleo/regole.js`.
 
 **Gli id dei brani possono cambiare** (sono impronte delle fonti: cambiano se
 si uniscono doppioni o un brano guadagna/perde una fonte; non cambiano
@@ -92,20 +92,20 @@ piano (aggancio a `aggiorna.py`), e solo a revisione chiusa.
   link verso NewPipe/Spotify, coda, 5 schede.
 - **Estetica (01–02/10/2026):** jukebox anni '50 in blu notte con neon, dal
   disegno su tela Claude Design; caratteri in `fonts/`. Generi raggruppati solo
-  nella vista (`js/generi.js`): house/techno → "Tech house", disco house +
+  nella vista (`js/nucleo/generi.js`): house/techno → "Tech house", disco house +
   disco/funk/soul → "Disco". "Va bene per iniziare, la miglioriamo più avanti."
 - **Online e installata (02/10/2026)** sul telefono di Nicolò (Oppo, Android
   11) col token; NewPipe 0.29.1 installato via adb.
 - **M2 (02–06/10/2026):** file sul telefono suonati dal Jukebox; tasto grande
   sul brano che si vede; dal 22/10/2026 ⏮ ⏭ cambiano subito brano (coi file
-  lo suona il Jukebox, con le app esterne lo apre lì; `ui.js`); ▶ su
+  lo suona il Jukebox, con le app esterne lo apre lì; `js/ui/ui.js`); ▶ su
   una riga suona la lista da lì; brano in corso evidenziato ovunque; scheda
   Suona sempre fedele a ciò che si sente, "Mostra altri" in "A seguire". In uso
   sul telefono: playlist "Hip Rap USA ITA (youtube)", 234 brani su 238.
 - **Solo Jukebox (03/11/2026):** interruttore nelle Impostazioni (spento di
   default): acceso, il Jukebox non apre mai app esterne, i brani senza file
   appaiono spenti e un ▶ su uno di loro parte dal prossimo della lista che c'è.
-- **Test:** 221 Node (`test/*.test.mjs`, dati inventati) + 47 Python
+- **Test:** 258 Node (`test/*.test.mjs`, dati inventati) + 50 Python
   (`strumenti/test_*.py`); `npm run verifica` lancia lint, tipi e tutti i test;
   `npm run prova` fa 5 giri nel browser sull'app vera (dal 16/11/2026, restauro).
 - **Da fare:** finire l'archivio; a revisione del catalogo chiusa →
