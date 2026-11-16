@@ -81,7 +81,7 @@
         </div>
         <div class="riepilogo"><span id="cerca-riepilogo"></span><span id="cerca-ordine-testo" class="riepilogo-ordine"></span></div>
         <div id="cerca-risultati" class="lista"></div>
-        <button id="cerca-altri" class="btn-secondary btn-blocco" hidden>Mostra altri</button>
+        <button id="cerca-altri" type="button" class="btn-secondary btn-blocco" hidden>Mostra altri</button>
       </section>
 
       <!-- ---- Generi ---- -->
@@ -113,6 +113,7 @@
         <div id="riproduzione-contenuto" hidden>
           <div class="rip-testa">
             <div class="rip-etichetta">In riproduzione</div>
+            <!-- biome-ignore lint/a11y/useHeadingContent: il titolo lo scrive il Jukebox quando parte una playlist; il blocco resta nascosto finché è vuoto -->
             <h2 id="riproduzione-nome" class="rip-nome"></h2>
             <span id="riproduzione-piano" class="pill"></span>
           </div>
@@ -155,8 +156,8 @@
         <div class="riquadro">
           <h3>Dati</h3>
           <div id="imp-dati-info" class="muted small"></div>
-          <button id="imp-aggiorna" class="btn-secondary">Aggiorna dati ora</button>
-          <button id="imp-svuota-cache" class="btn-secondary">Svuota cache dati</button>
+          <button id="imp-aggiorna" type="button" class="btn-secondary">Aggiorna dati ora</button>
+          <button id="imp-svuota-cache" type="button" class="btn-secondary">Svuota cache dati</button>
         </div>
 
         <div class="riquadro">
@@ -165,8 +166,8 @@
           <p class="muted small">I file li prepara il PC nella cartella <b>Download/Jukebox</b> del telefono.
             Tocca "Aggiungi", apri quella cartella, tieni premuto il primo file e scegli <b>Seleziona tutto</b>.</p>
           <input id="imp-file-input" type="file" multiple accept="audio/*,.m4a,.mp3,.webm,.opus,.ogg" hidden>
-          <button id="imp-file-aggiungi" class="btn-secondary">Aggiungi file dal telefono</button>
-          <button id="imp-file-svuota" class="btn-secondary">Togli tutta la musica</button>
+          <button id="imp-file-aggiungi" type="button" class="btn-secondary">Aggiungi file dal telefono</button>
+          <button id="imp-file-svuota" type="button" class="btn-secondary">Togli tutta la musica</button>
           <div id="imp-file-avanzamento" class="muted small" role="status"></div>
         </div>
 
@@ -183,7 +184,7 @@
         <div class="riquadro">
           <h3>Account</h3>
           <div class="muted small">Repo dati: <code id="imp-repo"></code></div>
-          <button id="imp-cambia-token" class="btn-secondary">Cambia token</button>
+          <button id="imp-cambia-token" type="button" class="btn-secondary">Cambia token</button>
         </div>
 
         <div class="muted small" id="imp-versione"></div>

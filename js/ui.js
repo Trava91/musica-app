@@ -85,7 +85,7 @@ export function showToast(msg, type = "", opts = {}) {
     });
     t.appendChild(btn);
   }
-  t.className = "toast" + (type ? " " + type : "");
+  t.className = `toast${type ? ` ${type}` : ""}`;
   t.hidden = false;
   toastTimer = setTimeout(() => {
     t.hidden = true;
@@ -154,7 +154,9 @@ export class UI {
   }
 
   init() {
-    $$(".tab").forEach((btn) => btn.addEventListener("click", () => this.switchTab(btn.dataset.tab)));
+    $$(".tab").forEach((btn) => {
+      btn.addEventListener("click", () => this.switchTab(btn.dataset.tab));
+    });
     $("#cerca-testo").addEventListener(
       "input",
       debounce(() => {
@@ -235,16 +237,18 @@ export class UI {
       this.prossimiMostrati += 30;
       this.renderRiproduzione();
     });
-    $$(".overlay").forEach((ov) =>
+    $$(".overlay").forEach((ov) => {
       ov.addEventListener("click", (e) => {
         if (e.target === ov) ov.hidden = true;
-      }),
-    );
+      });
+    });
   }
 
   switchTab(tab) {
     this.tab = tab;
-    $$(".tab").forEach((b) => b.classList.toggle("attivo", b.dataset.tab === tab));
+    $$(".tab").forEach((b) => {
+      b.classList.toggle("attivo", b.dataset.tab === tab);
+    });
     $$(".schermo").forEach((s) => {
       s.hidden = s.dataset.schermo !== tab;
     });
@@ -379,7 +383,7 @@ export class UI {
     const inCorso = b.id === this.idInCorso();
     const spento = this.ctx.soloJukebox && !this.ctx.fileIds.has(b.id); // "Solo Jukebox": non è sul telefono
     return `<div class="striscia${grande ? " grande" : ""}${inCorso ? " in-corso" : ""}${spento ? " senza-file" : ""}" data-id="${esc(b.id)}">
-      <button class="striscia-corpo" type="button" aria-label="${esc(titoloCompleto(b) + " di " + (b.a || "artista sconosciuto"))}: apri la scheda">
+      <button class="striscia-corpo" type="button" aria-label="${esc(`${titoloCompleto(b)} di ${b.a || "artista sconosciuto"}`)}: apri la scheda">
         <span class="striscia-codice" aria-hidden="true">${codiceSelezione(i)}</span>
         <span class="striscia-testo">
           <span class="striscia-titolo">${esc(titoloCompleto(b))}</span>
@@ -387,7 +391,7 @@ export class UI {
           <span class="striscia-meta">${esc(meta)}</span>
         </span>
       </button>
-      ${play ? `<button class="striscia-play" type="button" aria-label="${inCorso ? this.etichettaInCorso() : "Suona " + esc(titoloCompleto(b))}">${inCorso ? this.iconaInCorso() : SVG_PLAY}</button>` : ""}
+      ${play ? `<button class="striscia-play" type="button" aria-label="${inCorso ? this.etichettaInCorso() : `Suona ${esc(titoloCompleto(b))}`}">${inCorso ? this.iconaInCorso() : SVG_PLAY}</button>` : ""}
     </div>`;
   }
 
@@ -518,7 +522,7 @@ export class UI {
       `<button class="tasto-genere largo${scelti.length ? "" : " acceso"}" type="button" data-idx="tutti" aria-pressed="${!scelti.length}">
         <span class="tasto-nome">Tutti i generi</span>
         <span class="tasto-sotto">${n(totale)} dischi${senzaGenere ? ` · ${n(senzaGenere)} ancora senza genere` : ""}</span>
-      </button>` + ordine.map(tasto).join("");
+      </button>${ordine.map(tasto).join("")}`;
     $$(".tasto-genere", $("#generi-lista")).forEach((el) => {
       el.addEventListener("click", () => {
         this.filtri = {
@@ -557,11 +561,11 @@ export class UI {
       </div>
       <div class="campi-brano">
         <div>${esc(sottotitolo(b))}</div>
-        ${b.g !== undefined ? `<div class="muted small">${esc(this.nomeGenere(b.g))}${b.gf ? " — " + esc(b.gf) : ""}</div>` : ""}
-        <div class="muted small">${[b.y, durataFmt(b.d), b.b ? Math.round(b.b) + " bpm" : "", b.c, b.e !== undefined ? "energia " + b.e.toFixed(2) : ""].filter(Boolean).join(" · ")}</div>
+        ${b.g !== undefined ? `<div class="muted small">${esc(this.nomeGenere(b.g))}${b.gf ? ` — ${esc(b.gf)}` : ""}</div>` : ""}
+        <div class="muted small">${[b.y, durataFmt(b.d), b.b ? `${Math.round(b.b)} bpm` : "", b.c, b.e !== undefined ? `energia ${b.e.toFixed(2)}` : ""].filter(Boolean).join(" · ")}</div>
       </div>
       <div class="azioni-riga">
-        <button class="btn-primary" id="foglio-suona">▶ Suona${motore ? " (" + esc(NOMI_MOTORE[motore] || motore) + ")" : ""}</button>
+        <button class="btn-primary" id="foglio-suona">▶ Suona${motore ? ` (${esc(NOMI_MOTORE[motore] || motore)})` : ""}</button>
         <button class="btn-secondary" id="foglio-aggiungi">+ Playlist</button>
       </div>
       <div class="foglio-sezione"><h3>Dove si trova</h3>${fontiRighe}</div>
@@ -576,7 +580,7 @@ export class UI {
       else this.suonaDaLista(contesto.lista || [b], b, contesto.nome || "Brano singolo");
     });
     $("#foglio-aggiungi").addEventListener("click", () => this.apriAggiungiAPlaylist(b));
-    $$(".btn-apri", el).forEach((btn) =>
+    $$(".btn-apri", el).forEach((btn) => {
       btn.addEventListener("click", () => {
         const fonte = [btn.dataset.cod, btn.dataset.rif];
         const motore =
@@ -586,8 +590,8 @@ export class UI {
               ? "newpipe"
               : "web";
         apriLink(link.linkApertura(motore, fonte, { android: ANDROID }));
-      }),
-    );
+      });
+    });
     if (altriArtista.length) {
       $("#foglio-altri-artista").innerHTML = altriArtista.map((x, i) => this.rigaBrano(x, i)).join("");
       this.agganciaClicRighe($("#foglio-altri-artista"), altriArtista, {
@@ -627,15 +631,15 @@ export class UI {
     $("#agg-chiudi").addEventListener("click", () => {
       overlay.hidden = true;
     });
-    $$(".riga", el).forEach((r) =>
+    $$(".riga", el).forEach((r) => {
       r.addEventListener("click", async () => {
         const p = manuali.find((x) => x.id === r.dataset.id);
         if (!p.brani.includes(b.id)) p.brani.push(b.id);
         await this.salvaPlaylistSingola(p);
         showToast(`Aggiunto a "${p.nome}".`, "ok");
         overlay.hidden = true;
-      }),
-    );
+      });
+    });
     $("#agg-nuova").addEventListener("click", async () => {
       overlay.hidden = true;
       const nome = window.prompt("Nome della nuova playlist:");
@@ -750,7 +754,7 @@ export class UI {
         ${pronti ? `<button class="btn-secondary" id="pl-libera">Libera spazio</button>` : ""}
       </div>
       <div class="azioni-riga">
-        <button class="btn-primary" id="pl-avvia">▶ Avvia${piano.consigliato ? " con " + esc(NOMI_MOTORE[piano.consigliato] || piano.consigliato) : ""}</button>
+        <button class="btn-primary" id="pl-avvia">▶ Avvia${piano.consigliato ? ` con ${esc(NOMI_MOTORE[piano.consigliato] || piano.consigliato)}` : ""}</button>
         ${p.tipo === "intelligente" ? `<button class="btn-secondary" id="pl-modifica">Modifica</button><button class="btn-secondary" id="pl-congela">Congela</button>` : ""}
         <button class="btn-secondary" id="pl-duplica">Duplica</button>
         <button class="btn-danger" id="pl-elimina">Elimina</button>
@@ -809,8 +813,8 @@ export class UI {
       });
       $("#pl-congela").addEventListener("click", async () => {
         const congelata = {
-          id: playlist.nuovoId(p.nome + " congelata"),
-          nome: p.nome + " (congelata)",
+          id: playlist.nuovoId(`${p.nome} congelata`),
+          nome: `${p.nome} (congelata)`,
           tipo: "manuale",
           brani: elenco.map((b) => b.id),
         };
@@ -825,7 +829,7 @@ export class UI {
       });
     }
     $("#pl-duplica").addEventListener("click", async () => {
-      const copia = { ...p, id: playlist.nuovoId(p.nome + " copia"), nome: p.nome + " (copia)" };
+      const copia = { ...p, id: playlist.nuovoId(`${p.nome} copia`), nome: `${p.nome} (copia)` };
       try {
         await this.salvaPlaylistSingola(copia);
         showToast("Playlist duplicata.", "ok");
@@ -965,7 +969,9 @@ export class UI {
       const n = regole.conta(leggiRegoleForm(), this.catalogo.brani, this.ctx);
       $("#cost-conteggio").textContent = `${n.toLocaleString("it-IT")} brani`;
     };
-    $$("input, select, textarea", el).forEach((campo) => campo.addEventListener("input", aggiornaConteggio));
+    $$("input, select, textarea", el).forEach((campo) => {
+      campo.addEventListener("input", aggiornaConteggio);
+    });
     aggiornaConteggio();
 
     $("#cost-chiudi").addEventListener("click", () => {
@@ -1243,7 +1249,7 @@ export class UI {
         <span class="ed-artista">${esc(sel.a || "")}</span>
         <span class="ed-foro"></span>
         <span class="ed-titolo">${esc(sel.t || "")}</span>
-        <span class="ed-anno">45 giri${sel.y ? " · " + esc(sel.y) : ""}</span>`;
+        <span class="ed-anno">45 giri${sel.y ? ` · ${esc(sel.y)}` : ""}</span>`;
       $("#riproduzione-corrente").innerHTML = this.rigaBrano(sel, Math.max(this.coda.indice, 0), {
         grande: true,
         play: false,
@@ -1351,7 +1357,7 @@ export class UI {
       </li>`,
       )
       .join("");
-    $$("button[data-dir]", lista).forEach((btn) =>
+    $$("button[data-dir]", lista).forEach((btn) => {
       btn.addEventListener("click", () => {
         const li = btn.closest("li");
         const idx = this.ctx.priorita.indexOf(li.dataset.m);
@@ -1361,7 +1367,7 @@ export class UI {
         this.ctx.priorita = nuovo;
         salvaPreferenzaMotori(nuovo);
         this.renderOrdineMotori();
-      }),
-    );
+      });
+    });
   }
 }

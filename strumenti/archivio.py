@@ -24,7 +24,6 @@ import html
 import json
 import os
 import re
-import shutil
 import subprocess
 import unicodedata
 from datetime import datetime

@@ -32,7 +32,7 @@ function show(schermo) {
 function setFeedback(msg, cls = "") {
   const el = $("#onb-feedback");
   el.textContent = msg;
-  el.className = "feedback" + (cls ? " " + cls : "");
+  el.className = `feedback${cls ? ` ${cls}` : ""}`;
 }
 
 // --- onboarding --------------------------------------------------------------

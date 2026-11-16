@@ -125,7 +125,7 @@ export class GitHubApi {
 
   // PUT file (commit). Ritorna il nuovo sha. `sha` = quello noto (lock ottimistico).
   async putFile(path, dataObj, sha, message) {
-    const content = utf8ToBase64(JSON.stringify(dataObj, null, 2) + "\n");
+    const content = utf8ToBase64(`${JSON.stringify(dataObj, null, 2)}\n`);
     const body = { message, content, branch: this.branch };
     if (sha) body.sha = sha; // assente solo alla creazione del file
     let resp;
