@@ -448,6 +448,21 @@ def archivio_in_ordine(tutti: list[dict], playlist: list[dict]) -> list[str]:
     return [b["id"] for b in sorted(scelti, key=priorita)]
 
 
+# Con --tutti restano sul PC: è la voce "Tech house" del Jukebox (RAGGRUPPATI in js/generi.js).
+GENERI_SOLO_PC = {"Tech house", "Deep e melodic", "Chicago e acid", "Techno", "Minimal"}
+
+
+def tutti_per_telefono(tutti: list[dict], macro: list[str], playlist: list[dict]) -> list[str]:
+    """I brani scelti da tenere sul telefono senza passare da una playlist:
+    quelli dell'archivio (niente set), tranne i generi in GENERI_SOLO_PC."""
+    per_id = {b["id"]: b for b in tutti}
+    def fuori(b):
+        if any(cod == "lo" and rif.startswith("locali/techno-house/") for cod, rif in b["s"]):
+            return True  # la cassa dei DJ set, anche se il genere manca
+        return b.get("g") is not None and macro[b["g"]] in GENERI_SOLO_PC
+    return [i for i in archivio_in_ordine(tutti, playlist) if not fuori(per_id[i])]
+
+
 # --------------------------------------------------------------------- main --
 
 def main() -> int:
@@ -462,7 +477,8 @@ def main() -> int:
     ap.add_argument("--reinvia", action="store_true", help="ricopia sul telefono anche i file già inviati")
     ap.add_argument("--pulisci", action="store_true", help="svuota Download/Jukebox sul telefono e basta")
     ap.add_argument("--archivio", action="store_true", help="tutti i brani scelti del catalogo, solo sul PC")
-    ap.add_argument("--minuti", type=float, default=0, help="ferma il giro dopo circa N minuti")
+    ap.add_argument("--tutti", action="store_true", help="tutti i brani scelti tranne la tech house, anche sul telefono (senza playlist)")
+    ap.add_argument("--minuti",type=float, default=0, help="ferma il giro dopo circa N minuti")
     ap.add_argument("--riprova", action="store_true", help="ricerca anche i brani già cercati e non trovati")
     ap.add_argument("--metadati", action="store_true", help="riscrive i metadati dei file che li hanno vecchi")
     ap.add_argument("--forza", action="store_true", help="con --metadati: riscrive i metadati di tutti i file")
@@ -515,11 +531,13 @@ def lavora(a, adb) -> int:
     if a.archivio:
         scelte = []
         a.solo_pc = True  # l'archivio non va sul telefono
+    elif a.tutti:
+        scelte = []
     elif a.nomi:
         scelte = [p for p in playlist if any(n.lower() in p["nome"].lower() for n in a.nomi)]
     else:
         scelte = [p for p in playlist if p["telefono"]]
-    if not scelte and not a.archivio:
+    if not scelte and not a.archivio and not a.tutti:
         print("Nessuna playlist da preparare. Quelle salvate:")
         for p in playlist:
             print(f"  - {p['nome']} ({len(p['brani'])} brani){' · segnata per il telefono' if p['telefono'] else ''}")
@@ -528,6 +546,8 @@ def lavora(a, adb) -> int:
 
     if a.archivio:
         ids = archivio_in_ordine(catalogo["brani"], playlist)
+    elif a.tutti:
+        ids = tutti_per_telefono(catalogo["brani"], macro, playlist)
     else:
         ids = list(dict.fromkeys(i for p in scelte for i in p["brani"]))
     rifare = {i for i in ids if da_rifare_in_opus(brani[i], registro, abbinamenti)}
@@ -550,7 +570,7 @@ def lavora(a, adb) -> int:
         if mancanti:
             print(f"A circa 5 brani al minuto: {len(mancanti) / 5 / 60:.0f} ore di scaricamento, cioè {len(mancanti) / 150:.0f} giri da 30 minuti")
     else:
-        print(f"Playlist: {', '.join(p['nome'] for p in scelte)}")
+        print(f"Playlist: {', '.join(p['nome'] for p in scelte) or 'tutti i brani scelti tranne la tech house'}")
         print(f"Brani: {len(ids)} · già pronti sul PC: {len(ids) - len(mancanti) - len(introvabili)} · da procurare: {len(mancanti)} (circa {durata_min:.0f} MB), di cui {len(rifare)} da rifare in Opus")
     if a.prova:
         return 0

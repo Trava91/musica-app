@@ -156,6 +156,7 @@ Android non dice al Jukebox quando un brano è finito.
    ```bash
    python strumenti/prepara.py              # le playlist segnate
    python strumenti/prepara.py "Hip Rap"    # oppure per nome
+   python strumenti/prepara.py --tutti --solo-invio   # tutto l'archivio tranne la tech house, senza playlist
    ```
    Procura l'audio in `05-hobby/musica/audio/` (fuori dai repo, riusato
    le volte dopo) e, se il telefono è collegato col debug USB, lo copia in
