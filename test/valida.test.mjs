@@ -88,10 +88,10 @@ test("validaCatalogo: non modifica i dati che riceve", () => {
   assert.equal(JSON.stringify(dati), prima);
 });
 
-test("validaCatalogo: la fixture di test passa senza scarti né avvisi", () => {
+test("validaCatalogo: la fixture di test passa senza scarti; l'unico avviso è il brano senza artista (f27)", () => {
   const { scartati, avvisi, catalogo: ok } = validaCatalogo(fixture);
   assert.deepEqual(scartati, []);
-  assert.deepEqual(avvisi, []);
+  assert.deepEqual(avvisi, ["1 brano senza artista"]);
   assert.equal(ok.brani.length, fixture.brani.length);
 });
 

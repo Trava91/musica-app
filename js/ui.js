@@ -497,7 +497,7 @@ export class UI {
   // ---------------- Generi ----------------
   renderGeneri() {
     if (!this.catalogo) return;
-    const { conteggi, senzaGenere } = cercaMod.conteggiMacro(this.catalogo.brani, {});
+    const { conteggi, senzaGenere } = cercaMod.conteggiMacro(this.catalogo.brani, {}, this.catalogo.macro.length);
     const scelti = this.filtri.macro || [];
     const n = (x) => x.toLocaleString("it-IT");
     // Tasti in ordine di quantità, come una pulsantiera: i generi più pieni in alto.

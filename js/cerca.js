@@ -147,16 +147,21 @@ export function perArtista(brani, artistaNorm) {
     .sort((a, b) => (ORDINE_TIPO[a.k] ?? 9) - (ORDINE_TIPO[b.k] ?? 9) || a._normT.localeCompare(b._normT));
 }
 
-// Conteggi per la schermata Generi: quanti brani per ciascuno dei 17 macro-generi,
-// rispettando gli altri filtri attivi (eccetto "macro" stesso).
-export function conteggiMacro(brani, filtri) {
+// Conteggi per la schermata Generi: quanti brani per ciascun macro-genere (nMacro è
+// la lunghezza di catalogo.macro: i generi li decide il catalogo, non questo file),
+// rispettando gli altri filtri attivi (eccetto "macro" stesso). Un brano senza genere
+// (o con un indice fuori dall'elenco) va in senzaGenere: nessun brano si perde.
+export function conteggiMacro(brani, filtri, nMacro) {
+  if (!Number.isInteger(nMacro) || nMacro < 0) {
+    throw new TypeError("conteggiMacro: serve il numero dei macro-generi (catalogo.macro.length)");
+  }
   const senzaFiltriGenere = { ...filtri, macro: undefined };
-  const conteggi = new Array(17).fill(0);
+  const conteggi = new Array(nMacro).fill(0);
   let senzaGenere = 0;
   for (const b of brani) {
     if (!passaFiltri(b, senzaFiltriGenere)) continue;
-    if (b.g === undefined) senzaGenere++;
-    else conteggi[b.g]++;
+    if (Number.isInteger(b.g) && b.g >= 0 && b.g < nMacro) conteggi[b.g]++;
+    else senzaGenere++;
   }
   return { conteggi, senzaGenere };
 }

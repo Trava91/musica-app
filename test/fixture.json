@@ -336,6 +336,35 @@
       "g": 11,
       "s": [["yt", "ytV22"]],
       "r": [2]
+    },
+    {
+      "id": "f27",
+      "o": "o-anonimo",
+      "t": "Titolo Senza Artista",
+      "k": "originale",
+      "g": 7,
+      "s": [["yt", "ytW23"]],
+      "r": [2]
+    },
+    {
+      "id": "f28",
+      "o": "o-nogenere",
+      "a": "Artista Senza Genere",
+      "t": "Brano Neutro",
+      "k": "originale",
+      "s": [["sp", "spX24"]],
+      "r": [0]
+    },
+    {
+      "id": "f29",
+      "o": "o-multi",
+      "a": "Multi Fonte",
+      "t": "Tre Piattaforme",
+      "gf": "bossa nova, samba",
+      "k": "originale",
+      "g": 14,
+      "s": [["sp", "spY25"], ["yt", "ytY25"], ["sc", "https://soundcloud.com/multi-fonte/tre-piattaforme"]],
+      "r": [0, 2, 4]
     }
   ]
 }
