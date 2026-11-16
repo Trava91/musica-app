@@ -4,6 +4,10 @@ Lancio: python strumenti/test_archivio.py"""
 import sys
 from pathlib import Path
 
+# La console di Windows è in cp1252: senza questo il "✓" fa crashare il test.
+for _s in (sys.stdout, sys.stderr):
+    _s.reconfigure(encoding="utf-8", errors="replace")
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import archivio as A  # noqa: E402
 
