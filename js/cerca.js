@@ -7,6 +7,7 @@
 // b(pm), c(amelot), e(nergia), x (1 = esplorazione), s(orgenti), r(accolte), q(uando
 // aggiunto). preparaIndice() aggiunge campi che iniziano con "_", usati solo qui dentro.
 
+import { passa } from "./filtri.js";
 import { normalizza } from "./testo.js";
 
 const parole = (testoNorm) => (testoNorm ? testoNorm.split(" ").filter(Boolean) : []);
@@ -45,42 +46,6 @@ function punteggio(brano, paroleQuery) {
   return tot;
 }
 
-// --- filtri ------------------------------------------------------------------
-function passaFiltri(b, f) {
-  if (!f) return true;
-  if (f.soloScelti !== false && b.x === 1) return false;
-  const tipo = f.tipo || "canzoni";
-  if (tipo === "canzoni" && b.k === "set") return false;
-  if (tipo === "set" && b.k !== "set") return false;
-  if (f.macro?.length && !f.macro.includes(b.g)) return false;
-  if (f.piattaforme?.length && !b.s.some(([cod]) => f.piattaforme.includes(cod))) return false;
-  if (f.raccolta !== undefined && f.raccolta !== null && !(b.r || []).includes(f.raccolta)) return false;
-  if (f.tipi?.length && !f.tipi.includes(b.k)) return false;
-  if (f.artisti?.length && !f.artisti.includes(b._normA)) return false;
-  if (f.anno) {
-    if (b.y === undefined) return false;
-    const [min, max] = f.anno;
-    if ((min !== undefined && b.y < min) || (max !== undefined && b.y > max)) return false;
-  }
-  if (f.bpm) {
-    if (b.b === undefined) return false;
-    const [min, max] = f.bpm;
-    if ((min !== undefined && b.b < min) || (max !== undefined && b.b > max)) return false;
-  }
-  if (f.camelot) {
-    const attesi = Array.isArray(f.camelot) ? f.camelot : [f.camelot];
-    if (attesi.length && !attesi.includes(b.c)) return false;
-  }
-  if (f.energia) {
-    if (b.e === undefined) return false;
-    const [min, max] = f.energia;
-    if ((min !== undefined && b.e < min) || (max !== undefined && b.e > max)) return false;
-  }
-  if (f.escludiArtisti?.length && f.escludiArtisti.includes(b._normA)) return false;
-  if (f.escludiBrani?.length && f.escludiBrani.includes(b.id)) return false;
-  return true;
-}
-
 // --- ordinamenti ---------------------------------------------------------------
 function comparatore(ordine) {
   switch (ordine) {
@@ -101,7 +66,7 @@ function comparatore(ordine) {
  * Cerca e filtra. Restituisce l'array dei brani corrispondenti, ordinato.
  * - brani: array del catalogo, già passato da preparaIndice.
  * - testo: query libera (può essere vuota).
- * - filtri: vedi passaFiltri sopra.
+ * - filtri: vedi filtri.js.
  * - ordine: "rilevanza" | "artista" | "recenti" | "bpm". Se omesso: "rilevanza" con
  *   testo non vuoto, altrimenti "artista".
  */
@@ -111,7 +76,7 @@ export function cerca(brani, testo, filtri, ordine) {
 
   const risultati = [];
   for (const b of brani) {
-    if (!passaFiltri(b, filtri)) continue;
+    if (!passa(b, filtri)) continue;
     if (q.length) {
       const p = punteggio(b, q);
       if (p === null) continue;
@@ -150,7 +115,7 @@ export function conteggiMacro(brani, filtri, nMacro) {
   const conteggi = new Array(nMacro).fill(0);
   let senzaGenere = 0;
   for (const b of brani) {
-    if (!passaFiltri(b, senzaFiltriGenere)) continue;
+    if (!passa(b, senzaFiltriGenere)) continue;
     if (Number.isInteger(b.g) && b.g >= 0 && b.g < nMacro) conteggi[b.g]++;
     else senzaGenere++;
   }

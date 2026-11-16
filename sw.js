@@ -29,6 +29,7 @@ const SHELL = [
   "js/coda.js",
   "js/casuale.js",
   "js/testo.js",
+  "js/filtri.js",
   "js/playlist.js",
   "js/valida.js",
   "icons/icon.svg",

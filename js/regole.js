@@ -12,48 +12,14 @@
 //    seme, limite}
 // Formato di una playlist manuale: {id, nome, tipo: "manuale", brani: [id, ...]}
 
-import { normalizza } from "./testo.js";
 import { mescola } from "./casuale.js";
 import { percorsoArmonico } from "./dj.js";
-import { motoreBrano, MOTORI_CONTINUI } from "./motori.js";
+import { passa } from "./filtri.js";
 
-function suonaSchermoSpento(b, ctx) {
-  const { motore } = motoreBrano(b, ctx);
-  return Boolean(motore) && MOTORI_CONTINUI.has(motore);
-}
-
-function corrisponde(b, r, ctx) {
-  if (!r) return true;
-  if (r.soloScelti !== false && b.x === 1) return false;
-  if (r.soloSchermoSpento && !suonaSchermoSpento(b, ctx)) return false;
-  if (r.macro?.length && !r.macro.includes(b.g)) return false;
-  if (r.tipi?.length) {
-    if (!r.tipi.includes(b.k)) return false;
-  } else if (b.k === "set") {
-    return false; // come in cerca.js: di default i set restano fuori, servono espliciti
-  }
-  if (r.piattaforme?.length && !b.s.some(([cod]) => r.piattaforme.includes(cod))) return false;
-  if (r.raccolte?.length && !(b.r || []).some((i) => r.raccolte.includes(i))) return false;
-  if (r.artisti?.length && !r.artisti.includes(b._normA)) return false;
-  if (r.camelot?.length && !r.camelot.includes(b.c)) return false;
-  if (r.escludiArtisti?.length && r.escludiArtisti.includes(b._normA)) return false;
-  if (r.escludiBrani?.length && r.escludiBrani.includes(b.id)) return false;
-
-  const range = (campo, [min, max]) => {
-    if (b[campo] === undefined) return false;
-    if (min !== undefined && b[campo] < min) return false;
-    if (max !== undefined && b[campo] > max) return false;
-    return true;
-  };
-  if (r.bpm && !range("b", r.bpm)) return false;
-  if (r.anno && !range("y", r.anno)) return false;
-  if (r.energia && !range("e", r.energia)) return false;
-
-  if (r.testo) {
-    const parole = normalizza(r.testo).split(" ").filter(Boolean);
-    if (parole.length && !parole.every((p) => b._txt.includes(p))) return false;
-  }
-  return true;
+// Le regole di una playlist sono un filtro come gli altri (filtri.js), con una sola differenza:
+// di default restano fuori i set, a meno che le regole non chiedano dei tipi precisi.
+function filtroDaRegole(r) {
+  return r ? { ...r, tipo: r.tipi?.length ? "tutti" : "canzoni" } : r;
 }
 
 // Una playlist casuale deve poter essere "ripetuta": senza seme si usa 0, sempre lo stesso.
@@ -101,7 +67,8 @@ export function valuta(playlist, brani, ctx) {
     const perId = new Map(brani.map((b) => [b.id, b]));
     elenco = (playlist.brani || []).map((id) => perId.get(id)).filter(Boolean);
   } else {
-    elenco = brani.filter((b) => corrisponde(b, playlist.regole, ctx));
+    const filtro = filtroDaRegole(playlist.regole);
+    elenco = brani.filter((b) => passa(b, filtro, ctx));
     elenco = ordina(elenco, playlist.ordine, playlist.seme);
   }
   if (playlist.limite) elenco = elenco.slice(0, playlist.limite);
@@ -111,7 +78,8 @@ export function valuta(playlist, brani, ctx) {
 // Solo il conteggio (per il costruttore playlist, che deve aggiornarlo dal vivo
 // senza rifare l'ordinamento a ogni tocco di un filtro).
 export function conta(regole, brani, ctx) {
+  const filtro = filtroDaRegole(regole);
   let n = 0;
-  for (const b of brani) if (corrisponde(b, regole, ctx)) n++;
+  for (const b of brani) if (passa(b, filtro, ctx)) n++;
   return n;
 }
