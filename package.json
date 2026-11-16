@@ -6,9 +6,10 @@
   "scripts": {
     "test": "node --test \"test/**/*.test.mjs\"",
     "test:py": "python strumenti/test_esporta.py && python strumenti/test_prepara.py && python strumenti/test_archivio.py",
-    "lint": "biome check . && python -m ruff check strumenti",
-    "formatta": "biome format --write . && python -m ruff format strumenti",
+    "lint": "biome check . && python -m ruff check strumenti test/browser",
+    "formatta": "biome format --write . && python -m ruff format strumenti test/browser",
     "tipi": "tsc --noEmit -p tsconfig.json",
+    "prova": "python test/browser/prova.py",
     "verifica": "npm run lint && npm run tipi && npm run test && npm run test:py"
   },
   "devDependencies": {
