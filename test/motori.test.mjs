@@ -87,3 +87,22 @@ test("pianoRiproduzione: Solo Jukebox, solo il gruppo file", () => {
 test("pianoRiproduzione: Solo Jukebox, gli altri sono esclusi", () => {
   assert.equal(pianoSolo.esclusi.length, 3);
 });
+
+// ================================================================ motoreFonte ====
+
+test("motoreFonte: una fonte Spotify si apre nell'app Spotify", () => {
+  assert.equal(motori.motoreFonte(["sp", "spX"], {}), "spotify-app");
+});
+
+test("motoreFonte: YouTube e SoundCloud vanno a NewPipe se è attivo", () => {
+  assert.equal(motori.motoreFonte(["yt", "ytX"], { usaNewPipe: true }), "newpipe");
+  assert.equal(motori.motoreFonte(["sc", "https://soundcloud.com/x"], {}), "newpipe");
+});
+
+test("motoreFonte: senza NewPipe YouTube va sul web", () => {
+  assert.equal(motori.motoreFonte(["yt", "ytX"], { usaNewPipe: false }), "web");
+});
+
+test("motoreFonte: 'Solo Jukebox' non conta, la fonte la sceglie l'utente", () => {
+  assert.equal(motori.motoreFonte(["sp", "spX"], { soloJukebox: true }), "spotify-app");
+});

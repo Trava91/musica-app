@@ -6,6 +6,43 @@
 //
 // Contratto dei dati: in testa a strumenti/esporta.py (catalogo) e a regole.js (playlist).
 
+/**
+ * Un brano del catalogo (contratto v1, in testa a strumenti/esporta.py): campi abbreviati.
+ * Dopo questo controllo ogni brano ha `id` e almeno una fonte in `s`.
+ * @typedef {object} Brano
+ * @property {string} id         impronta delle fonti (può cambiare: vedi la tabella `rinominati`)
+ * @property {string[][]} [s]    fonti [codice, riferimento]; codice tra sp, yt, sc, lo
+ * @property {string} [a]        artista
+ * @property {string} [t]        titolo
+ * @property {string} [v]        versione (es. "Extended Mix")
+ * @property {string} [k]        tipo di versione (originale, remix, edit, extended, live, set)
+ * @property {string} [f]        featuring
+ * @property {number} [g]        indice del macro-genere in `macro`
+ * @property {string} [gf]       generi fini
+ * @property {number} [y]        anno
+ * @property {number} [d]        durata in secondi
+ * @property {number} [b]        BPM
+ * @property {string} [c]        tonalità Camelot
+ * @property {number} [e]        energia (0–1)
+ * @property {number[]} [r]      indici delle raccolte
+ * @property {number} [x]        1 = esplorazione (non scelto da Nicolò)
+ * @property {string} [q]        quando è stato aggiunto
+ */
+
+/**
+ * Una playlist di playlist.json (forma completa in testa a regole.js).
+ * @typedef {object} Playlist
+ * @property {string} id
+ * @property {string} nome
+ * @property {string} tipo      "intelligente" | "manuale"
+ * @property {string[]} [brani]  solo le manuali: gli id dei brani
+ * @property {object} [regole]   solo le intelligenti: i filtri
+ * @property {string} [ordine]
+ * @property {number} [seme]
+ * @property {number | null} [limite]
+ * @property {boolean} [telefono]  da tenere sul telefono (la prepara il PC)
+ */
+
 /** Errore bloccante: il file non è un catalogo (o una playlist) che l'app sa leggere. */
 export class ErroreDati extends Error {
   constructor(messaggio) {

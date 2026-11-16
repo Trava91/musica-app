@@ -52,6 +52,18 @@ export function motoreBrano(brano, ctx = {}) {
 }
 
 /**
+ * Il motore con cui aprire UNA fonte precisa scelta a mano (il tasto "Apri" accanto a ogni
+ * fonte nella scheda del brano): Spotify nell'app, YouTube e SoundCloud in NewPipe se è
+ * attivo, altrimenti il web. Non guarda la priorità né "Solo Jukebox": è l'utente che sceglie.
+ * @param {string[]} fonte [codice, riferimento]
+ */
+export function motoreFonte(fonte, ctx = {}) {
+  if (fonte[0] === "sp") return "spotify-app";
+  if ((fonte[0] === "yt" || fonte[0] === "sc") && ctx.usaNewPipe !== false) return "newpipe";
+  return "web";
+}
+
+/**
  * Il "piano di riproduzione" di una playlist: quanti brani coprirebbe ciascun
  * motore e quale conviene avviare. Una playlist suona con UN SOLO motore alla
  * volta (scelta 4 del piano): a schermo spento il Jukebox non può aprire
