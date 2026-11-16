@@ -7,16 +7,7 @@
 // b(pm), c(amelot), e(nergia), x (1 = esplorazione), s(orgenti), r(accolte), q(uando
 // aggiunto). preparaIndice() aggiunge campi che iniziano con "_", usati solo qui dentro.
 
-export function normalizza(s) {
-  return (s || "")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/&/g, " and ")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim()
-    .replace(/\s+/g, " ");
-}
+import { normalizza } from "./testo.js";
 
 const parole = (testoNorm) => (testoNorm ? testoNorm.split(" ").filter(Boolean) : []);
 

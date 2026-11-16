@@ -4,6 +4,7 @@
 // la scelta la fa comandi.dopoFine.
 
 import * as file from "./file.js";
+import { titoloCompleto } from "./testo.js";
 
 export class Lettore {
   /**
@@ -84,7 +85,7 @@ export class Lettore {
     this.audio.src = u;
     if (navigator.mediaSession && globalThis.MediaMetadata) {
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: brano.v ? `${brano.t} (${brano.v})` : brano.t || "",
+        title: titoloCompleto(brano),
         artist: brano.a || "",
         album,
         artwork: icona ? [{ src: icona, sizes: "512x512", type: "image/png" }] : [],

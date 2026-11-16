@@ -1,21 +1,10 @@
-// Test di js/cerca.js: normalizzazione, ricerca, filtri, conteggi. Dati inventati (test/fixture.json).
+// Test di js/cerca.js: ricerca, filtri, conteggi. Dati inventati (test/fixture.json).
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import * as cerca from "../js/cerca.js";
 import { brani, fixture, ids } from "./fixture.mjs";
-
-test("normalizza: accenti", () => {
-  assert.equal(cerca.normalizza("Ünïcode Tëst"), "unicode test");
-});
-
-test("normalizza: e commerciale", () => {
-  assert.equal(cerca.normalizza("Rock & Roll"), "rock and roll");
-});
-
-test("normalizza: punteggiatura", () => {
-  assert.equal(cerca.normalizza("Prova, Uno! (Remix)"), "prova uno remix");
-});
+import { normalizza } from "../js/testo.js";
 
 test("cerca: query multi-parola per prefisso su artista", () => {
   assert.deepEqual(ids(cerca.cerca(brani, "dj test", undefined, "rilevanza")).sort(), ["f01", "f02", "f03"].sort());
@@ -53,7 +42,7 @@ test("cerca: filtro macro Tech house esclude l'esplorazione", () => {
 });
 
 test("perArtista: originali prima dei remix, poi alfabetico", () => {
-  assert.deepEqual(ids(cerca.perArtista(brani, cerca.normalizza("DJ Testino"))), ["f03", "f01", "f02"]);
+  assert.deepEqual(ids(cerca.perArtista(brani, normalizza("DJ Testino"))), ["f03", "f01", "f02"]);
 });
 
 test("conteggiMacro: Tech house esclude l'esplorazione di default", () => {

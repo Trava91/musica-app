@@ -12,7 +12,7 @@
 //    seme, limite}
 // Formato di una playlist manuale: {id, nome, tipo: "manuale", brani: [id, ...]}
 
-import { normalizza } from "./cerca.js";
+import { normalizza } from "./testo.js";
 import { mescola } from "./casuale.js";
 import { percorsoArmonico } from "./dj.js";
 import { motoreBrano, MOTORI_CONTINUI } from "./motori.js";

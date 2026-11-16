@@ -7,6 +7,7 @@ import * as motori from "./motori.js";
 import * as link from "./link.js";
 import { Coda } from "./coda.js";
 import * as generi from "./generi.js";
+import { durataFmt, normalizza, sottotitolo, titoloCompleto } from "./testo.js";
 import * as file from "./file.js";
 import * as comandi from "./comandi.js";
 import { Lettore } from "./lettore.js";
@@ -97,22 +98,6 @@ function esc(s) {
     /[&<>"']/g,
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
   );
-}
-function titoloCompleto(b) {
-  let t = b.t || "(senza titolo)";
-  if (b.v) t += ` (${b.v})`;
-  return t;
-}
-function sottotitolo(b) {
-  let s = b.a || "(artista sconosciuto)";
-  if (b.f) s += ` feat. ${b.f}`;
-  return s;
-}
-function durataFmt(sec) {
-  if (sec === undefined) return "";
-  const m = Math.floor(sec / 60),
-    s = Math.round(sec % 60);
-  return `${m}:${String(s).padStart(2, "0")}`;
 }
 function debounce(fn, ms) {
   let t;
@@ -945,7 +930,7 @@ export class UI {
           .value.split("\n")
           .map((s) => s.trim())
           .filter(Boolean)
-          .map((s) => cercaMod.normalizza(s));
+          .map((s) => normalizza(s));
       return {
         soloScelti: $("#cost-solo-scelti", el).checked,
         soloSchermoSpento: $("#cost-solo-schermo", el).checked,

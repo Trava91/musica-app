@@ -2,7 +2,7 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { normalizza } from "../js/cerca.js";
+import { normalizza } from "../js/testo.js";
 import * as regole from "../js/regole.js";
 import { brani, ids } from "./fixture.mjs";
 
