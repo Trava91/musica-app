@@ -1,8 +1,8 @@
-// Test di js/link.js: intent verso NewPipe e Spotify, indirizzi web, link di apertura.
+// Test di js/nucleo/link.js: intent verso NewPipe e Spotify, indirizzi web, link di apertura.
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import * as link from "../js/link.js";
+import * as link from "../js/nucleo/link.js";
 
 const urlYt = "https://www.youtube.com/watch?v=ABC123";
 const iNewPipe = link.intentNewPipe(urlYt);

@@ -1,9 +1,9 @@
-// Test di js/regole.js: playlist coi filtri, playlist a mano, rimappatura degli id. Dati inventati.
+// Test di js/nucleo/regole.js: playlist coi filtri, playlist a mano, rimappatura degli id. Dati inventati.
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { normalizza } from "../js/testo.js";
-import * as regole from "../js/regole.js";
+import { normalizza } from "../js/nucleo/testo.js";
+import * as regole from "../js/nucleo/regole.js";
 import { brani, ids } from "./fixture.mjs";
 
 test("regole: AND tra campi, OR dentro macro", () => {

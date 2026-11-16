@@ -1,11 +1,11 @@
 // sw.js — service worker: cache dell'app shell (lettura offline dell'interfaccia).
 //
 // I DATI (catalogo.json, playlist.json) NON passano da qui: arrivano da
-// api.github.com (cross-origin, autenticato) e li mette in cache dati.js/playlist.js
+// api.github.com (cross-origin, autenticato) e li mette in cache dati/catalogo.js e dati/playlist.js
 // per conto proprio (Cache Storage "jukebox-dati", localStorage per le playlist).
 // Qui si mette in cache solo lo "shell" statico dell'app.
 
-const CACHE = "jukebox-v13"; // bump a ogni deploy per invalidare lo shell
+const CACHE = "jukebox-v14"; // bump a ogni deploy per invalidare lo shell
 
 const SHELL = [
   "./",
@@ -13,25 +13,25 @@ const SHELL = [
   "manifest.webmanifest",
   "css/styles.css",
   "js/main.js",
-  "js/ui.js",
   "js/config.js",
-  "js/api.js",
-  "js/dati.js",
-  "js/cerca.js",
-  "js/generi.js",
-  "js/comandi.js",
-  "js/file.js",
-  "js/lettore.js",
-  "js/regole.js",
-  "js/dj.js",
-  "js/motori.js",
-  "js/link.js",
-  "js/coda.js",
-  "js/casuale.js",
-  "js/testo.js",
-  "js/filtri.js",
-  "js/playlist.js",
-  "js/valida.js",
+  "js/nucleo/testo.js",
+  "js/nucleo/casuale.js",
+  "js/nucleo/filtri.js",
+  "js/nucleo/cerca.js",
+  "js/nucleo/regole.js",
+  "js/nucleo/dj.js",
+  "js/nucleo/motori.js",
+  "js/nucleo/link.js",
+  "js/nucleo/generi.js",
+  "js/nucleo/comandi.js",
+  "js/nucleo/coda.js",
+  "js/nucleo/valida.js",
+  "js/dati/github.js",
+  "js/dati/catalogo.js",
+  "js/dati/playlist.js",
+  "js/dati/file-audio.js",
+  "js/audio/lettore.js",
+  "js/ui/ui.js",
   "icons/icon.svg",
   "icons/icon-192.png",
   "icons/icon-512.png",

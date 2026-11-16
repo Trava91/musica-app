@@ -1,4 +1,4 @@
-// dati.js — carica il catalogo (catalogo.json), lo mette in Cache Storage (troppo
+// catalogo.js — carica il catalogo (catalogo.json), lo mette in Cache Storage (troppo
 // grande per localStorage) e lo tiene aggiornato. Offline legge dalla cache.
 // Ogni catalogo viene controllato (valida.js) e ogni brano indicizzato per la ricerca
 // da cerca.preparaIndice.
@@ -14,10 +14,10 @@
 // fuori nel parametro `dip`: nell'app sono quelle del browser, nei test sono finte
 // (test/catalogo.test.mjs).
 
-import { ApiError, GitHubApi } from "./api.js";
-import { preparaIndice } from "./cerca.js";
-import { ATTESA_CACHE_MS, leggiConfig } from "./config.js";
-import { ErroreDati, validaCatalogo } from "./valida.js";
+import { ApiError, GitHubApi } from "./github.js";
+import { preparaIndice } from "../nucleo/cerca.js";
+import { ATTESA_CACHE_MS, leggiConfig } from "../config.js";
+import { ErroreDati, validaCatalogo } from "../nucleo/valida.js";
 
 const CACHE_NOME = "jukebox-dati";
 // Chiave sullo stesso indirizzo dell'app (Cache Storage vuole un URL assoluto).
@@ -26,7 +26,7 @@ const LS_SHA = "jukebox.dati.sha";
 const NON_E_UN_CATALOGO = 'GitHub non ha mandato il catalogo: riprova con "Aggiorna dati ora".';
 
 /**
- * Le dipendenze di dati.js, tutte facoltative: di default sono quelle del browser.
+ * Le dipendenze di catalogo.js, tutte facoltative: di default sono quelle del browser.
  * @typedef {object} Dipendenze
  * @property {(url: string, opzioni?: object) => Promise<Response>} [fetch]
  * @property {{ open: (nome: string) => Promise<any>, delete: (nome: string) => Promise<any> } | null} [caches]

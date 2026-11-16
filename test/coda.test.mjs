@@ -1,8 +1,8 @@
-// Test di js/coda.js: scorrimento, salti, ripeti, casuale con seme, brani riproducibili.
+// Test di js/nucleo/coda.js: scorrimento, salti, ripeti, casuale con seme, brani riproducibili.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { Coda } from "../js/coda.js";
+import { Coda } from "../js/nucleo/coda.js";
 
 const q = [{ id: "q1" }, { id: "q2" }, { id: "q3" }];
 

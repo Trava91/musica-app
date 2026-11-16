@@ -1,11 +1,11 @@
-// Test di js/filtri.js: l'unico motore di filtri (ricerca e playlist intelligenti). Dati inventati.
+// Test di js/nucleo/filtri.js: l'unico motore di filtri (ricerca e playlist intelligenti). Dati inventati.
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { cerca } from "../js/cerca.js";
-import { passa } from "../js/filtri.js";
-import { valuta } from "../js/regole.js";
-import { normalizza } from "../js/testo.js";
+import { cerca } from "../js/nucleo/cerca.js";
+import { passa } from "../js/nucleo/filtri.js";
+import { valuta } from "../js/nucleo/regole.js";
+import { normalizza } from "../js/nucleo/testo.js";
 import { brani, ids } from "./fixture.mjs";
 
 /** Gli id dei brani della fixture che passano il filtro, ordinati. */

@@ -1,8 +1,8 @@
-// Test di js/generi.js: i generi raggruppati nelle voci mostrate dal Jukebox.
+// Test di js/nucleo/generi.js: i generi raggruppati nelle voci mostrate dal Jukebox.
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import * as generi from "../js/generi.js";
+import * as generi from "../js/nucleo/generi.js";
 
 const MACRO = [
   "Tech house",

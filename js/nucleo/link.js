@@ -18,7 +18,7 @@ export function intentSpotify(idTraccia) {
 }
 
 // Il link "grezzo" (https) di una fonte [codice, riferimento]. null per i file
-// locali: non hanno un indirizzo web (sono sul telefono, li suona lettore.js).
+// locali: non hanno un indirizzo web (sono sul telefono, li suona audio/lettore.js).
 export function urlWeb([codice, rif]) {
   switch (codice) {
     case "sp":

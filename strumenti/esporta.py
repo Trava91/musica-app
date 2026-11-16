@@ -8,7 +8,7 @@ deve restare autonomo, con la sola libreria standard.
 Uso (dalla cartella app/):
     python strumenti/esporta.py
 
-CONTRATTO DATI v1 — se cambia un campo qui, aggiorna anche js/dati.js, js/playlist.js
+CONTRATTO DATI v1 — se cambia un campo qui, aggiorna anche js/dati/catalogo.js, js/dati/playlist.js
 e la sezione "Contratto dati" di README.md.
 
 {

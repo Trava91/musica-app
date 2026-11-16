@@ -6,8 +6,8 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { cerca, conteggiMacro, preparaIndice } from "../js/cerca.js";
-import { validaCatalogo } from "../js/valida.js";
+import { cerca, conteggiMacro, preparaIndice } from "../js/nucleo/cerca.js";
+import { validaCatalogo } from "../js/nucleo/valida.js";
 import { generaCatalogo } from "./genera-catalogo.mjs";
 
 const { catalogo: grezzo, vocabolario, artisti } = generaCatalogo({ n: 50_000 });

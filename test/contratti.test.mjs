@@ -188,7 +188,7 @@ test("valuta.mjs: stampa [{id, nome, telefono, brani}] per ogni playlist", () =>
 
 // prepara.py --tutti legge da qui quali generi restano sul PC (la voce "Tech house" del Jukebox).
 test("valuta.mjs --gruppi: stampa i generi raggruppati di js/generi.js", async () => {
-  const { RAGGRUPPATI } = await import("../js/generi.js");
+  const { RAGGRUPPATI } = await import("../js/nucleo/generi.js");
   const uscita = JSON.parse(
     execFileSync(process.execPath, [join(radice, "strumenti", "valuta.mjs"), "--gruppi"]).toString(),
   );

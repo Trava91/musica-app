@@ -1,4 +1,4 @@
-// api.js — strato che parla con GitHub (Contents API). Porting di
+// github.js — strato che parla con GitHub (Contents API). Porting di
 // 03-burocrazia/app/js/api.js, con due aggiunte per un file grande come
 // catalogo.json (oltre il limite di 1 MB del base64 di getFile):
 //   - getSha: legge solo i metadati (sha, size), per capire se il file è cambiato

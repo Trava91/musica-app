@@ -4,7 +4,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { preparaIndice } from "../js/cerca.js";
+import { preparaIndice } from "../js/nucleo/cerca.js";
 
 const cartella = dirname(fileURLToPath(import.meta.url));
 

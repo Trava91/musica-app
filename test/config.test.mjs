@@ -4,8 +4,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import * as config from "../js/config.js";
-import { RAGGRUPPATI } from "../js/generi.js";
-import { TOLLERANZA_BPM } from "../js/dj.js";
+import { RAGGRUPPATI } from "../js/nucleo/generi.js";
+import { TOLLERANZA_BPM } from "../js/nucleo/dj.js";
 
 test("tempi e soglie: i valori di prima che fossero raccolti in config.js", () => {
   assert.equal(config.ATTESA_RICERCA_MS, 120);

@@ -3,13 +3,13 @@
 // Session (quello è lettore.js/spotify.js, dalla M2/M5 in poi).
 //
 // ctx descrive lo stato del telefono in questo momento:
-//   { fileIds: Set<string>   id dei brani che hanno il file audio sul telefono (M2, file.js)
+//   { fileIds: Set<string>   id dei brani che hanno il file audio sul telefono (M2, dati/file-audio.js)
 //     spotify: "premium" | "senza" | "non-configurato" | "da-ricollegare"  (M5)
 //     usaNewPipe: bool       impostazione dell'utente (default true)
 //     soloJukebox: bool      solo i file sul telefono, mai le app esterne (default false)
 //     priorita: string[] }   ordine dei motori, da config.leggiPreferenzaMotori()
 
-import { MOTORI_DEFAULT } from "./config.js";
+import { MOTORI_DEFAULT } from "../config.js";
 
 // I motori che suonano SENZA che il Jukebox resti in primo piano (schermo spento
 // compreso). Sono l'unica scelta sensata per una playlist "solo schermo spento".

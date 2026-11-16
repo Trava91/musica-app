@@ -5,7 +5,7 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { cerca } from "../js/cerca.js";
+import { cerca } from "../js/nucleo/cerca.js";
 import { brani, ids } from "./fixture.mjs";
 
 const trova = (testo, filtri, ordine) => ids(cerca(brani, testo, filtri, ordine));

@@ -1,9 +1,9 @@
-// Test di js/comandi.js: il tasto grande, lo spostamento della selezione e cosa parte a fine brano.
+// Test di js/nucleo/comandi.js: il tasto grande, lo spostamento della selezione e cosa parte a fine brano.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { Coda } from "../js/coda.js";
-import * as comandi from "../js/comandi.js";
+import { Coda } from "../js/nucleo/coda.js";
+import * as comandi from "../js/nucleo/comandi.js";
 
 // ================================================================ tastoPrincipale ====
 

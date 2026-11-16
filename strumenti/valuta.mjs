@@ -11,9 +11,9 @@
 // sapere quali brani restano sul PC con --tutti, invece di tenerne una copia a mano.
 
 import { readFileSync } from "node:fs";
-import { preparaIndice } from "../js/cerca.js";
-import { RAGGRUPPATI } from "../js/generi.js";
-import { valuta, rimappaPlaylist } from "../js/regole.js";
+import { preparaIndice } from "../js/nucleo/cerca.js";
+import { RAGGRUPPATI } from "../js/nucleo/generi.js";
+import { valuta, rimappaPlaylist } from "../js/nucleo/regole.js";
 
 const [percorsoCatalogo, percorsoPlaylist] = process.argv.slice(2);
 if (percorsoCatalogo === "--gruppi") {

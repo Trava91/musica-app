@@ -1,8 +1,8 @@
-// Test di js/valida.js: il controllo di catalogo.json e playlist.json in lettura. Dati inventati.
+// Test di js/nucleo/valida.js: il controllo di catalogo.json e playlist.json in lettura. Dati inventati.
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { ErroreDati, validaCatalogo, validaPlaylist } from "../js/valida.js";
+import { ErroreDati, validaCatalogo, validaPlaylist } from "../js/nucleo/valida.js";
 import { fixture } from "./fixture.mjs";
 
 // Un catalogo minimo e valido: 2 generi, 2 raccolte, un brano.

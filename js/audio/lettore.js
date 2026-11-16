@@ -3,8 +3,8 @@
 // (Media Session). Non decide cosa suonare dopo: a fine brano chiama onFine e
 // la scelta la fa comandi.dopoFine.
 
-import * as file from "./file.js";
-import { titoloCompleto } from "./testo.js";
+import * as file from "../dati/file-audio.js";
+import { titoloCompleto } from "../nucleo/testo.js";
 
 export class Lettore {
   /**

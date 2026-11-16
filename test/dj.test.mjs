@@ -1,8 +1,8 @@
-// Test di js/dj.js: compatibilità di chiave (Camelot) e BPM, percorso armonico.
+// Test di js/nucleo/dj.js: compatibilità di chiave (Camelot) e BPM, percorso armonico.
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import * as dj from "../js/dj.js";
+import * as dj from "../js/nucleo/dj.js";
 
 test("livelloChiave 8A-8A (uguale)", () => {
   assert.equal(dj.livelloChiave("8A", "8A"), 3);

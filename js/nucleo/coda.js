@@ -1,6 +1,6 @@
 // coda.js — la coda di riproduzione del Jukebox: posizione corrente, avanti,
-// indietro, casuale, ripeti. Logica pura: non tocca l'audio (lettore.js, M2) né
-// la UI (ui.js), solo lo stato "che cosa viene dopo".
+// indietro, casuale, ripeti. Logica pura: non tocca l'audio (audio/lettore.js, M2) né
+// la UI (ui/ui.js), solo lo stato "che cosa viene dopo".
 
 import { mescola } from "./casuale.js";
 

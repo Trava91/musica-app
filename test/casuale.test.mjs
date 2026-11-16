@@ -1,8 +1,8 @@
-// Test di js/casuale.js: il generatore casuale ripetibile (stesso seme, stessa sequenza).
+// Test di js/nucleo/casuale.js: il generatore casuale ripetibile (stesso seme, stessa sequenza).
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { mescola, mulberry32 } from "../js/casuale.js";
+import { mescola, mulberry32 } from "../js/nucleo/casuale.js";
 
 test("mulberry32: stesso seme, stessa sequenza (valori di sempre)", () => {
   const rand = mulberry32(42);

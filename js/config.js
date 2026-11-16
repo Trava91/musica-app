@@ -5,7 +5,7 @@
 //   - "url": un catalogo.json raggiungibile a un indirizzo, senza token. Serve per
 //     l'anteprima sul PC (app/?dati=../app-dati/catalogo.json) e, un domani, per
 //     un'eventuale versione pubblica. In questa modalità le playlist restano solo
-//     nel browser (playlist.js non scrive su GitHub).
+//     nel browser (dati/playlist.js non scrive su GitHub).
 
 const LS = {
   tipo: "jukebox.dati.tipo",
@@ -39,12 +39,12 @@ export const DURATA_AVVISO_LUNGO_MS = 7000; // ...e quelli lunghi (importazione 
 export const SECONDI_PER_RIPARTIRE = 4; // ⏮ oltre questi secondi riparte dall'inizio del brano
 
 // Questi tre vivono nella logica pura (nucleo) ma si guardano da qui, con tutti gli altri.
-export { TOLLERANZA_BPM } from "./dj.js"; // quanto possono differire i BPM di due brani "in mix" (6%)
-export { RAGGRUPPATI } from "./generi.js"; // i generi che il Jukebox mostra fusi in un'unica voce
+export { TOLLERANZA_BPM } from "./nucleo/dj.js"; // quanto possono differire i BPM di due brani "in mix" (6%)
+export { RAGGRUPPATI } from "./nucleo/generi.js"; // i generi che il Jukebox mostra fusi in un'unica voce
 
 // Il numero della versione dell'app: dev'essere lo stesso di "jukebox-vN" in sw.js (lo controlla
 // test/contratti.test.mjs). Si alza a ogni pubblicazione, in tutti e due i posti.
-export const VERSIONE = 13;
+export const VERSIONE = 14;
 
 // I tipi di versione di un brano (campo k del catalogo), nell'ordine in cui si mostrano.
 export const TIPI_VERSIONE = ["originale", "remix", "edit", "extended", "live", "set"];

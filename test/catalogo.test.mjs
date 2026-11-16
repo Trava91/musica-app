@@ -1,11 +1,11 @@
-// Test di js/dati.js: il caricamento del catalogo (GitHub, indirizzo diretto, cache), con rete,
+// Test di js/dati/catalogo.js: il caricamento del catalogo (GitHub, indirizzo diretto, cache), con rete,
 // Cache Storage e localStorage finti. Nessuna rete vera, nessun dato reale (test/fixture.json).
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { ApiError } from "../js/api.js";
-import * as dati from "../js/dati.js";
-import { ErroreDati } from "../js/valida.js";
+import { ApiError } from "../js/dati/github.js";
+import * as dati from "../js/dati/catalogo.js";
+import { ErroreDati } from "../js/nucleo/valida.js";
 import { fixture, testoFixture } from "./fixture.mjs";
 
 const NOME_CACHE = "jukebox-dati";

@@ -1,4 +1,4 @@
-// file.js — l'audio dei brani salvato sul telefono, per suonarli dentro il
+// file-audio.js — l'audio dei brani salvato sul telefono, per suonarli dentro il
 // Jukebox (anche a schermo spento). Ogni file è un brano del catalogo: il nome
 // del file comincia con l'id del brano (lo prepara strumenti/prepara.py sul PC).
 //

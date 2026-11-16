@@ -11,16 +11,5 @@
     "strict": false,
     "skipLibCheck": true
   },
-  "include": [
-    "js/cerca.js",
-    "js/regole.js",
-    "js/dj.js",
-    "js/motori.js",
-    "js/link.js",
-    "js/coda.js",
-    "js/comandi.js",
-    "js/generi.js",
-    "js/valida.js",
-    "test/**/*.mjs"
-  ]
+  "include": ["js/config.js", "js/nucleo/**/*.js", "js/dati/**/*.js", "test/**/*.mjs"]
 }

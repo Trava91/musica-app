@@ -1,8 +1,8 @@
-// Test di js/motori.js: quale motore suona un brano e il piano di riproduzione di una lista.
+// Test di js/nucleo/motori.js: quale motore suona un brano e il piano di riproduzione di una lista.
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import * as motori from "../js/motori.js";
+import * as motori from "../js/nucleo/motori.js";
 
 const bFile = { id: "m1", s: [["lo", "percorso/uno.mp3"]] };
 const bSp = { id: "m2", s: [["sp", "spX"]] };

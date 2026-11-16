@@ -1,8 +1,8 @@
-// Test di js/file.js: il nome dei file preparati dal PC (<id>.<estensione>) e le copie doppie di Android.
+// Test di js/dati/file-audio.js: il nome dei file preparati dal PC (<id>.<estensione>) e le copie doppie di Android.
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { idDaNome } from "../js/file.js";
+import { idDaNome } from "../js/dati/file-audio.js";
 
 test("idDaNome: nome preparato dal PC", () => {
   assert.equal(idDaNome("c9412dc07ba6.m4a"), "c9412dc07ba6");

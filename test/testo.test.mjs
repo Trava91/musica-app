@@ -1,8 +1,8 @@
-// Test di js/testo.js: normalizzazione per la ricerca, titolo con versione, artista con feat., durata.
+// Test di js/nucleo/testo.js: normalizzazione per la ricerca, titolo con versione, artista con feat., durata.
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { durataFmt, normalizza, sottotitolo, titoloCompleto } from "../js/testo.js";
+import { durataFmt, normalizza, sottotitolo, titoloCompleto } from "../js/nucleo/testo.js";
 
 test("normalizza: accenti", () => {
   assert.equal(normalizza("Ünïcode Tëst"), "unicode test");

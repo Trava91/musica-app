@@ -11,12 +11,12 @@ import {
   leggiPreferenzaSoloJukebox,
   salvaPreferenzaSoloJukebox,
 } from "./config.js";
-import { GitHubApi, ApiError } from "./api.js";
-import * as dati from "./dati.js";
-import * as playlist from "./playlist.js";
-import * as file from "./file.js";
-import { rimappaPlaylist } from "./regole.js";
-import { UI, showToast } from "./ui.js";
+import { GitHubApi, ApiError } from "./dati/github.js";
+import * as dati from "./dati/catalogo.js";
+import * as playlist from "./dati/playlist.js";
+import * as file from "./dati/file-audio.js";
+import { rimappaPlaylist } from "./nucleo/regole.js";
+import { UI, showToast } from "./ui/ui.js";
 
 const $ = (s) => document.querySelector(s);
 const PAT_URL = "https://github.com/settings/personal-access-tokens/new";
@@ -58,7 +58,7 @@ async function onOnboardingSubmit(e) {
 
   $("#onb-submit").disabled = true;
   setFeedback("Verifico il token…");
-  // salva PRIMA di verificare: dati.js legge la config da localStorage
+  // salva PRIMA di verificare: dati/catalogo.js legge la config da localStorage
   salvaConfig({ tipo: "github-privato", token, owner, repo });
   try {
     const cfg = leggiConfig();

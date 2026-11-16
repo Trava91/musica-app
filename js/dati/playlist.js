@@ -3,9 +3,9 @@
 // sul 409), stesso schema di 03-burocrazia/app/js/store.js. Copia in localStorage
 // per leggerle anche offline.
 
-import { GitHubApi, ApiError } from "./api.js";
-import { leggiConfig, MAX_TENTATIVI_SALVATAGGIO } from "./config.js";
-import { validaPlaylist } from "./valida.js";
+import { GitHubApi, ApiError } from "./github.js";
+import { leggiConfig, MAX_TENTATIVI_SALVATAGGIO } from "../config.js";
+import { validaPlaylist } from "../nucleo/valida.js";
 
 const FILE = "playlist.json";
 const LS_CACHE = "jukebox.playlist.cache";

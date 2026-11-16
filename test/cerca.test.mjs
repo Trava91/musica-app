@@ -1,10 +1,10 @@
-// Test di js/cerca.js: ricerca, filtri, conteggi. Dati inventati (test/fixture.json).
+// Test di js/nucleo/cerca.js: ricerca, filtri, conteggi. Dati inventati (test/fixture.json).
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import * as cerca from "../js/cerca.js";
+import * as cerca from "../js/nucleo/cerca.js";
 import { brani, fixture, ids } from "./fixture.mjs";
-import { normalizza } from "../js/testo.js";
+import { normalizza } from "../js/nucleo/testo.js";
 
 test("cerca: query multi-parola per prefisso su artista", () => {
   assert.deepEqual(ids(cerca.cerca(brani, "dj test", undefined, "rilevanza")).sort(), ["f01", "f02", "f03"].sort());

@@ -1,17 +1,17 @@
 // ui.js — rendering e stato dell'interfaccia del Jukebox. Tutta la manipolazione
 // DOM vive qui; la logica pura sta in cerca/regole/dj/motori/link/coda.js.
 
-import * as cercaMod from "./cerca.js";
-import * as regole from "./regole.js";
-import * as motori from "./motori.js";
-import * as link from "./link.js";
-import { Coda } from "./coda.js";
-import * as generi from "./generi.js";
-import { durataFmt, normalizza, sottotitolo, titoloCompleto } from "./testo.js";
-import * as file from "./file.js";
-import * as comandi from "./comandi.js";
-import { Lettore } from "./lettore.js";
-import * as playlist from "./playlist.js";
+import * as cercaMod from "../nucleo/cerca.js";
+import * as regole from "../nucleo/regole.js";
+import * as motori from "../nucleo/motori.js";
+import * as link from "../nucleo/link.js";
+import { Coda } from "../nucleo/coda.js";
+import * as generi from "../nucleo/generi.js";
+import { durataFmt, normalizza, sottotitolo, titoloCompleto } from "../nucleo/testo.js";
+import * as file from "../dati/file-audio.js";
+import * as comandi from "../nucleo/comandi.js";
+import { Lettore } from "../audio/lettore.js";
+import * as playlist from "../dati/playlist.js";
 import {
   ATTESA_RICERCA_MS,
   DURATA_AVVISO_LUNGO_MS,
@@ -24,7 +24,7 @@ import {
   salvaPreferenzaMotori,
   TIPI_VERSIONE,
   VERSIONE,
-} from "./config.js";
+} from "../config.js";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];

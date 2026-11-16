@@ -12,7 +12,7 @@ import { normalizza } from "./testo.js";
 
 const parole = (testoNorm) => (testoNorm ? testoNorm.split(" ").filter(Boolean) : []);
 
-// Da chiamare una volta sui brani appena caricati (dati.js lo fa). Aggiunge l'indice
+// Da chiamare una volta sui brani appena caricati (dati/catalogo.js lo fa). Aggiunge l'indice
 // di ricerca: _normA/_normT (artista/titolo normalizzati), _paroleA/_paroleT (le loro
 // parole) e _txt (tutto il testo utile — compresi generi e nomi delle raccolte —
 // normalizzato, per la corrispondenza "trovata da qualche parte").
