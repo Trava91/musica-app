@@ -5,16 +5,23 @@ import { beforeEach, test } from "node:test";
 import {
   ascolta,
   azzera,
+  azzeraMisure,
   descrivi,
   elenco,
   installaReteDiSicurezza,
   MAX_ERRORI,
+  misure,
   registra,
   rigaVoce,
+  segna,
+  testoMisure,
   testoPerCopia,
 } from "../js/nucleo/diagnostica.js";
 
-beforeEach(() => azzera());
+beforeEach(() => {
+  azzera();
+  azzeraMisure();
+});
 
 test("descrivi: un Error, un testo, il nulla e un oggetto", () => {
   assert.equal(descrivi(new TypeError("non va")), "TypeError: non va");
@@ -138,4 +145,23 @@ test("rete di sicurezza: gli errori di ResizeObserver (innocui) non contano", ()
   installaReteDiSicurezza(b);
   b.lancia("error", { error: null, message: "ResizeObserver loop completed with undelivered notifications." });
   assert.equal(elenco().length, 0);
+});
+
+// ------------------------------------------------------------------------- misure ----
+
+test("segna: si tiene l'ultima misura di ogni cosa, nell'ordine in cui sono comparse", () => {
+  segna("indice", 120.4, "14.416 brani");
+  segna("ricerca", 8);
+  segna("indice", 95.2);
+  assert.deepEqual(misure(), [
+    { nome: "indice", ms: 95.2, nota: "" },
+    { nome: "ricerca", ms: 8, nota: "" },
+  ]);
+});
+
+test("testoMisure: una riga per misura, con l'etichetta, i millisecondi arrotondati e la nota", () => {
+  assert.equal(testoMisure(), "");
+  segna("indice", 120.4, "14.416 brani");
+  segna("ricerca", 8.6);
+  assert.equal(testoMisure({ indice: "Indice di ricerca" }), "Indice di ricerca: 120 ms (14.416 brani)\nricerca: 9 ms");
 });

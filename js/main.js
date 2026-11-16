@@ -92,13 +92,16 @@ async function avviaApp() {
       usaNewPipe: leggiPreferenzaNewPipe(),
       soloJukebox: leggiPreferenzaSoloJukebox(),
     });
+    const inizioCatalogo = performance.now();
     const catalogo = await dati.carica();
+    diagnostica.segna("catalogo", performance.now() - inizioCatalogo, catalogo.offline ? "dalla copia salvata" : "");
     mostraAvvio("caricamento", { testo: "Leggo le playlist…" });
     await applicaCatalogo(catalogo);
     const elenco = await playlist.carica();
     stato.cambia({ playlist: elenco.map((p) => rimappaPlaylist(p, catalogo.rinominati)) });
     mostraAvvio("pronto");
     vaiA(app, "cerca");
+    diagnostica.segna("primaLista", performance.now(), "dall'apertura della pagina");
     if (catalogo.offline) {
       const quando = dataBreve(catalogo.costruitoIl);
       mostraAvviso(`Dati ${quando ? `del ${quando}` : "salvati"}, non aggiornati: rete assente.`, "", {

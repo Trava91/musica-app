@@ -1,6 +1,7 @@
 // diagnostica.js — il registro di bordo del Jukebox: gli ultimi errori (con l'ora e da dove
-// vengono) e, per chi vuole un avviso, la frase da mostrare. Niente viene mandato fuori dal
-// telefono: la scheda Impostazioni → Diagnostica li elenca e ha un tasto "Copia".
+// vengono), per chi vuole un avviso la frase da mostrare, e le misure di velocità (quanto ci
+// mettono l'avvio, l'indice, una ricerca). Niente viene mandato fuori dal telefono: la scheda
+// Impostazioni → Diagnostica li elenca e ha un tasto "Copia".
 //
 // Logica pura (non conosce la pagina): chi la collega alla pagina è main.js, che ascolta le voci
 // con ascolta() e mostra l'avviso di quelle che ne hanno uno. La rete di sicurezza generale
@@ -69,6 +70,34 @@ export function ascolta(fn) {
   return () => {
     ascoltatori.delete(fn);
   };
+}
+
+// --------------------------------------------------------------------- misure ----
+/** @type {Map<string, { ms: number, nota: string }>} */
+const misurate = new Map();
+
+/** Annota quanto ci ha messo qualcosa (l'ultima volta). `nota` = un dettaglio, es. "14.416 brani". */
+export function segna(nome, ms, nota = "") {
+  misurate.set(nome, { ms, nota });
+}
+
+/** Le misure annotate, nell'ordine in cui sono state fatte la prima volta. */
+export function misure() {
+  return [...misurate].map(([nome, m]) => ({ nome, ...m }));
+}
+
+/** Svuota le misure (i test). */
+export function azzeraMisure() {
+  misurate.clear();
+}
+
+/** Le misure in testo, una per riga, con le etichette in `nomi` (nome → etichetta); vuoto se non ce n'è. */
+export function testoMisure(nomi = {}) {
+  return misure()
+    .map(
+      (m) => `${nomi[m.nome] ?? m.nome}: ${Math.round(m.ms).toLocaleString("it-IT")} ms${m.nota ? ` (${m.nota})` : ""}`,
+    )
+    .join("\n");
 }
 
 const due = (n) => String(n).padStart(2, "0");

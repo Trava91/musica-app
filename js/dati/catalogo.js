@@ -17,7 +17,7 @@
 import { ApiError, GitHubApi } from "./github.js";
 import { preparaIndice } from "../nucleo/cerca.js";
 import { ATTESA_CACHE_MS, leggiConfig } from "../config.js";
-import { registra } from "../nucleo/diagnostica.js";
+import { registra, segna } from "../nucleo/diagnostica.js";
 import { ErroreDati, validaCatalogo } from "../nucleo/valida.js";
 
 const CACHE_NOME = "jukebox-dati";
@@ -91,8 +91,12 @@ function salvaInCache(testo, d) {
 // `avvisi` dicono cosa non andava nei dati: li mostra Impostazioni → Dati. `offline` = è la
 // copia in cache perché la rete non c'era: chi avvia l'app lo dice all'utente.
 function preparaCatalogo(dati, offline = false) {
+  const inizio = performance.now();
   const { catalogo, scartati, avvisi } = validaCatalogo(dati);
+  const dopoControllo = performance.now();
   preparaIndice(catalogo.brani, catalogo.raccolte);
+  segna("controllo", dopoControllo - inizio, `${catalogo.brani.length.toLocaleString("it-IT")} brani`);
+  segna("indice", performance.now() - dopoControllo);
   // rinominati: id vecchio → id nuovo (vedi strumenti/esporta.py), per i file e le playlist salvati.
   return {
     brani: catalogo.brani,

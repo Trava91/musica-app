@@ -4,6 +4,7 @@
 
 import { ATTESA_RICERCA_MS, RIGHE_PER_PAGINA } from "../config.js";
 import * as cercaMod from "../nucleo/cerca.js";
+import { segna } from "../nucleo/diagnostica.js";
 import { vociSelezionate } from "../nucleo/generi.js";
 import { FILTRI_DEFAULT } from "../nucleo/stato.js";
 import { $, debounce, vaiA } from "./base.js";
@@ -67,7 +68,13 @@ export function disegnaCerca(app) {
   const { catalogo, filtri, ordine, voci } = app.stato.leggi();
   if (!catalogo) return;
   const testo = $("#cerca-testo").value;
+  const inizioRicerca = performance.now();
   const risultati = cercaMod.cerca(catalogo.brani, testo, filtri, ordine);
+  segna(
+    "ricerca",
+    performance.now() - inizioRicerca,
+    `${risultati.length.toLocaleString("it-IT")} risultati, ${testo.trim() ? "con testo" : "senza testo"}`,
+  );
   const nAttivi = contaFiltriAttivi(filtri);
   $("#cerca-filtri-badge").hidden = nAttivi === 0;
   $("#cerca-filtri-badge").textContent = nAttivi;
@@ -95,7 +102,9 @@ export function disegnaCerca(app) {
         azione: { etichetta: "Togli i filtri", fai: () => togliFiltri(app) },
       }
     : "Il catalogo non ha dischi da mostrare.";
+  const inizioDisegno = performance.now();
   mostraLista(app, $("#cerca-risultati"), mostrati, { lista: risultati, nome }, { vuoto });
+  segna("disegno", performance.now() - inizioDisegno, `${mostrati.length} righe`);
   $("#cerca-altri").hidden = risultati.length <= mostrati.length;
 }
 

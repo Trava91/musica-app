@@ -2,6 +2,7 @@
 // quanti brani e con che cosa suonerebbe) e i tasti per crearne di nuove. Il ▶ di un
 // cartellino passa la playlist alla sessione.
 
+import { segna } from "../nucleo/diagnostica.js";
 import { vociSelezionate } from "../nucleo/generi.js";
 import * as motori from "../nucleo/motori.js";
 import * as regole from "../nucleo/regole.js";
@@ -42,6 +43,7 @@ export function collegaPlaylist(app) {
 export function disegnaPlaylist(app) {
   const { catalogo, playlist, ctx } = app.stato.leggi();
   if (!catalogo) return;
+  const inizio = performance.now();
   const n = playlist.length;
   $("#playlist-sotto").textContent = n ? `${n} playlist · quelle coi filtri si aggiornano da sole` : "";
   $("#playlist-lista").innerHTML =
@@ -71,6 +73,7 @@ export function disegnaPlaylist(app) {
       testo: "Nessuna playlist ancora.",
       azione: { etichetta: "Crea la prima playlist", fai: () => apriCostruttore(app, null) },
     });
+  segna("playlist", performance.now() - inizio, `${n} playlist`);
 }
 
 // Le regole di una playlist in poche etichette leggibili (per il cartellino).
