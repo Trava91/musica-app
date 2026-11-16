@@ -1,5 +1,5 @@
 // comandi.js — cosa fanno il tasto grande, i tasti ⏮ ⏭ e la fine di un brano.
-// Logica pura, testata in test/logica.test.mjs.
+// Logica pura, testata in test/comandi.test.mjs.
 //
 // Due brani distinti nella schermata "Suona":
 //   - il SELEZIONATO: quello che si vede sul disco (la posizione della coda);

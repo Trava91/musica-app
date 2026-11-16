@@ -1,4 +1,4 @@
-// generi.js — come il jukebox MOSTRA i generi. Logica pura, testata in test/logica.test.mjs.
+// generi.js — come il jukebox MOSTRA i generi. Logica pura, testata in test/generi.test.mjs.
 //
 // Il catalogo ha 17 macro-generi, con più dettaglio su house e techno (utile
 // all'assistente DJ). Nel jukebox sono troppi: qui alcuni si fondono in una sola

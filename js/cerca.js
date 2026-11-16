@@ -1,6 +1,6 @@
 // cerca.js — logica pura di ricerca e filtri sul catalogo. Nessun accesso al DOM o
 // alla rete: prende in ingresso l'array "brani" del contratto dati (vedi
-// strumenti/esporta.py) e restituisce array derivati. Testato in test/logica.test.mjs.
+// strumenti/esporta.py) e restituisce array derivati. Testato in test/cerca.test.mjs.
 //
 // Un brano ha i campi abbreviati del contratto: a(rtista), t(itolo), v(ersione),
 // k (tipo), f(eat), g (indice macro-genere), gf (generi fini), y(anno), d(urata),

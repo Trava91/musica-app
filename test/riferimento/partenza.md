@@ -13,6 +13,10 @@ prima di ogni modifica del piano `plans/2026-11-14-restauro-jukebox.md`.
 Totale Python: 47. Con la console di Windows in cp1252 i test Python si
 lanciano con `PYTHONUTF8=1` (la Fase 1 del piano sistema questo punto).
 
+Dalla Fase 1 il comando unico è `npm run verifica`. Il vecchio `logica.test.mjs`
+è diviso in un file per modulo (`npm test`, gli stessi 114 casi) e i test Python
+non hanno più bisogno di `PYTHONUTF8=1`.
+
 ## Confronto dopo ogni spostamento di codice
 
 L'uscita di `node strumenti/valuta.mjs <catalogo.json> <playlist.json>` sui dati

@@ -46,8 +46,10 @@ app/
 │   ├── test_archivio.py      test di metadati, nomi leggibili, fonti
 │   └── test_esporta.py       test della tabella degli id rinominati
 ├── test/
-│   ├── logica.test.mjs      test Node della logica pura
-│   └── fixture.json          catalogo finto (nessun dato reale: repo pubblico)
+│   ├── *.test.mjs            test Node della logica pura, un file per modulo
+│   ├── fixture.mjs           carica e indicizza il catalogo finto
+│   ├── fixture.json          catalogo finto (nessun dato reale: repo pubblico)
+│   └── riferimento/          fotografia di partenza del restauro
 └── icons/icon.svg
 ```
 
@@ -85,10 +87,11 @@ Apri `http://localhost:8000` e usa il token nell'onboarding.
 ### Test della logica
 
 ```bash
-node test/logica.test.mjs
-python strumenti/test_prepara.py
-python strumenti/test_archivio.py
-python strumenti/test_esporta.py
+npm install                   # una volta sola: Biome (solo attrezzi di sviluppo)
+python -m pip install ruff    # una volta sola: il controllo dei file Python
+npm run verifica              # lint (Biome, Ruff) + tutti i test JavaScript e Python
+npm test                      # solo i test JavaScript (node:test)
+npm run test:py               # solo i test Python
 ```
 
 `test/fixture.json` è un mini-catalogo **completamente inventato**: nessun dato

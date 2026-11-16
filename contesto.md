@@ -105,8 +105,8 @@ piano (aggancio a `aggiorna.py`), e solo a revisione chiusa.
 - **Solo Jukebox (03/11/2026):** interruttore nelle Impostazioni (spento di
   default): acceso, il Jukebox non apre mai app esterne, i brani senza file
   appaiono spenti e un ▶ su uno di loro parte dal prossimo della lista che c'è.
-- **Test:** 114 Node (`test/logica.test.mjs`, dati inventati) + 47 Python
-  (`strumenti/test_*.py`).
+- **Test:** 114 Node (`test/*.test.mjs`, dati inventati) + 47 Python
+  (`strumenti/test_*.py`); `npm run verifica` lancia lint e tutti i test.
 - **Da fare:** finire l'archivio; a revisione del catalogo chiusa →
   `esporta.py`, `--riallinea`, `--metadati`, `--riprova`, id stabili; poi M4
   (assistente DJ + Shazam), M5 (Spotify Premium), M6 (Deezer + lista da
