@@ -4,13 +4,12 @@
 // per leggerle anche offline.
 
 import { GitHubApi, ApiError } from "./api.js";
-import { leggiConfig } from "./config.js";
+import { leggiConfig, MAX_TENTATIVI_SALVATAGGIO } from "./config.js";
 import { validaPlaylist } from "./valida.js";
 
 const FILE = "playlist.json";
 const LS_CACHE = "jukebox.playlist.cache";
 const LS_SHA = "jukebox.playlist.sha";
-const MAX_TENTATIVI = 3;
 const VUOTO = () => ({ schema: 1, playlist: [] });
 
 function api() {
@@ -73,7 +72,7 @@ export async function carica() {
 
 // Applica `modifica(playlist[]) -> playlist[]` e salva. Su conflitto (409/412,
 // qualcun altro ha scritto nel frattempo) rilegge, riapplica la STESSA modifica
-// e riprova, fino a MAX_TENTATIVI.
+// e riprova, fino a MAX_TENTATIVI_SALVATAGGIO.
 export async function salva(modifica) {
   if (soloLocale()) {
     const nuovo = { schema: 1, playlist: modifica(daCacheLocale().playlist.slice()) };
@@ -84,7 +83,7 @@ export async function salva(modifica) {
   let sha = localStorage.getItem(LS_SHA);
   let attuale = sha ? daCacheLocale() : null;
 
-  for (let tentativo = 0; tentativo < MAX_TENTATIVI; tentativo++) {
+  for (let tentativo = 0; tentativo < MAX_TENTATIVI_SALVATAGGIO; tentativo++) {
     if (!attuale) {
       try {
         const r = await gh.getFile(FILE);

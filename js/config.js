@@ -26,6 +26,22 @@ const DEFAULT = {
   file: "catalogo.json",
 };
 
+// --- Tempi e soglie (prima sparsi nei file) -----------------------------------------------------
+export const ATTESA_RICERCA_MS = 120; // dopo l'ultimo tasto, prima di rifare la ricerca
+export const RIGHE_PER_PAGINA = 100; // risultati mostrati alla volta in Cerca ("Mostra altri" ne aggiunge altrettanti)
+export const PROSSIMI_MOSTRATI = 30; // brani di "A seguire" mostrati alla volta
+export const RIGHE_MAX_PLAYLIST = 200; // righe mostrate dentro una playlist aperta
+export const RIGHE_MAX_AVVISI = 200; // righe dell'elenco "brani ignorati" nelle Impostazioni
+export const ATTESA_CACHE_MS = 5000; // quanto aspettare la cache del catalogo prima di proseguire
+export const MAX_TENTATIVI_SALVATAGGIO = 3; // se GitHub segnala un conflitto, quante volte riprovare a salvare
+export const DURATA_AVVISO_MS = 3200; // quanto resta in vista un avviso
+export const DURATA_AVVISO_LUNGO_MS = 7000; // ...e quelli lunghi (importazione dei file)
+export const SECONDI_PER_RIPARTIRE = 4; // ⏮ oltre questi secondi riparte dall'inizio del brano
+
+// Questi tre vivono nella logica pura (nucleo) ma si guardano da qui, con tutti gli altri.
+export { TOLLERANZA_BPM } from "./dj.js"; // quanto possono differire i BPM di due brani "in mix" (6%)
+export { RAGGRUPPATI } from "./generi.js"; // i generi che il Jukebox mostra fusi in un'unica voce
+
 // Il numero della versione dell'app: dev'essere lo stesso di "jukebox-vN" in sw.js (lo controlla
 // test/contratti.test.mjs). Si alza a ogni pubblicazione, in tutti e due i posti.
 export const VERSIONE = 13;

@@ -16,14 +16,13 @@
 
 import { ApiError, GitHubApi } from "./api.js";
 import { preparaIndice } from "./cerca.js";
-import { leggiConfig } from "./config.js";
+import { ATTESA_CACHE_MS, leggiConfig } from "./config.js";
 import { ErroreDati, validaCatalogo } from "./valida.js";
 
 const CACHE_NOME = "jukebox-dati";
 // Chiave sullo stesso indirizzo dell'app (Cache Storage vuole un URL assoluto).
 const CACHE_CHIAVE = new URL("cache-dati/catalogo.json", globalThis.location?.href || "http://localhost/").href;
 const LS_SHA = "jukebox.dati.sha";
-const ATTESA_CACHE_MS = 5000;
 const NON_E_UN_CATALOGO = 'GitHub non ha mandato il catalogo: riprova con "Aggiorna dati ora".';
 
 /**

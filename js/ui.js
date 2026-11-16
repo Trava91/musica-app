@@ -12,7 +12,19 @@ import * as file from "./file.js";
 import * as comandi from "./comandi.js";
 import { Lettore } from "./lettore.js";
 import * as playlist from "./playlist.js";
-import { salvaPreferenzaMotori, TIPI_VERSIONE, VERSIONE } from "./config.js";
+import {
+  ATTESA_RICERCA_MS,
+  DURATA_AVVISO_LUNGO_MS,
+  DURATA_AVVISO_MS,
+  PROSSIMI_MOSTRATI,
+  RIGHE_MAX_AVVISI,
+  RIGHE_MAX_PLAYLIST,
+  RIGHE_PER_PAGINA,
+  SECONDI_PER_RIPARTIRE,
+  salvaPreferenzaMotori,
+  TIPI_VERSIONE,
+  VERSIONE,
+} from "./config.js";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -89,7 +101,7 @@ export function showToast(msg, type = "", opts = {}) {
   t.hidden = false;
   toastTimer = setTimeout(() => {
     t.hidden = true;
-  }, opts.duration || 3200);
+  }, opts.duration || DURATA_AVVISO_MS);
 }
 
 function esc(s) {
@@ -123,13 +135,13 @@ export class UI {
     this.tab = "cerca";
     this.filtri = { soloScelti: true, tipo: "canzoni" };
     this.ordineRisultati = undefined;
-    this.paginaRisultati = 100;
+    this.paginaRisultati = RIGHE_PER_PAGINA;
     this.ctx = { fileIds: new Set(), spotify: "non-configurato", usaNewPipe: true, soloJukebox: false, priorita: [] };
     this.coda = null;
     this.playlistAttiva = null;
     this.esterno = null; // ultimo brano mandato a un'app esterna (NewPipe, Spotify)
     this.motoreCoda = null; // il motore con cui suona la coda attuale ("file" = lettore interno)
-    this.prossimiMostrati = 30; // quanti brani di "A seguire" si vedono (cresce con "Mostra altri")
+    this.prossimiMostrati = PROSSIMI_MOSTRATI; // quanti brani di "A seguire" si vedono (cresce con "Mostra altri")
     this.lettore = new Lettore({
       onFine: (b) => this.fineBrano(b),
       onStato: () => this.aggiornaStatoLettore(),
@@ -144,12 +156,12 @@ export class UI {
     $("#cerca-testo").addEventListener(
       "input",
       debounce(() => {
-        this.paginaRisultati = 100;
+        this.paginaRisultati = RIGHE_PER_PAGINA;
         this.renderCerca();
-      }, 120),
+      }, ATTESA_RICERCA_MS),
     );
     $("#cerca-altri").addEventListener("click", () => {
-      this.paginaRisultati += 100;
+      this.paginaRisultati += RIGHE_PER_PAGINA;
       this.renderCerca();
     });
     $("#cerca-filtri-btn").addEventListener("click", () => this.apriFiltri());
@@ -157,7 +169,7 @@ export class UI {
     $("#rapido-ordine").addEventListener("click", () => {
       const giro = [undefined, "artista", "recenti", "bpm"];
       this.ordineRisultati = giro[(giro.indexOf(this.ordineRisultati) + 1) % giro.length];
-      this.paginaRisultati = 100;
+      this.paginaRisultati = RIGHE_PER_PAGINA;
       this.renderCerca();
     });
     $("#pl-nuova-intelligente").addEventListener("click", () => this.apriCostruttore(null));
@@ -218,7 +230,7 @@ export class UI {
     });
     $("#mini-apri").addEventListener("click", () => this.switchTab("riproduzione"));
     $("#prossimi-altri").addEventListener("click", () => {
-      this.prossimiMostrati += 30;
+      this.prossimiMostrati += PROSSIMI_MOSTRATI;
       this.renderRiproduzione();
     });
     $$(".overlay").forEach((ov) => {
@@ -513,7 +525,7 @@ export class UI {
           ...this.filtri,
           macro: el.dataset.idx === "tutti" ? [] : [...this.voci[Number(el.dataset.idx)].indici],
         };
-        this.paginaRisultati = 100;
+        this.paginaRisultati = RIGHE_PER_PAGINA;
         this.switchTab("cerca");
       });
     });
@@ -836,7 +848,7 @@ export class UI {
       }
     });
     $("#pl-elenco").innerHTML = elenco
-      .slice(0, 200)
+      .slice(0, RIGHE_MAX_PLAYLIST)
       .map((b, i) => this.rigaBrano(b, i))
       .join("");
     this.agganciaClicRighe($("#pl-elenco"), elenco, { lista: elenco, nome: p.nome });
@@ -1059,7 +1071,7 @@ export class UI {
           .filter(Boolean),
       };
       this.ordineRisultati = $("#filt-ordine", el).value || undefined;
-      this.paginaRisultati = 100;
+      this.paginaRisultati = RIGHE_PER_PAGINA;
       overlay.hidden = true;
       this.renderCerca();
     });
@@ -1067,7 +1079,7 @@ export class UI {
       this.filtri = { soloScelti: true, tipo: "canzoni" };
       this.ordineRisultati = undefined;
       overlay.hidden = true;
-      this.paginaRisultati = 100;
+      this.paginaRisultati = RIGHE_PER_PAGINA;
       this.renderCerca();
     });
     overlay.hidden = false;
@@ -1096,7 +1108,7 @@ export class UI {
     this.playlistAttiva = p;
     this.coda = new Coda(brani, { ripeti: "no" });
     if (da) this.coda.salta(da.id);
-    this.prossimiMostrati = 30;
+    this.prossimiMostrati = PROSSIMI_MOSTRATI;
     this.saltati = saltati;
     this.lettore.ferma();
     this.esterno = null;
@@ -1140,7 +1152,7 @@ export class UI {
   // si aspetta che il brano cambi subito.
   comandoBlocco(c) {
     if (!this.coda || this.motoreCoda !== "file") return;
-    if (c === "indietro" && this.lettore.posizione > 4) {
+    if (c === "indietro" && this.lettore.posizione > SECONDI_PER_RIPARTIRE) {
       this.lettore.cerca(0);
       return;
     }
@@ -1280,7 +1292,7 @@ export class UI {
       showToast(
         `${esito.aggiunti} brani aggiunti${esito.gia ? `, ${esito.gia} c'erano già` : ""}${esito.sconosciuti.length ? `, ${esito.sconosciuti.length} file non riconosciuti` : ""}. Ora puoi cancellare la cartella Download/Jukebox.`,
         "ok",
-        { duration: 7000 },
+        { duration: DURATA_AVVISO_LUNGO_MS },
       );
     } catch (err) {
       showToast(
@@ -1288,7 +1300,7 @@ export class UI {
           ? "Spazio finito sul telefono: libera spazio e riprova."
           : err?.message || "Importazione non riuscita.",
         "err",
-        { duration: 7000 },
+        { duration: DURATA_AVVISO_LUNGO_MS },
       );
     }
     stato.textContent = "";
@@ -1337,10 +1349,9 @@ export class UI {
     const { scartate, avvisi: avvisiPlaylist } = playlist.controlloPlaylist();
     const avvisi = [...(this.catalogo?.avvisi || []), ...avvisiPlaylist];
 
-    const MAX_RIGHE = 200; // un catalogo molto rovinato non deve riempire la pagina
     const elenco = (righe) => {
-      const voci = righe.slice(0, MAX_RIGHE).map((r) => `<li>${esc(r)}</li>`);
-      if (righe.length > MAX_RIGHE) voci.push(`<li>…e altri ${righe.length - MAX_RIGHE}</li>`);
+      const voci = righe.slice(0, RIGHE_MAX_AVVISI).map((r) => `<li>${esc(r)}</li>`);
+      if (righe.length > RIGHE_MAX_AVVISI) voci.push(`<li>…e altri ${righe.length - RIGHE_MAX_AVVISI}</li>`);
       return `<ul>${voci.join("")}</ul>`;
     };
     const blocco = (titolo, righe) =>
