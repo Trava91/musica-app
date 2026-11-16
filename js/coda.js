@@ -2,25 +2,10 @@
 // indietro, casuale, ripeti. Logica pura: non tocca l'audio (lettore.js, M2) né
 // la UI (ui.js), solo lo stato "che cosa viene dopo".
 
-function mulberry32(seme) {
-  let a = seme >>> 0;
-  return function rand() {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+import { mescola } from "./casuale.js";
 
-function mescola(elenco, seme) {
-  const rand = mulberry32(seme ?? Date.now() >>> 0);
-  const a = elenco.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
+// Senza seme ogni coda casuale è diversa: il seme è l'ora.
+const mescolaCoda = (elenco, seme) => mescola(elenco, seme ?? Date.now() >>> 0);
 
 export class Coda {
   /**
@@ -36,7 +21,7 @@ export class Coda {
     this.seme = seme;
     this.casuale = casuale;
     this.ripeti = ripeti;
-    this.ordine = casuale ? mescola(elenco, seme) : elenco.slice();
+    this.ordine = casuale ? mescolaCoda(elenco, seme) : elenco.slice();
     this.indice = elenco.length ? 0 : -1;
   }
 
@@ -52,7 +37,7 @@ export class Coda {
     if (on === this.casuale) return;
     const attuale = this.corrente;
     this.casuale = on;
-    this.ordine = on ? mescola(this.originale, this.seme) : this.originale.slice();
+    this.ordine = on ? mescolaCoda(this.originale, this.seme) : this.originale.slice();
     this.indice = attuale ? this.ordine.findIndex((b) => b.id === attuale.id) : -1;
   }
 

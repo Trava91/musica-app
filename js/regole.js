@@ -13,6 +13,7 @@
 // Formato di una playlist manuale: {id, nome, tipo: "manuale", brani: [id, ...]}
 
 import { normalizza } from "./cerca.js";
+import { mescola } from "./casuale.js";
 import { percorsoArmonico } from "./dj.js";
 import { motoreBrano, MOTORI_CONTINUI } from "./motori.js";
 
@@ -55,27 +56,8 @@ function corrisponde(b, r, ctx) {
   return true;
 }
 
-// PRNG deterministico (mulberry32): stesso seme → stesso mescolamento, sempre.
-// Serve a poter "ripetere" una playlist casuale, non a garantire imprevedibilità.
-function mulberry32(seme) {
-  let a = seme >>> 0;
-  return function rand() {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function mescolaDeterministico(elenco, seme) {
-  const rand = mulberry32(seme ?? 0);
-  const a = elenco.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
+// Una playlist casuale deve poter essere "ripetuta": senza seme si usa 0, sempre lo stesso.
+const mescolaDeterministico = (elenco, seme) => mescola(elenco, seme ?? 0);
 
 function ordina(elenco, ordine, seme) {
   switch (ordine) {

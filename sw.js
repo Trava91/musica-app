@@ -27,6 +27,7 @@ const SHELL = [
   "js/motori.js",
   "js/link.js",
   "js/coda.js",
+  "js/casuale.js",
   "js/playlist.js",
   "js/valida.js",
   "icons/icon.svg",
