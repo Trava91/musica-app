@@ -28,6 +28,7 @@ const SHELL = [
   "js/link.js",
   "js/coda.js",
   "js/playlist.js",
+  "js/valida.js",
   "icons/icon.svg",
   "icons/icon-192.png",
   "icons/icon-512.png",

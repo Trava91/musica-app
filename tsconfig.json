@@ -20,6 +20,7 @@
     "js/coda.js",
     "js/comandi.js",
     "js/generi.js",
+    "js/valida.js",
     "test/**/*.mjs"
   ]
 }
