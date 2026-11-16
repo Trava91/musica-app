@@ -36,6 +36,9 @@ const SHELL = [
   "fonts/oswald-400-600.woff2",
   "fonts/courier-prime-400.woff2",
   "fonts/courier-prime-700.woff2",
+  "fonts/dseg7-classic-700.woff2",
+  "fonts/doto-700.woff2",
+  "fonts/barlow-condensed-500.woff2",
 ];
 
 self.addEventListener("install", (event) => {
