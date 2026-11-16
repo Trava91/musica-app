@@ -8,7 +8,7 @@ deve restare autonomo, con la sola libreria standard.
 Uso (dalla cartella app/):
     python strumenti/esporta.py
 
-CONTRATTO DATI v1 — se cambia un campo qui, aggiorna anche js/dati.js, js/playlist.js
+CONTRATTO DATI v1 — se cambia un campo qui, aggiorna anche js/dati/catalogo.js, js/dati/playlist.js
 e la sezione "Contratto dati" di README.md.
 
 {
@@ -42,6 +42,7 @@ il posto di quello vecchio. È cumulativa (le voci vecchie puntano all'arrivo di
 oggi), così il Jukebox e prepara.py --riallinea ritrovano i brani anche dopo più
 export. Un id sparito senza eredi (tutte le sue fonti tolte) non ha voce.
 """
+
 from __future__ import annotations
 
 import json
@@ -62,10 +63,23 @@ DEST = APP.parent / "app-dati" / "catalogo.json"
 # Copia esatta di generi.MACRO in liste/motore/generi.py: questo script non importa
 # da lì (vedi docstring), quindi la lista va tenuta allineata a mano se cambia.
 MACRO = [
-    "Tech house", "Deep e melodic", "Disco e funky house", "Chicago e acid", "Techno",
-    "Minimal", "Disco, funk e soul", "Elettronica varia", "Hip hop USA", "Rap italiano",
-    "Reggae, dub e ska", "Rock, garage e psichedelia", "Swing e rock'n'roll", "Jazz e blues",
-    "Brasile, latin e Africa", "Cantautori e pop italiano", "Altro",
+    "Tech house",
+    "Deep e melodic",
+    "Disco e funky house",
+    "Chicago e acid",
+    "Techno",
+    "Minimal",
+    "Disco, funk e soul",
+    "Elettronica varia",
+    "Hip hop USA",
+    "Rap italiano",
+    "Reggae, dub e ska",
+    "Rock, garage e psichedelia",
+    "Swing e rock'n'roll",
+    "Jazz e blues",
+    "Brasile, latin e Africa",
+    "Cantautori e pop italiano",
+    "Altro",
 ]
 INDICE_MACRO = {nome: i for i, nome in enumerate(MACRO)}
 
@@ -89,8 +103,10 @@ def _rif(fonte: sqlite3.Row) -> str:
 
 def esporta() -> dict:
     if not CATALOGO_SQLITE.exists():
-        sys.exit(f"Non trovo {CATALOGO_SQLITE}. Prima costruisci il catalogo con "
-                  "python liste/motore/aggiorna.py (vedi liste/README.md).")
+        sys.exit(
+            f"Non trovo {CATALOGO_SQLITE}. Prima costruisci il catalogo con "
+            "python liste/motore/aggiorna.py (vedi liste/README.md)."
+        )
 
     with tempfile.TemporaryDirectory() as tmp:
         copia = Path(tmp) / "catalogo.sqlite"
@@ -98,16 +114,19 @@ def esporta() -> dict:
         con = sqlite3.connect(copia)
         con.row_factory = sqlite3.Row
 
-        macro_db = {r["macro_genere"] for r in con.execute(
-            "SELECT DISTINCT macro_genere FROM versioni WHERE macro_genere IS NOT NULL")}
+        macro_db = {
+            r["macro_genere"]
+            for r in con.execute("SELECT DISTINCT macro_genere FROM versioni WHERE macro_genere IS NOT NULL")
+        }
         ignoti = macro_db - set(MACRO)
         if ignoti:
-            sys.exit(f"Macro-generi nel database non presenti nella copia locale di MACRO: {ignoti}. "
-                      "Allinea la costante MACRO in questo script a liste/motore/generi.py.")
+            sys.exit(
+                f"Macro-generi nel database non presenti nella copia locale di MACRO: {ignoti}. "
+                "Allinea la costante MACRO in questo script a liste/motore/generi.py."
+            )
 
         fonti_per_versione: dict[str, list[sqlite3.Row]] = {}
-        for f in con.execute("SELECT id, versione_id, piattaforma, url FROM fonti "
-                              "WHERE versione_id IS NOT NULL"):
+        for f in con.execute("SELECT id, versione_id, piattaforma, url FROM fonti WHERE versione_id IS NOT NULL"):
             fonti_per_versione.setdefault(f["versione_id"], []).append(f)
 
         # Indice delle raccolte: (nome, tipo, codice piattaforma) -> indice, in ordine
@@ -130,7 +149,8 @@ def esporta() -> dict:
         righe_versioni = con.execute(
             "SELECT id, opera_id, artista, titolo, versione, tipo, feat, anno, durata_s, "
             "macro_genere, generi, bpm, camelot, energia, esplorazione FROM versioni "
-            "ORDER BY artista COLLATE NOCASE, titolo COLLATE NOCASE").fetchall()
+            "ORDER BY artista COLLATE NOCASE, titolo COLLATE NOCASE"
+        ).fetchall()
         for v in righe_versioni:
             fnt = fonti_per_versione.get(v["id"], [])
             if not fnt:
@@ -149,7 +169,10 @@ def esporta() -> dict:
                         date_aggiunta.append(a["aggiunto_il"])
 
             b = {
-                "id": v["id"], "o": v["opera_id"], "a": v["artista"], "t": v["titolo"],
+                "id": v["id"],
+                "o": v["opera_id"],
+                "a": v["artista"],
+                "t": v["titolo"],
                 "k": v["tipo"] or "originale",
                 "s": [[CODICE[f["piattaforma"]], _rif(f)] for f in sorgenti],
                 "r": sorted(indici_raccolte),
@@ -178,8 +201,7 @@ def esporta() -> dict:
                 b["q"] = max(date_aggiunta)
             brani.append(b)
 
-        costruito_il = con.execute(
-            "SELECT valore FROM meta WHERE chiave='costruito_il'").fetchone()
+        costruito_il = con.execute("SELECT valore FROM meta WHERE chiave='costruito_il'").fetchone()
         con.close()
 
     return {
@@ -251,12 +273,16 @@ def main():
     dimensione_kb = DEST.stat().st_size // 1024
     con_bpm = sum(1 for b in dati["brani"] if "b" in b)
     scelti = sum(1 for b in dati["brani"] if "x" not in b)
-    print(f"Esportato: {len(dati['brani'])} brani, {len(dati['raccolte'])} raccolte, "
-          f"{dimensione_kb} KB → {DEST.relative_to(APP.parent)}")
+    print(
+        f"Esportato: {len(dati['brani'])} brani, {len(dati['raccolte'])} raccolte, "
+        f"{dimensione_kb} KB → {DEST.relative_to(APP.parent)}"
+    )
     print(f"  scelti: {scelti} | esplorazione: {len(dati['brani']) - scelti} | con BPM: {con_bpm}")
     if precedente:
         nuovi_oggi = sum(1 for b in precedente["brani"] if b["id"] in dati.get("rinominati", {}))
-        print(f"  id cambiati da questo export: {nuovi_oggi} · tabella rinominati: {len(dati.get('rinominati', {}))} voci")
+        print(
+            f"  id cambiati da questo export: {nuovi_oggi} · tabella rinominati: {len(dati.get('rinominati', {}))} voci"
+        )
     if dimensione_kb > 5000:
         print(f"  ATTENZIONE: sopra i 5 MB previsti dal piano ({dimensione_kb} KB).")
     verifica(dati)

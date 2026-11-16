@@ -1,0 +1,30 @@
+# Controllo automatico a ogni push: lint, tipi e tutti i test (npm run verifica).
+# È un avviso, non un blocco: la pubblicazione su GitHub Pages avviene lo stesso.
+# Nessun costo: per i repo pubblici i minuti di GitHub Actions sono gratuiti.
+name: Verifica
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verifica:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Installa gli attrezzi
+        run: |
+          npm ci
+          python -m pip install ruff==0.17.5
+      - name: Verifica (lint, tipi, test)
+        run: npm run verifica

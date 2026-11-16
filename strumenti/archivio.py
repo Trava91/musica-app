@@ -24,7 +24,6 @@ import html
 import json
 import os
 import re
-import shutil
 import subprocess
 import unicodedata
 from datetime import datetime
@@ -37,6 +36,7 @@ LUNGHEZZA_NOME = 140  # caratteri del nome leggibile, estensione esclusa (Window
 
 
 # ------------------------------------------------------------------ utilità --
+
 
 def leggi_json(p: Path, vuoto):
     try:
@@ -54,8 +54,9 @@ def scrivi_json(p: Path, dati) -> None:
 def file_audio(cartella: Path) -> list[Path]:
     """I file audio dell'archivio (solo il primo livello: niente _orfani, _tmp).
     Solo nomi "<id>.<ext>": i residui di yt-dlp come "<id>.temp.m4a" non contano."""
-    return sorted(f for f in cartella.iterdir()
-                  if f.is_file() and f.suffix.lower() in ESTENSIONI_AUDIO and "." not in f.stem)
+    return sorted(
+        f for f in cartella.iterdir() if f.is_file() and f.suffix.lower() in ESTENSIONI_AUDIO and "." not in f.stem
+    )
 
 
 def adesso() -> str:
@@ -70,6 +71,7 @@ def durata_fmt(sec) -> str:
 
 
 # --------------------------------------------------------------- registro --
+
 
 def fonte_ancora(brano: dict, origine: str) -> str | None:
     """La fonte del catalogo a cui legare il file: quella da cui è arrivato
@@ -116,6 +118,7 @@ def migra(cartella: Path, brani: dict, origine_di) -> dict:
 
 # --------------------------------------------------------------- metadati --
 
+
 def tag_brano(brano: dict, macro: list[str]) -> dict:
     """I metadati di un brano, in forma neutra (prima di adattarli al formato)."""
     titolo = (brano.get("t") or brano["id"]) + (f" ({brano['v']})" if brano.get("v") else "")
@@ -125,10 +128,14 @@ def tag_brano(brano: dict, macro: list[str]) -> dict:
     # Commento solo ASCII e corto: negli mp3 VLC lo legge dal vecchio ID3v1 (30 caratteri).
     commento = ", ".join(x for x in [f"{bpm} BPM" if bpm else "", camelot, f"id {brano['id']}"] if x)
     return {
-        "titolo": titolo, "artista": artista,
+        "titolo": titolo,
+        "artista": artista,
         "genere": macro[brano["g"]] if brano.get("g") is not None and brano["g"] < len(macro) else "",
-        "anno": str(brano["y"]) if brano.get("y") else "", "bpm": bpm, "camelot": camelot,
-        "id": brano["id"], "commento": commento,
+        "anno": str(brano["y"]) if brano.get("y") else "",
+        "bpm": bpm,
+        "camelot": camelot,
+        "id": brano["id"],
+        "commento": commento,
     }
 
 
@@ -153,7 +160,13 @@ def argomenti_ffmpeg(tag: dict, ext: str) -> list[str] | None:
     elif ext in (".m4a", ".mp4"):
         campi = {**base, "date": tag["anno"]}
     elif ext in (".webm", ".mkv", ".mka"):
-        campi = {**base, "DATE_RELEASED": tag["anno"], "BPM": tag["bpm"], "INITIAL_KEY": tag["camelot"], "JUKEBOX_ID": tag["id"]}
+        campi = {
+            **base,
+            "DATE_RELEASED": tag["anno"],
+            "BPM": tag["bpm"],
+            "INITIAL_KEY": tag["camelot"],
+            "JUKEBOX_ID": tag["id"],
+        }
     elif ext in (".opus", ".ogg", ".flac"):
         campi = {**base, "date": tag["anno"], "BPM": tag["bpm"], "INITIALKEY": tag["camelot"], "JUKEBOX_ID": tag["id"]}
     else:
@@ -166,12 +179,18 @@ def argomenti_ffmpeg(tag: dict, ext: str) -> list[str] | None:
 
 
 def impronta(tag: dict, ext: str) -> str:
-    return hashlib.sha1(json.dumps([tag, ext.lower()], sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()[:16]
+    return hashlib.sha1(json.dumps([tag, ext.lower()], sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()[
+        :16
+    ]
 
 
 def _durata(f: Path) -> float | None:
-    r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", str(f)],
-                       capture_output=True, text=True, encoding="utf-8")
+    r = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", str(f)],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
     try:
         return float(r.stdout.strip())
     except ValueError:
@@ -188,7 +207,22 @@ def scrivi_metadati(f: Path, tag: dict) -> bool:
     tmpdir = f.parent / "_tmp"
     tmpdir.mkdir(exist_ok=True)
     tmp = tmpdir / f.name
-    cmd = ["ffmpeg", "-y", "-v", "error", "-i", str(f), "-map", "0", "-c", "copy", "-map_metadata", "-1", *argomenti, str(tmp)]
+    cmd = [
+        "ffmpeg",
+        "-y",
+        "-v",
+        "error",
+        "-i",
+        str(f),
+        "-map",
+        "0",
+        "-c",
+        "copy",
+        "-map_metadata",
+        "-1",
+        *argomenti,
+        str(tmp),
+    ]
     r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
     try:
         if r.returncode != 0 or not tmp.exists():
@@ -204,7 +238,9 @@ def scrivi_metadati(f: Path, tag: dict) -> bool:
     return True
 
 
-def aggiorna_metadati(cartella: Path, brani: dict, macro: list[str], registro: dict, forza: bool = False, stampa=print) -> dict:
+def aggiorna_metadati(
+    cartella: Path, brani: dict, macro: list[str], registro: dict, forza: bool = False, stampa=print
+) -> dict:
     """Scrive i metadati nei file che non li hanno o li hanno vecchi (per es.
     dopo una correzione dei titoli). Salta quelli già a posto."""
     esito = {"aggiornati": 0, "a_posto": 0, "senza_brano": 0, "non_supportati": 0, "errori": []}
@@ -236,25 +272,33 @@ def aggiorna_metadati(cartella: Path, brani: dict, macro: list[str], registro: d
 
 # ----------------------------------------------------------------- indice --
 
+
 def righe_indice(cartella: Path, brani: dict, macro: list[str], registro: dict) -> list[dict]:
     righe = []
     for f in file_audio(cartella):
         b = brani.get(f.stem)
         if not b:
             continue
-        righe.append({
-            "artista": b.get("a") or "", "titolo": (b.get("t") or "") + (f" ({b['v']})" if b.get("v") else ""),
-            "genere": macro[b["g"]] if b.get("g") is not None and b["g"] < len(macro) else "",
-            "durata": durata_fmt(b.get("d")), "provenienza": registro.get(f.stem, {}).get("origine", ""),
-            "file": f.name, "mb": f.stat().st_size / 1048576,
-        })
+        righe.append(
+            {
+                "artista": b.get("a") or "",
+                "titolo": (b.get("t") or "") + (f" ({b['v']})" if b.get("v") else ""),
+                "genere": macro[b["g"]] if b.get("g") is not None and b["g"] < len(macro) else "",
+                "durata": durata_fmt(b.get("d")),
+                "provenienza": registro.get(f.stem, {}).get("origine", ""),
+                "file": f.name,
+                "mb": f.stat().st_size / 1048576,
+            }
+        )
     righe.sort(key=lambda r: (r["artista"].casefold(), r["titolo"].casefold()))
     return righe
 
 
 def scrivi_indice(cartella: Path, brani: dict, macro: list[str], registro: dict) -> int:
     righe = righe_indice(cartella, brani, macro, registro)
-    with (cartella / "indice.csv").open("w", encoding="utf-8-sig", newline="") as fh:  # utf-8-sig e ";" per Excel in italiano
+    with (cartella / "indice.csv").open(
+        "w", encoding="utf-8-sig", newline=""
+    ) as fh:  # utf-8-sig e ";" per Excel in italiano
         w = csv.writer(fh, delimiter=";")
         w.writerow(["Artista", "Titolo", "Genere", "Durata", "Provenienza", "File"])
         for r in righe:
@@ -264,8 +308,9 @@ def scrivi_indice(cartella: Path, brani: dict, macro: list[str], registro: dict)
     corpo = "\n".join(
         f"<tr><td>{html.escape(r['artista'])}</td><td>{html.escape(r['titolo'])}</td><td>{html.escape(r['genere'])}</td>"
         f"<td class=n>{r['durata']}</td><td>{html.escape(r['provenienza'])}</td>"
-        f"<td><a href=\"{html.escape(r['file'])}\">{html.escape(r['file'])}</a></td></tr>"
-        for r in righe)
+        f'<td><a href="{html.escape(r["file"])}">{html.escape(r["file"])}</a></td></tr>'
+        for r in righe
+    )
     pagina = f"""<!doctype html>
 <html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Archivio audio</title>
@@ -311,7 +356,7 @@ def nome_leggibile(brano: dict) -> str:
     nome = "".join(c for c in nome if ord(c) >= 32)
     nome = re.sub(r"\s+", " ", nome).strip()
     if len(nome) > LUNGHEZZA_NOME:
-        nome = nome[:LUNGHEZZA_NOME - 1].rstrip() + "…"
+        nome = nome[: LUNGHEZZA_NOME - 1].rstrip() + "…"
     nome = nome.rstrip(". ")  # Windows non accetta nomi che finiscono con punto o spazio
     if nome.split(".")[0].upper() in _RISERVATI:
         nome = "_" + nome
@@ -327,10 +372,10 @@ def nomi_collegamenti(file_e_brani: list[tuple[Path, dict]]) -> dict[Path, str]:
     for nome in proposti.values():
         conteggio[nome.casefold()] = conteggio.get(nome.casefold(), 0) + 1
     finali = {}
-    for (f, b) in file_e_brani:
+    for f, b in file_e_brani:
         nome = proposti[f]
         if conteggio[nome.casefold()] > 1:
-            nome = f"{nome[:-len(f.suffix)]} [{b['id']}]{f.suffix.lower()}"
+            nome = f"{nome[: -len(f.suffix)]} [{b['id']}]{f.suffix.lower()}"
         finali[f] = nome
     return finali
 
@@ -356,6 +401,7 @@ def scrivi_collegamenti(cartella: Path, dest: Path, brani: dict) -> tuple[int, s
 
 
 # ----------------------------------------------------- riallineamento e orfani --
+
 
 def mappa_fonti(brani: dict) -> dict[str, str]:
     """'yt:<video>' (ecc.) → id del brano che oggi contiene quella fonte."""
@@ -409,7 +455,11 @@ def riallinea(cartella: Path, brani: dict, registro: dict, rinominati: dict, abb
             k += 1
         os.replace(f, dest)
         registro_orfani = leggi_json(orfani_dir / REGISTRO, {})
-        registro_orfani[vecchio] = {**registro.pop(vecchio, {}), "spostato": adesso(), **({"doppione_di": nuovo} if nuovo else {})}
+        registro_orfani[vecchio] = {
+            **registro.pop(vecchio, {}),
+            "spostato": adesso(),
+            **({"doppione_di": nuovo} if nuovo else {}),
+        }
         scrivi_json(orfani_dir / REGISTRO, registro_orfani)
         esito["doppioni" if nuovo else "orfani"].append(vecchio)
     return esito

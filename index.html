@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Jukebox</title>
 
+  <!-- Scudo: la pagina carica codice, stili e caratteri solo da sé, parla solo con sé e con GitHub
+       (i dati) e suona solo file del telefono (blob:). Niente script esterni. Il token vive nello
+       stesso "cassetto" dell'app burocrazia: così un difetto non può mandarlo altrove. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: data:; font-src 'self'; connect-src 'self' https://api.github.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon.svg">
@@ -59,6 +64,17 @@
 
   <!-- ================= APP ================= -->
   <div id="app" hidden>
+    <!-- ---- Avvio: caricamento, errore (Riprova) ---- -->
+    <section id="avvio" class="avvio" hidden>
+      <h1 class="titolo-neon">Jukebox</h1>
+      <div id="avvio-ruota" class="avvio-ruota" aria-hidden="true"></div>
+      <p id="avvio-testo" class="avvio-testo" role="status"></p>
+      <div id="avvio-azioni" class="azioni-riga" hidden>
+        <button id="avvio-riprova" type="button" class="btn-primary">Riprova</button>
+        <button id="avvio-token" type="button" class="btn-secondary" hidden>Cambia token</button>
+      </div>
+    </section>
+
     <main id="schermi">
 
       <!-- ---- Cerca ---- -->
@@ -81,7 +97,7 @@
         </div>
         <div class="riepilogo"><span id="cerca-riepilogo"></span><span id="cerca-ordine-testo" class="riepilogo-ordine"></span></div>
         <div id="cerca-risultati" class="lista"></div>
-        <button id="cerca-altri" class="btn-secondary btn-blocco" hidden>Mostra altri</button>
+        <button id="cerca-altri" type="button" class="btn-secondary btn-blocco" hidden>Mostra altri</button>
       </section>
 
       <!-- ---- Generi ---- -->
@@ -113,6 +129,7 @@
         <div id="riproduzione-contenuto" hidden>
           <div class="rip-testa">
             <div class="rip-etichetta">In riproduzione</div>
+            <!-- biome-ignore lint/a11y/useHeadingContent: il titolo lo scrive il Jukebox quando parte una playlist; il blocco resta nascosto finché è vuoto -->
             <h2 id="riproduzione-nome" class="rip-nome"></h2>
             <span id="riproduzione-piano" class="pill"></span>
           </div>
@@ -155,8 +172,9 @@
         <div class="riquadro">
           <h3>Dati</h3>
           <div id="imp-dati-info" class="muted small"></div>
-          <button id="imp-aggiorna" class="btn-secondary">Aggiorna dati ora</button>
-          <button id="imp-svuota-cache" class="btn-secondary">Svuota cache dati</button>
+          <div id="imp-dati-controllo" class="muted small" hidden></div>
+          <button id="imp-aggiorna" type="button" class="btn-secondary">Aggiorna dati ora</button>
+          <button id="imp-svuota-cache" type="button" class="btn-secondary">Svuota cache dati</button>
         </div>
 
         <div class="riquadro">
@@ -165,8 +183,8 @@
           <p class="muted small">I file li prepara il PC nella cartella <b>Download/Jukebox</b> del telefono.
             Tocca "Aggiungi", apri quella cartella, tieni premuto il primo file e scegli <b>Seleziona tutto</b>.</p>
           <input id="imp-file-input" type="file" multiple accept="audio/*,.m4a,.mp3,.webm,.opus,.ogg" hidden>
-          <button id="imp-file-aggiungi" class="btn-secondary">Aggiungi file dal telefono</button>
-          <button id="imp-file-svuota" class="btn-secondary">Togli tutta la musica</button>
+          <button id="imp-file-aggiungi" type="button" class="btn-secondary">Aggiungi file dal telefono</button>
+          <button id="imp-file-svuota" type="button" class="btn-secondary">Togli tutta la musica</button>
           <div id="imp-file-avanzamento" class="muted small" role="status"></div>
         </div>
 
@@ -177,13 +195,20 @@
           <label class="switch"><input id="imp-newpipe" type="checkbox" checked> Usa NewPipe per YouTube e SoundCloud</label>
           <p class="muted small">Ordine con cui il Jukebox sceglie chi suona un brano (tocca ↑/↓ per cambiarlo).</p>
           <ul id="imp-ordine-motori" class="ordine-motori"></ul>
-          <div class="muted small" id="imp-spotify-stato">Spotify: non configurato (arriva con una prossima versione).</div>
+          <div class="muted small" id="imp-spotify-stato"></div>
         </div>
 
         <div class="riquadro">
           <h3>Account</h3>
           <div class="muted small">Repo dati: <code id="imp-repo"></code></div>
-          <button id="imp-cambia-token" class="btn-secondary">Cambia token</button>
+          <button id="imp-cambia-token" type="button" class="btn-secondary">Cambia token</button>
+        </div>
+
+        <div class="riquadro">
+          <h3>Diagnostica</h3>
+          <p class="muted small">Gli ultimi errori di questa app, tenuti solo su questo telefono: se qualcosa non va, copiali e mandameli.</p>
+          <div id="imp-diagnostica" class="diagnostica small"></div>
+          <button id="imp-diagnostica-copia" type="button" class="btn-secondary">Copia</button>
         </div>
 
         <div class="muted small" id="imp-versione"></div>
@@ -226,6 +251,11 @@
   <!-- ================= PANNELLO FILTRI (Cerca) ================= -->
   <div id="filtri-overlay" class="overlay" hidden>
     <div id="filtri-pannello" class="foglio" role="dialog" aria-modal="true"></div>
+  </div>
+
+  <!-- ================= FINESTRA DI DIALOGO (domande e riepiloghi: al posto di prompt/confirm) ================= -->
+  <div id="dialogo-overlay" class="overlay overlay-dialogo" data-dialogo hidden>
+    <div id="dialogo" class="foglio" role="dialog" aria-modal="true" aria-labelledby="dialogo-titolo"></div>
   </div>
 
   <div id="toast" class="toast" hidden></div>

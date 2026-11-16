@@ -1,0 +1,101 @@
+// motori.js — decide CHI suona ogni brano, e come si organizza una playlist tra
+// più motori di riproduzione. Logica pura: nessun accesso a rete, DOM o Media
+// Session (quello è lettore.js/spotify.js, dalla M2/M5 in poi).
+//
+// ctx descrive lo stato del telefono in questo momento:
+//   { fileIds: Set<string>   id dei brani che hanno il file audio sul telefono (M2, dati/file-audio.js)
+//     spotify: "premium" | "senza" | "non-configurato" | "da-ricollegare"  (M5)
+//     usaNewPipe: bool       impostazione dell'utente (default true)
+//     soloJukebox: bool      solo i file sul telefono, mai le app esterne (default false)
+//     priorita: string[] }   ordine dei motori, da config.leggiPreferenzaMotori()
+
+// Ordine di default con cui si sceglie chi suona un brano (scelta 3 del piano dell'app). Sta qui, nella
+// logica pura, perché la logica pura non importa mai da fuori; config.js lo riesporta.
+export const MOTORI_DEFAULT = ["file", "spotify-premium", "newpipe", "spotify-app", "web"];
+
+// I motori che suonano SENZA che il Jukebox resti in primo piano (schermo spento
+// compreso). Sono l'unica scelta sensata per una playlist "solo schermo spento".
+export const MOTORI_CONTINUI = new Set(["file", "spotify-premium"]);
+
+function fonte(brano, codice) {
+  return brano.s.find(([c]) => c === codice);
+}
+
+/**
+ * Sceglie il motore che suona `brano` adesso, secondo l'ordine di priorità
+ * (ctx.priorita, o il default della scelta 3 del piano) e cosa è davvero
+ * disponibile in questo momento. { motore: null } solo se il brano non ha
+ * nessuna fonte utilizzabile (non dovrebbe capitare: ne ha sempre almeno una).
+ */
+export function motoreBrano(brano, ctx = {}) {
+  const priorita = ctx.priorita?.length ? ctx.priorita : MOTORI_DEFAULT;
+  for (const motore of priorita) {
+    if (ctx.soloJukebox && motore !== "file") continue; // "Solo Jukebox": niente app esterne
+    if (motore === "file") {
+      if (ctx.fileIds?.has(brano.id)) return { motore, fonte: ["file", brano.id] };
+    } else if (motore === "spotify-premium") {
+      const f = fonte(brano, "sp");
+      if (f && ctx.spotify === "premium") return { motore, fonte: f };
+    } else if (motore === "newpipe") {
+      if (ctx.usaNewPipe === false) continue;
+      const f = fonte(brano, "yt") || fonte(brano, "sc");
+      if (f) return { motore, fonte: f };
+    } else if (motore === "spotify-app") {
+      const f = fonte(brano, "sp");
+      if (f) return { motore, fonte: f };
+    } else if (motore === "web") {
+      const f = brano.s.find(([c]) => c !== "lo"); // qualunque fonte con un indirizzo web
+      if (f) return { motore, fonte: f };
+    }
+  }
+  return { motore: null, fonte: null };
+}
+
+/**
+ * Perché un brano non si può suonare adesso (quando `motoreBrano` non trova nessun motore), in una
+ * frase. Serve alla riga spenta e all'avviso del tasto ▶.
+ */
+export function motivoSenzaMotore(brano, ctx = {}) {
+  if (ctx.soloJukebox) return "Questo brano non è sul telefono e «Solo Jukebox» è acceso.";
+  if (brano.s.every(([c]) => c === "lo"))
+    return "È un file del PC che non è sul telefono: serve la musica sul telefono.";
+  return "Nessuna fonte utilizzabile: controlla l'ordine dei motori nelle Impostazioni.";
+}
+
+/**
+ * Il motore con cui aprire UNA fonte precisa scelta a mano (il tasto "Apri" accanto a ogni
+ * fonte nella scheda del brano): Spotify nell'app, YouTube e SoundCloud in NewPipe se è
+ * attivo, altrimenti il web. Non guarda la priorità né "Solo Jukebox": è l'utente che sceglie.
+ * @param {string[]} fonte [codice, riferimento]
+ */
+export function motoreFonte(fonte, ctx = {}) {
+  if (fonte[0] === "sp") return "spotify-app";
+  if ((fonte[0] === "yt" || fonte[0] === "sc") && ctx.usaNewPipe !== false) return "newpipe";
+  return "web";
+}
+
+/**
+ * Il "piano di riproduzione" di una playlist: quanti brani coprirebbe ciascun
+ * motore e quale conviene avviare. Una playlist suona con UN SOLO motore alla
+ * volta (scelta 4 del piano): a schermo spento il Jukebox non può aprire
+ * un'altra app quando il motore cambia, quindi mischiarli fermerebbe la coda.
+ */
+export function pianoRiproduzione(elenco, ctx = {}) {
+  const perMotore = new Map();
+  const sceltoPerBrano = new Map();
+  for (const b of elenco) {
+    const { motore, fonte: f } = motoreBrano(b, ctx);
+    sceltoPerBrano.set(b.id, motore);
+    if (!motore) continue;
+    if (!perMotore.has(motore))
+      perMotore.set(motore, { motore, n: 0, continuo: MOTORI_CONTINUI.has(motore), brani: [] });
+    const g = perMotore.get(motore);
+    g.n++;
+    g.brani.push({ brano: b, fonte: f });
+  }
+  const gruppi = [...perMotore.values()].sort((a, b) => b.n - a.n);
+  const continui = gruppi.filter((g) => g.continuo);
+  const consigliato = (continui[0] || gruppi[0] || null)?.motore || null;
+  const esclusi = elenco.filter((b) => !sceltoPerBrano.get(b.id));
+  return { gruppi, consigliato, esclusi };
+}

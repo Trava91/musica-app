@@ -18,3 +18,6 @@ Thumbs.db
 # Python (strumenti/esporta.py)
 __pycache__/
 *.pyc
+
+# Attrezzi di sviluppo (npm): si reinstallano con "npm ci"
+node_modules/
