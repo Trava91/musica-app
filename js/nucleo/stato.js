@@ -6,6 +6,7 @@
 // La coda e la riproduzione NON stanno qui: sono della sessione di ascolto (sessione.js).
 
 import { vociGeneri } from "./generi.js";
+import { PlaylistCalcolate } from "./playlist-calcolate.js";
 
 /**
  * @typedef {import("./valida.js").Brano} Brano
@@ -47,6 +48,9 @@ export class Stato {
     };
     /** @type {Map<string, Brano>} */
     this.indice = new Map();
+    /** @type {Map<string, any>} cose calcolate sul catalogo, buone finché il catalogo non cambia */
+    this.derivati = new Map();
+    this.playlistCalcolate = new PlaylistCalcolate();
     if (this.dati.catalogo) this.indicizza();
     /** @type {Set<(cambiati: string[], dati: DatiApp) => void>} */
     this.ascoltatori = new Set();
@@ -70,7 +74,10 @@ export class Stato {
     const cambiati = Object.keys(dopo).filter((k) => dopo[k] !== prima[k]);
     if (!cambiati.length) return cambiati;
     this.dati = dopo;
-    if (cambiati.includes("catalogo")) this.indicizza();
+    if (cambiati.includes("catalogo")) {
+      this.indicizza();
+      this.derivati.clear(); // i conteggi e i totali del catalogo di prima non valgono più
+    }
     for (const fn of [...this.ascoltatori]) fn(cambiati, dopo);
     return cambiati;
   }
@@ -83,6 +90,31 @@ export class Stato {
   /** Il brano con quell'id nel catalogo attuale (null se non c'è), senza scorrere la lista. */
   brano(id) {
     return this.indice.get(id) ?? null;
+  }
+
+  /**
+   * Una cosa calcolata sul catalogo (i conteggi dei generi, il totale dei dischi): si calcola la
+   * prima volta che serve e poi si ricorda, finché il catalogo non cambia.
+   * @template T
+   * @param {string} chiave
+   * @param {() => T} calcolo
+   * @returns {T}
+   */
+  derivato(chiave, calcolo) {
+    if (!this.derivati.has(chiave)) this.derivati.set(chiave, calcolo());
+    return this.derivati.get(chiave);
+  }
+
+  /**
+   * I brani e il piano di riproduzione di una playlist (vedi playlist-calcolate.js): si rifà solo
+   * se è cambiato il catalogo, la playlist o lo stato del telefono (ctx).
+   * @param {Playlist} playlist
+   * @returns {import("./playlist-calcolate.js").Calcolata}
+   */
+  calcola(playlist) {
+    const { catalogo, ctx } = this.dati;
+    if (!catalogo) throw new Error("calcola: il catalogo non è ancora caricato");
+    return this.playlistCalcolate.leggi(playlist, catalogo, ctx);
   }
 
   /** @param {(cambiati: string[], dati: DatiApp) => void} fn @returns {() => void} la funzione per smettere */

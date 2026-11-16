@@ -106,9 +106,14 @@ piano (aggancio a `aggiorna.py`), e solo a revisione chiusa.
 - **Solo Jukebox (03/11/2026):** interruttore nelle Impostazioni (spento di
   default): acceso, il Jukebox non apre mai app esterne, i brani senza file
   appaiono spenti e un ▶ su uno di loro parte dal prossimo della lista che c'è.
-- **Test:** 338 Node (`test/*.test.mjs`, dati inventati) + 50 Python
+- **Test:** 385 Node (`test/*.test.mjs`, dati inventati) + 50 Python
   (`strumenti/test_*.py`); `npm run verifica` lancia lint, tipi e tutti i test;
-  `npm run prova` fa 5 giri nel browser sull'app vera (dal 16/11/2026, restauro).
+  `npm run prova` fa 9 giri nel browser sull'app vera, errori compresi (dal 16/11/2026, restauro).
+- **Errori e velocità (restauro, fasi 6-7, 16/11/2026):** la Diagnostica (Impostazioni) elenca gli
+  ultimi 20 errori e le misure di velocità (avvio, indice, ricerca…), con il tasto Copia; l'avvio ha
+  tre stati (caricamento, errore con Riprova, pronto); un file audio rotto avvisa e passa al
+  successivo (3 di fila e si ferma); la pagina ha lo scudo CSP; le playlist e i conteggi si
+  calcolano una volta sola (`stato.calcola`, `stato.derivato`).
 - **Da fare:** finire l'archivio; a revisione del catalogo chiusa →
   `esporta.py`, `--riallinea`, `--metadati`, `--riprova`, id stabili; poi M4
   (assistente DJ + Shazam), M5 (Spotify Premium), M6 (Deezer + lista da

@@ -2,11 +2,12 @@
 // apposta: servono a scoprire un peggioramento grosso, non a misurare. Misure su questo PC (16/11/2026):
 // controllo 190 ms, indice 700 ms, ricerca con testo 16 ms, filtri 7 ms, conteggi 13 ms, ricerca
 // senza testo (tutto il catalogo ordinato per artista) 150 ms. Il telefono è più lento: i numeri veri
-// del telefono si misurano nella Fase 7.
+// del telefono si misurano nella Fase 7 (Impostazioni → Diagnostica).
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { cerca, conteggiMacro, preparaIndice } from "../js/nucleo/cerca.js";
+import { Stato } from "../js/nucleo/stato.js";
 import { validaCatalogo } from "../js/nucleo/valida.js";
 import { generaCatalogo } from "./genera-catalogo.mjs";
 
@@ -82,6 +83,51 @@ test("50.000 brani: i conteggi dei generi restano sotto i 50 ms", () => {
   });
   assert.ok(totale > 20_000);
   assert.ok(ms < 50, `${ms.toFixed(0)} ms`);
+});
+
+// ============================================== le playlist si calcolano una volta ====
+
+test("50.000 brani: aprire la scheda Playlist due volte, la seconda non ricalcola nulla", () => {
+  const stato = new Stato({ catalogo });
+  const playlist = [
+    { id: "p1", nome: "Armonica", tipo: "intelligente", regole: { soloScelti: true, macro: [0] }, ordine: "armonico" },
+    { id: "p2", nome: "Casuale", tipo: "intelligente", regole: { soloScelti: true }, ordine: "casuale", limite: 500 },
+    { id: "p3", nome: "A mano", tipo: "manuale", brani: brani.slice(0, 300).map((b) => b.id) },
+    { id: "p4", nome: "Per artista", tipo: "intelligente", regole: { macro: [1, 2] }, ordine: "artista" },
+  ];
+  // Come la scheda Playlist: per ogni playlist i brani e il piano di riproduzione.
+  const apriScheda = () => playlist.map((p) => stato.calcola(p).elenco.length);
+
+  inizio = ora();
+  const prima = apriScheda();
+  const msPrima = ora() - inizio;
+  assert.equal(stato.playlistCalcolate.calcoli, 4);
+  assert.ok(
+    prima.every((n) => n > 0),
+    `playlist vuote: ${prima}`,
+  );
+
+  const msSeconda = tempoMigliore(3, apriScheda);
+  assert.equal(stato.playlistCalcolate.calcoli, 4, "la seconda apertura non ha ricalcolato nessuna playlist");
+  assert.deepEqual(apriScheda(), prima);
+  assert.ok(
+    msSeconda < 10,
+    `la seconda apertura è durata ${msSeconda.toFixed(1)} ms (la prima ${msPrima.toFixed(0)} ms)`,
+  );
+});
+
+test("50.000 brani: i conteggi dei generi, chiesti più volte, si calcolano una volta sola", () => {
+  const stato = new Stato({ catalogo });
+  let calcoli = 0;
+  const chiedi = () =>
+    stato.derivato("conteggiMacro", () => {
+      calcoli++;
+      return conteggiMacro(brani, {}, catalogo.macro.length);
+    });
+  const a = chiedi();
+  assert.equal(chiedi(), a);
+  assert.equal(chiedi(), a);
+  assert.equal(calcoli, 1);
 });
 
 // ================================================== il catalogo finto è affidabile ====

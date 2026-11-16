@@ -101,3 +101,76 @@ test("stato: ascolta restituisce la funzione per smettere", () => {
   s.cambia({ scheda: "generi" });
   assert.equal(n, 1);
 });
+
+// ------------------------------------------------- cose calcolate e conservate ----
+
+test("derivato: si calcola la prima volta e poi si ricorda", () => {
+  const s = new Stato({ catalogo: fixture });
+  let calcoli = 0;
+  const calcolo = () => ++calcoli;
+  assert.equal(s.derivato("totale", calcolo), 1);
+  assert.equal(s.derivato("totale", calcolo), 1);
+  assert.equal(calcoli, 1, "la seconda richiesta non ricalcola");
+  assert.equal(s.derivato("altro", calcolo), 2, "una chiave diversa è una cosa diversa");
+});
+
+test("derivato: cambiando altro (filtri, scheda, ctx) si ricorda ancora; cambiando il catalogo si rifà", () => {
+  const s = new Stato({ catalogo: fixture });
+  let calcoli = 0;
+  s.derivato("totale", () => ++calcoli);
+  s.cambia({ filtri: { ...FILTRI_DEFAULT, macro: [1] }, scheda: "generi" });
+  s.cambiaCtx({ soloJukebox: true });
+  s.derivato("totale", () => ++calcoli);
+  assert.equal(calcoli, 1);
+  s.cambia({ catalogo: { ...fixture, brani: fixture.brani.slice(1) } });
+  assert.equal(
+    s.derivato("totale", () => ++calcoli),
+    2,
+    "col catalogo nuovo il vecchio risultato non vale più",
+  );
+});
+
+test("calcola: i brani e il piano di una playlist si conservano finché nulla cambia", () => {
+  const s = new Stato({ catalogo: fixture });
+  const p = { id: "p1", nome: "Tutto", tipo: "intelligente", regole: { soloScelti: true }, ordine: "artista" };
+  const prima = s.calcola(p);
+  assert.ok(prima.elenco.length > 0);
+  assert.ok(prima.piano.gruppi.length > 0, "il piano dice con quale motore suonerebbe");
+  assert.equal(s.calcola(p), prima, "stesso oggetto: nessun ricalcolo");
+  assert.equal(s.playlistCalcolate.calcoli, 1);
+  s.cambia({ scheda: "playlist", filtri: { ...FILTRI_DEFAULT, macro: [2] } });
+  assert.equal(s.calcola(p), prima, "i filtri della ricerca e la scheda non c'entrano");
+});
+
+test("calcola: si rifà se cambiano i file sul telefono, la playlist o il catalogo", () => {
+  const s = new Stato({ catalogo: fixture });
+  const p = { id: "p1", nome: "Tutto", tipo: "intelligente", regole: { soloScelti: true }, ordine: "artista" };
+  const a = s.calcola(p);
+  s.cambiaCtx({ fileIds: new Set([fixture.brani[0].id]) });
+  const b = s.calcola(p);
+  assert.notEqual(b, a, "i file sul telefono cambiano il piano di riproduzione");
+  assert.equal(b.piano.consigliato, "file", "un motore continuo (il file) è preferito agli altri");
+  assert.equal(s.calcola(p), b);
+  const modificata = { ...p, ordine: "casuale" };
+  assert.notEqual(s.calcola(modificata), b, "una playlist modificata è un oggetto nuovo: si ricalcola");
+  s.cambia({ catalogo: { ...fixture, brani: fixture.brani.slice(1) } });
+  assert.notEqual(s.calcola(modificata), b);
+  assert.equal(s.playlistCalcolate.calcoli, 4);
+});
+
+test("calcola: anche le altre impostazioni dei motori (Solo Jukebox, NewPipe, ordine) rifanno il calcolo", () => {
+  const s = new Stato({ catalogo: fixture });
+  const p = { id: "p1", nome: "Tutto", tipo: "intelligente", regole: { soloScelti: true }, ordine: "artista" };
+  s.calcola(p);
+  s.cambiaCtx({ soloJukebox: true });
+  s.calcola(p);
+  s.cambiaCtx({ usaNewPipe: false });
+  s.calcola(p);
+  s.cambiaCtx({ priorita: ["web", "file"] });
+  s.calcola(p);
+  assert.equal(s.playlistCalcolate.calcoli, 4);
+});
+
+test("calcola: senza catalogo è un errore chiaro", () => {
+  assert.throws(() => new Stato().calcola({ id: "p", nome: "x", tipo: "manuale", brani: [] }), /catalogo/);
+});

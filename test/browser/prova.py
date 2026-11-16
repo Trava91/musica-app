@@ -239,6 +239,24 @@ def prova(catalogo: dict, cartella_audio: Path) -> list[str]:
             assert visibili > 20, f"la lista dovrebbe avere decine di brani, ne ha {visibili}"
             passo(f"avvio: la lista mostra {visibili} brani")
 
+            # "Mostra altri" aggiunge le righe in fondo senza ridisegnare quelle di prima; e tornando
+            # alla scheda senza aver cambiato nulla la lista non si rifà.
+            giro = "1b. mostra altri"
+            pagina.evaluate("() => { document.querySelector('#cerca-risultati .striscia').dataset.marca = 'si'; }")
+            pagina.click("#cerca-altri")
+            pagina.wait_for_function(
+                "n => document.querySelectorAll('#cerca-risultati .striscia').length > n", arg=visibili
+            )
+            prima_riga = pagina.locator("#cerca-risultati .striscia").first
+            assert prima_riga.get_attribute("data-marca") == "si", "'Mostra altri' ha ridisegnato le righe di prima"
+            pagina.click(".tab[data-tab='generi']")
+            pagina.click(".tab[data-tab='cerca']")
+            assert prima_riga.get_attribute("data-marca") == "si", "tornando alla scheda Cerca la lista è stata rifatta"
+            passo(
+                "mostra altri: le righe nuove si aggiungono in fondo, le vecchie restano; tornando alla scheda non si rifà"
+            )
+            giro = "1. avvio"
+
             # 2. Si scrive un artista: compaiono i suoi brani (e meno brani in tutto).
             giro = "2. ricerca di un artista"
             pagina.fill("#cerca-testo", artista)

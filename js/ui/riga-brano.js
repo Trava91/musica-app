@@ -80,6 +80,19 @@ export function mostraLista(app, contenitore, righe, contesto, opzioni = {}) {
   liste.set(contenitore, { righe, contesto, azioneVuoto: opzioni.vuoto?.azione?.fai });
 }
 
+/**
+ * "Mostra altri": aggiunge in fondo a una lista già disegnata le righe nuove, senza ridisegnare
+ * quelle di prima. `inizio` = il numero d'ordine della prima riga nuova (per il codice di selezione).
+ * Il contesto della lista (da dove suonare) resta quello di mostraLista.
+ */
+export function aggiungiLista(app, contenitore, nuove, inizio) {
+  const lista = liste.get(contenitore);
+  if (!lista || !nuove.length) return;
+  const d = datiRighe(app);
+  contenitore.insertAdjacentHTML("beforeend", nuove.map((b, i) => rigaBrano(b, inizio + i, d)).join(""));
+  lista.righe = lista.righe.concat(nuove);
+}
+
 /** Lo "stato vuoto" di una lista: una frase e, se c'è, un tasto per uscirne. */
 export function statoVuoto(vuoto) {
   if (!vuoto) return "";

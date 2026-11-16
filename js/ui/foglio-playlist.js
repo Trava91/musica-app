@@ -4,8 +4,6 @@
 import { RIGHE_MAX_PLAYLIST } from "../config.js";
 import * as file from "../dati/file-audio.js";
 import * as playlist from "../dati/playlist.js";
-import * as motori from "../nucleo/motori.js";
-import * as regole from "../nucleo/regole.js";
 import { $, apriFinestra, chiudiFinestra, esc, mostraAvviso, NOMI_MOTORE, vaiA } from "./base.js";
 import { chiediConferma } from "./dialoghi.js";
 import { eliminaPlaylist, salvaPlaylist } from "./azioni-playlist.js";
@@ -29,9 +27,8 @@ async function salvaEChiudi(app, p, fatto) {
 export function apriFoglioPlaylist(app, pScelta) {
   let p = pScelta;
   const el = $("#foglio-brano");
-  const { catalogo, ctx } = app.stato.leggi();
-  const elenco = regole.valuta(p, catalogo.brani, ctx);
-  const piano = motori.pianoRiproduzione(elenco, ctx);
+  const { ctx } = app.stato.leggi();
+  const { elenco, piano } = app.stato.calcola(p);
   const righePiano = piano.gruppi
     .map((g) => `${esc(NOMI_MOTORE[g.motore] || g.motore)}: ${g.n}${g.continuo ? " (schermo spento)" : ""}`)
     .join(" · ");
@@ -81,7 +78,7 @@ export function apriFoglioPlaylist(app, pScelta) {
     const altre = new Set(
       s.playlist
         .filter((x) => x.id !== p.id && x.telefono)
-        .flatMap((x) => regole.valuta(x, s.catalogo.brani, s.ctx).map((b) => b.id)),
+        .flatMap((x) => app.stato.calcola(x).elenco.map((b) => b.id)),
     );
     const sessione = app.sessione.stato();
     const suonaOra = sessione.interno ? sessione.inCorso : null;

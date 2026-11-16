@@ -23,7 +23,10 @@ export function collegaGeneri(app) {
 export function disegnaGeneri(app) {
   const { catalogo, filtri, voci } = app.stato.leggi();
   if (!catalogo) return;
-  const { conteggi, senzaGenere } = cercaMod.conteggiMacro(catalogo.brani, {}, catalogo.macro.length);
+  // I conteggi non dipendono dai filtri: si fanno una volta per catalogo.
+  const { conteggi, senzaGenere } = app.stato.derivato("conteggiMacro", () =>
+    cercaMod.conteggiMacro(catalogo.brani, {}, catalogo.macro.length),
+  );
   const scelti = filtri.macro || [];
   const n = (x) => x.toLocaleString("it-IT");
   // Tasti in ordine di quantità, come una pulsantiera: i generi più pieni in alto.

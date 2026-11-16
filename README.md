@@ -25,6 +25,7 @@ app/
 ├── js/
 │   ├── main.js              avvio: crea stato, lettore, sessione e viste, carica i dati (non disegna)
 │   ├── config.js            da dove arrivano i dati, preferenze, tempi e soglie, VERSIONE
+│   ├── memoria.js           scrive in localStorage senza errori muti (spazio finito → avviso + Diagnostica)
 │   ├── nucleo/              LOGICA PURA: niente schermo, niente rete (lo controlla test/dipendenze.test.mjs)
 │   │   ├── testo.js           normalizza, titolo con versione, artista con feat., durata
 │   │   ├── casuale.js         generatore casuale ripetibile
@@ -38,7 +39,10 @@ app/
 │   │   ├── coda.js            la coda di riproduzione (voci con chi e quando, avanti/indietro/casuale, accoda/togli)
 │   │   ├── comandi.js         tasto grande, ⏮ ⏭, cosa parte a fine brano
 │   │   ├── sessione.js        la sessione di ascolto: coda + lettore + regole, l'unico punto che decide cosa suona
-│   │   ├── stato.js           lo stato dell'app (catalogo, playlist, filtri, ctx, scheda) e l'indice id → brano
+│   │   ├── stato.js           lo stato dell'app (catalogo, playlist, filtri, ctx, scheda), l'indice id → brano e le cose calcolate una volta per catalogo
+│   │   ├── playlist-calcolate.js  i brani e il piano di ogni playlist, ricalcolati solo se cambia qualcosa
+│   │   ├── diagnostica.js     registro degli ultimi errori e misure di velocità; rete di sicurezza generale
+│   │   ├── errori.js          gli errori detti a parole, con cosa fare
 │   │   └── generi.js          generi raggruppati per la vista (Tech house, Disco)
 │   ├── dati/                DATI: da dove arrivano e dove vanno
 │   │   ├── github.js          client GitHub Contents API (getFile/getSha/getRaw/putFile)
@@ -47,9 +51,11 @@ app/
 │   │   └── file-audio.js      l'audio sul telefono (Cache Storage, id brano → file)
 │   ├── audio/lettore.js     lettore interno: <audio> + Media Session (schermo spento)
 │   └── ui/                  INTERFACCIA: disegna dallo stato e passa i tocchi alla sessione
-│       ├── base.js            aiuti comuni: avvisi, finestre, schede, campi min–max, chip
-│       ├── riga-brano.js      la riga di un brano e le liste (un solo ascoltatore per lista)
-│       ├── vista-*.js         una per schermata: avvio, cerca, generi, playlist, suona, impostazioni
+│       ├── base.js            aiuti comuni: avvisi, apertura delle app esterne, finestre, schede, campi min–max, chip
+│       ├── dialoghi.js        domande e riepiloghi dell'app (al posto di prompt/confirm del sistema)
+│       ├── aggiornamento.js   service worker e avviso "Versione nuova pronta"
+│       ├── riga-brano.js      la riga di un brano, le liste (un solo ascoltatore per lista) e gli stati vuoti
+│       ├── vista-*.js         una per schermata: avvio (anche caricamento/errore), cerca, generi, playlist, suona, impostazioni, diagnostica
 │       ├── foglio-*.js        scheda del brano, filtri, foglio di una playlist
 │       ├── costruttore-playlist.js   il modulo delle playlist coi filtri
 │       └── azioni-playlist.js        salva, elimina, nuova playlist a mano
@@ -66,7 +72,7 @@ app/
 │   ├── fixture.mjs           carica e indicizza il catalogo finto
 │   ├── fixture.json          catalogo finto (nessun dato reale: repo pubblico)
 │   ├── genera-catalogo.mjs   catalogo finto di qualsiasi misura (seme fisso), per velocità e browser
-│   ├── browser/prova.py      prova automatica nel browser: 5 giri sull'app vera (npm run prova)
+│   ├── browser/prova.py      prova automatica nel browser: 9 giri sull'app vera, errori compresi (npm run prova)
 │   └── riferimento/          fotografia di partenza del restauro
 └── icons/icon.svg
 ```

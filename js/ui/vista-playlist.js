@@ -4,8 +4,6 @@
 
 import { segna } from "../nucleo/diagnostica.js";
 import { vociSelezionate } from "../nucleo/generi.js";
-import * as motori from "../nucleo/motori.js";
-import * as regole from "../nucleo/regole.js";
 import { $, esc, mostraAvviso, NOMI_MOTORE, NOMI_ORDINE_PL, NOMI_PIATT, SVG_PLAY, vaiA } from "./base.js";
 import { nuovaManuale } from "./azioni-playlist.js";
 import { apriCostruttore } from "./costruttore-playlist.js";
@@ -29,11 +27,10 @@ export function collegaPlaylist(app) {
     const tasto = e.target.closest?.(".cartellino-testa, .play-neon");
     const cartellino = tasto?.closest(".cartellino");
     if (!cartellino) return;
-    const { catalogo, playlist, ctx } = app.stato.leggi();
-    const p = playlist.find((x) => x.id === cartellino.dataset.id);
+    const p = app.stato.leggi().playlist.find((x) => x.id === cartellino.dataset.id);
     if (!p) return;
     if (tasto.classList.contains("cartellino-testa")) apriFoglioPlaylist(app, p);
-    else if (app.sessione.avviaPlaylist(p, regole.valuta(p, catalogo.brani, ctx))) vaiA(app, "riproduzione");
+    else if (app.sessione.avviaPlaylist(p, app.stato.calcola(p).elenco)) vaiA(app, "riproduzione");
   });
   app.stato.ascolta((cambiati, s) => {
     if (s.scheda === "playlist" && cambiati.some((k) => DIPENDENZE.includes(k))) disegnaPlaylist(app);
@@ -49,8 +46,7 @@ export function disegnaPlaylist(app) {
   $("#playlist-lista").innerHTML =
     playlist
       .map((p, i) => {
-        const elenco = regole.valuta(p, catalogo.brani, ctx);
-        const piano = motori.pianoRiproduzione(elenco, ctx);
+        const { elenco, piano } = app.stato.calcola(p); // conservato: la seconda apertura non ricalcola
         const consigliato = piano.consigliato
           ? NOMI_MOTORE[piano.consigliato].toLowerCase()
           : "nessuna fonte disponibile";

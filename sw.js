@@ -28,6 +28,7 @@ const SHELL = [
   "js/nucleo/coda.js",
   "js/nucleo/valida.js",
   "js/nucleo/stato.js",
+  "js/nucleo/playlist-calcolate.js",
   "js/nucleo/sessione.js",
   "js/nucleo/diagnostica.js",
   "js/nucleo/errori.js",

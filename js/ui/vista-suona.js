@@ -5,7 +5,7 @@
 import { PROSSIMI_MOSTRATI } from "../config.js";
 import { durataFmt, titoloCompleto } from "../nucleo/testo.js";
 import { $, esc, NOMI_DOVE, NOMI_ORDINE_PL, SVG_PAUSA, SVG_PLAY, vaiA } from "./base.js";
-import { aggiornaEvidenziati, mostraLista, statoVuoto } from "./riga-brano.js";
+import { aggiornaEvidenziati, aggiungiLista, mostraLista, statoVuoto } from "./riga-brano.js";
 
 let prossimiMostrati = PROSSIMI_MOSTRATI; // quanti brani di "A seguire" si vedono ("Mostra altri" ne aggiunge)
 let trascinando = false; // il dito sta spostando la posizione nel brano: la barra non si aggiorna
@@ -29,10 +29,7 @@ export function collegaSuona(app) {
     trascinando = false;
     sessione.cerca(Number(e.target.value));
   });
-  $("#prossimi-altri").addEventListener("click", () => {
-    prossimiMostrati += PROSSIMI_MOSTRATI;
-    disegnaSuona(app);
-  });
+  $("#prossimi-altri").addEventListener("click", () => mostraAltriProssimi(app));
   $("#mini-apri").addEventListener("click", () => vaiA(app, "riproduzione"));
   $("#mini-pausa").addEventListener("click", () => sessione.alterna());
 
@@ -47,6 +44,23 @@ export function collegaSuona(app) {
     if (s.scheda === "riproduzione") disegnaSuona(app);
     else aggiornaMini(app);
   });
+}
+
+// "Mostra altri" di "A seguire": le righe nuove si aggiungono in fondo, le altre non si ridisegnano.
+function mostraAltriProssimi(app) {
+  const s = app.sessione.stato();
+  const da = prossimiMostrati;
+  prossimiMostrati += PROSSIMI_MOSTRATI;
+  const mostrati = app.sessione.prossimi(prossimiMostrati);
+  aggiungiLista(app, $("#riproduzione-prossimi"), mostrati.slice(da), Math.max(s.indice, 0) + 1 + da);
+  aggiornaAltri(s, mostrati.length);
+}
+
+// Il tasto "Mostra altri (N)" sotto "A seguire": quanti brani restano fuori.
+function aggiornaAltri(s, mostrati) {
+  const altri = $("#prossimi-altri");
+  altri.hidden = s.prossimi.length <= mostrati;
+  if (!altri.hidden) altri.textContent = `Mostra altri (${(s.prossimi.length - mostrati).toLocaleString("it-IT")})`;
 }
 
 /** Ridisegna tutta la scheda Suona (coda nuova, selezione cambiata, casuale, ripeti...). */
@@ -99,10 +113,7 @@ export function disegnaSuona(app) {
   $("#rip-ripeti-uno").hidden = s.ripeti !== "uno";
 
   const prossimi = app.sessione.prossimi(prossimiMostrati);
-  const altri = $("#prossimi-altri");
-  altri.hidden = s.prossimi.length <= prossimi.length;
-  if (!altri.hidden)
-    altri.textContent = `Mostra altri (${(s.prossimi.length - prossimi.length).toLocaleString("it-IT")})`;
+  aggiornaAltri(s, prossimi.length);
   $("#prossimi-info").textContent = s.casuale ? "ordine casuale" : NOMI_ORDINE_PL[s.sorgente.ordine] || "";
   mostraLista(
     app,
