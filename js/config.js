@@ -38,15 +38,15 @@ export const ATTESA_CACHE_MS = 5000; // quanto aspettare la cache del catalogo p
 export const MAX_TENTATIVI_SALVATAGGIO = 3; // se GitHub segnala un conflitto, quante volte riprovare a salvare
 export const DURATA_AVVISO_MS = 3200; // quanto resta in vista un avviso
 export const DURATA_AVVISO_LUNGO_MS = 7000; // ...e quelli lunghi (importazione dei file)
-export const SECONDI_PER_RIPARTIRE = 4; // ⏮ oltre questi secondi riparte dall'inizio del brano
 
-// Questi tre vivono nella logica pura (nucleo) ma si guardano da qui, con tutti gli altri.
+// Questi vivono nella logica pura (nucleo) ma si guardano da qui, con tutti gli altri.
 export { TOLLERANZA_BPM } from "./nucleo/dj.js"; // quanto possono differire i BPM di due brani "in mix" (6%)
 export { RAGGRUPPATI } from "./nucleo/generi.js"; // i generi che il Jukebox mostra fusi in un'unica voce
+export { SECONDI_PER_RIPARTIRE } from "./nucleo/sessione.js"; // ⏮ oltre questi secondi riparte dall'inizio del brano
 
 // Il numero della versione dell'app: dev'essere lo stesso di "jukebox-vN" in sw.js (lo controlla
 // test/contratti.test.mjs). Si alza a ogni pubblicazione, in tutti e due i posti.
-export const VERSIONE = 14;
+export const VERSIONE = 15;
 
 // I tipi di versione di un brano (campo k del catalogo), nell'ordine in cui si mostrano.
 export const TIPI_VERSIONE = ["originale", "remix", "edit", "extended", "live", "set"];

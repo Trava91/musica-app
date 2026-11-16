@@ -95,6 +95,29 @@ test("dati/ e audio/ non importano da ui/; solo ui/ tocca la pagina (document, w
   }
 });
 
+test("main.js e config.js non toccano la pagina: la disegna solo js/ui/", () => {
+  for (const file of ["js/main.js", "js/config.js"]) {
+    assert.ok(!/\bdocument\b/.test(codiceSenzaCommenti(file)), `${file} usa document: va spostato in js/ui/`);
+  }
+});
+
+test("ui/: nessuna vista decide cosa suonare (lettore, coda e comandi solo attraverso la sessione)", () => {
+  const cervello = ["js/audio/lettore.js", "js/nucleo/coda.js", "js/nucleo/comandi.js"];
+  const viste = elencaJs("js/ui");
+  assert.ok(viste.length >= 10, `file trovati in js/ui: ${viste.length}`);
+  for (const file of viste) {
+    for (const spec of importati(codiceSenzaCommenti(file))) {
+      const dove = `${risolvi(file, spec)}`;
+      assert.ok(!cervello.includes(dove), `${file} importa ${spec}: deve passare da app.sessione`);
+    }
+  }
+});
+
+test("la sessione e lo stato vivono nella logica pura", () => {
+  assert.ok(nucleo.includes("js/nucleo/sessione.js"));
+  assert.ok(nucleo.includes("js/nucleo/stato.js"));
+});
+
 test("il controllo si accorge di una violazione (prova su codice finto)", () => {
   assert.deepEqual(importati('import { a } from "../dati/x.js";\nexport { b } from "./y.js";'), [
     "../dati/x.js",
