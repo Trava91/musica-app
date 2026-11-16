@@ -41,10 +41,6 @@ export class Coda {
     this.indice = attuale ? this.ordine.findIndex((b) => b.id === attuale.id) : -1;
   }
 
-  impostaRipeti(v) {
-    this.ripeti = v;
-  }
-
   // Avanza di uno. Con ripeti "uno" resta fermo; a fine coda con ripeti "tutti"
   // ricomincia; altrimenti restituisce null (coda finita).
   avanti() {

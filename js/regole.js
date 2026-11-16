@@ -37,9 +37,7 @@ function ordina(elenco, ordine, seme) {
       return percorsoArmonico(elenco);
     case "recenti":
       return elenco.slice().sort((a, b) => (b.q || "").localeCompare(a.q || ""));
-    case "artista":
-      return elenco.slice().sort((a, b) => a._normA.localeCompare(b._normA) || a._normT.localeCompare(b._normT));
-    default:
+    default: // "artista" e ogni ordine sconosciuto
       return elenco.slice().sort((a, b) => a._normA.localeCompare(b._normA) || a._normT.localeCompare(b._normT));
   }
 }

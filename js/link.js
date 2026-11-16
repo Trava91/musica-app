@@ -54,7 +54,8 @@ const RICERCA = {
 };
 
 // URL di ricerca esterna per artista+titolo, su uno dei 4 servizi. null se il
-// servizio non è tra questi.
+// servizio non è tra questi. Oggi nessuna schermata lo usa: resta perché serve alla tappa M6
+// del piano dell'app (lista "da comprare" su Beatport e Bandcamp).
 export function cercaEsterno(servizio, artista, titolo) {
   const f = RICERCA[servizio];
   if (!f) return null;

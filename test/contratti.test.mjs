@@ -93,6 +93,12 @@ test("sw.js: la cache dell'app si chiama jukebox-vN", () => {
   assert.match(sw, /const CACHE = "jukebox-v\d+"/);
 });
 
+test("sw.js: il numero in jukebox-vN è lo stesso di VERSIONE in config.js (quello che si legge nelle Impostazioni)", async () => {
+  const { VERSIONE } = await import("../js/config.js");
+  const nelServiceWorker = Number(/const CACHE = "jukebox-v(\d+)"/.exec(sw)?.[1]);
+  assert.equal(VERSIONE, nelServiceWorker);
+});
+
 test("sw.js: la pulizia cancella solo i nomi che iniziano per jukebox-v", () => {
   assert.ok(sw.includes('k.startsWith("jukebox-v")'));
   // ...e le altre cache non devono iniziare così, o la pulizia si porterebbe via anche loro.

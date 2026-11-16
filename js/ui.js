@@ -12,7 +12,7 @@ import * as file from "./file.js";
 import * as comandi from "./comandi.js";
 import { Lettore } from "./lettore.js";
 import * as playlist from "./playlist.js";
-import { salvaPreferenzaMotori } from "./config.js";
+import { salvaPreferenzaMotori, TIPI_VERSIONE, VERSIONE } from "./config.js";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -32,13 +32,12 @@ const NOMI_DOVE = {
   "spotify-app": "in Spotify",
   web: "sul web",
 };
-const NOMI_TIPO = {
-  originale: "originale",
-  remix: "remix",
-  edit: "edit",
-  extended: "extended",
-  live: "live",
-  set: "set",
+// Lo stato di Spotify (ctx.spotify, vedi motori.js) detto a parole, per le Impostazioni.
+const NOMI_SPOTIFY = {
+  premium: "Spotify: Premium collegato.",
+  senza: "Spotify: account gratuito, si apre l'app.",
+  "da-ricollegare": "Spotify: da ricollegare.",
+  "non-configurato": "Spotify: non configurato (arriva con una prossima versione).",
 };
 const NOMI_PIATT = { sp: "Spotify", yt: "YouTube", sc: "SoundCloud", lo: "File sul telefono" };
 const SIGLA_PIATT = { sp: "SP", yt: "YT", sc: "SC", lo: "FILE" };
@@ -881,7 +880,7 @@ export class UI {
 
       <div class="campo-riga"><span class="etichetta">Piattaforme</span><div class="chips">${piattChip("sp", "Spotify")}${piattChip("yt", "YouTube")}${piattChip("sc", "SoundCloud")}${piattChip("lo", "File")}</div></div>
 
-      <div class="campo-riga"><span class="etichetta">Tipo di versione (vuoto = tutte tranne i set)</span><div class="chips">${["originale", "remix", "edit", "extended", "live", "set"].map((k) => tipoChip(k, NOMI_TIPO[k])).join("")}</div></div>
+      <div class="campo-riga"><span class="etichetta">Tipo di versione (vuoto = tutte tranne i set)</span><div class="chips">${TIPI_VERSIONE.map((k) => tipoChip(k, k)).join("")}</div></div>
 
       <div class="campo-riga"><label for="cost-testo">Testo libero</label><input id="cost-testo" type="text" value="${esc(p.regole.testo || "")}" placeholder="Cerca dentro artista, titolo, generi…"></div>
 
@@ -1322,7 +1321,8 @@ export class UI {
       ? `${infoCache.brani.toLocaleString("it-IT")} brani in cache, costruito il ${infoCache.costruitoIl || "?"}`
       : "Nessun dato in cache.";
     this.renderControlloDati();
-    $("#imp-versione").textContent = "Jukebox — versione M2";
+    $("#imp-versione").textContent = `Jukebox — versione ${VERSIONE}`;
+    $("#imp-spotify-stato").textContent = NOMI_SPOTIFY[this.ctx.spotify] || NOMI_SPOTIFY["non-configurato"];
     this.renderFileInfo();
     $("#imp-newpipe").checked = this.ctx.usaNewPipe !== false;
     $("#imp-solo-jukebox").checked = this.ctx.soloJukebox;

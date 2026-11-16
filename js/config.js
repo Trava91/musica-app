@@ -26,6 +26,13 @@ const DEFAULT = {
   file: "catalogo.json",
 };
 
+// Il numero della versione dell'app: dev'essere lo stesso di "jukebox-vN" in sw.js (lo controlla
+// test/contratti.test.mjs). Si alza a ogni pubblicazione, in tutti e due i posti.
+export const VERSIONE = 13;
+
+// I tipi di versione di un brano (campo k del catalogo), nell'ordine in cui si mostrano.
+export const TIPI_VERSIONE = ["originale", "remix", "edit", "extended", "live", "set"];
+
 // Ordine di default con cui motori.js sceglie chi suona un brano (scelta 3 del piano).
 export const MOTORI_DEFAULT = ["file", "spotify-premium", "newpipe", "spotify-app", "web"];
 
@@ -54,10 +61,6 @@ export function salvaConfig({ tipo, url, owner, repo, file, token }) {
   if (repo !== undefined) localStorage.setItem(LS.repo, repo || DEFAULT.repo);
   if (file !== undefined) localStorage.setItem(LS.file, file || DEFAULT.file);
   if (token !== undefined) localStorage.setItem(LS.token, token);
-}
-
-export function haToken() {
-  return Boolean(localStorage.getItem(LS.token));
 }
 
 export function rimuoviToken() {
