@@ -89,6 +89,10 @@ piano (aggancio a `aggiorna.py`), e solo a revisione chiusa.
   dal 16/11/2026; il lavoro sullo stile riparte sul branch `restauro-stile` fino a R2. La cartella
   è su quel branch, quindi `prepara.py` e `valuta.mjs` girano da lì; il controllo che
   tutto torni è `python strumenti/prepara.py --prova` (stesse playlist di prima).
+  **Fase 8 (17/11/2026):** i pezzi dello stile hi-fi sono pronti in `css/base.css` (gettoni),
+  `css/componenti.css` e `js/ui/hifi/` (tutto col prefisso `hf-`, per convivere con `styles.css`),
+  e si vedono tutti in `anteprima/componenti.html`; l'app non li usa ancora (Fase 9). Il volume
+  della manopola passa da `sessione.impostaVolume()` e si ricorda in `jukebox.volume`.
 - **M1 (28/09/2026):** ricerca e filtri, playlist coi filtri e a mano, motori,
   link verso NewPipe/Spotify, coda, 5 schede.
 - **Estetica (01–02/10/2026):** jukebox anni '50 in blu notte con neon, dal
@@ -107,9 +111,10 @@ piano (aggancio a `aggiorna.py`), e solo a revisione chiusa.
 - **Solo Jukebox (03/11/2026):** interruttore nelle Impostazioni (spento di
   default): acceso, il Jukebox non apre mai app esterne, i brani senza file
   appaiono spenti e un ▶ su uno di loro parte dal prossimo della lista che c'è.
-- **Test:** 385 Node (`test/*.test.mjs`, dati inventati) + 50 Python
+- **Test:** 436 Node (`test/*.test.mjs`, dati inventati) + 50 Python
   (`strumenti/test_*.py`); `npm run verifica` lancia lint, tipi e tutti i test;
-  `npm run prova` fa 9 giri nel browser sull'app vera, errori compresi (dal 16/11/2026, restauro).
+  `npm run prova` fa 9 giri nel browser sull'app vera, errori compresi (dal 16/11/2026, restauro);
+  `npm run prova:componenti` prova nel browser la pagina dei componenti hi-fi (dal 17/11/2026).
 - **Errori e velocità (restauro, fasi 6-7, 16/11/2026):** la Diagnostica (Impostazioni) elenca gli
   ultimi 20 errori e le misure di velocità (avvio, indice, ricerca…), con il tasto Copia; l'avvio ha
   tre stati (caricamento, errore con Riprova, pronto); un file audio rotto avvisa e passa al
