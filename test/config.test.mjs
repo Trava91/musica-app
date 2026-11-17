@@ -44,6 +44,30 @@ test("leggiConfig: i valori di default quando la memoria è vuota", () => {
   assert.equal(config.configPronta(config.leggiConfig(vuota)), false);
 });
 
+test("volume: pieno se non è mai stato toccato; letto e tenuto tra 0 e 1", () => {
+  const memoria = (/** @type {string | null} */ v) => ({
+    getItem: (chiave) => (chiave === "jukebox.volume" ? v : null),
+  });
+  assert.equal(config.leggiPreferenzaVolume(memoria(null)), 1);
+  assert.equal(config.leggiPreferenzaVolume(memoria("0.62")), 0.62);
+  assert.equal(config.leggiPreferenzaVolume(memoria("0")), 0);
+  assert.equal(config.leggiPreferenzaVolume(memoria("7")), 1);
+  assert.equal(config.leggiPreferenzaVolume(memoria("-1")), 0);
+  assert.equal(config.leggiPreferenzaVolume(memoria("rovinato")), 1);
+  assert.equal(config.leggiPreferenzaVolume(memoria("")), 1);
+});
+
+test("volume: si salva sotto jukebox.volume, già dentro i limiti", () => {
+  /** @type {Record<string, string>} */
+  const scritto = {};
+  const memoria = { setItem: (chiave, valore) => (scritto[chiave] = valore) };
+  config.salvaPreferenzaVolume(0.62, memoria);
+  assert.deepEqual(scritto, { "jukebox.volume": "0.62" });
+  config.salvaPreferenzaVolume(3, memoria);
+  assert.equal(scritto["jukebox.volume"], "1");
+  assert.equal(config.leggiPreferenzaVolume({ getItem: (chiave) => scritto[chiave] ?? null }), 1);
+});
+
 test("configPronta: con GitHub serve il token, con 'url' l'indirizzo", () => {
   const base = { owner: "", repo: "", file: "" };
   assert.equal(config.configPronta({ ...base, tipo: "github-privato", url: "", token: "abc" }), true);

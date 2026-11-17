@@ -1,0 +1,179 @@
+// I "gettoni" dello stile hi-fi (css/base.css) e i componenti (css/componenti.css): i contrasti
+// delle coppie testo/fondo, nessun gettone inventato, le regole per convivere con lo stile vecchio
+// (solo classi hf-, base.css fatto solo di variabili e caratteri) e quelle sul movimento (si animano
+// solo transform e opacity; con "riduci movimento" i tempi vanno a zero), più le misure minime
+// (testo da 12 px, tasti da 44 px). Se cambi un colore o un pezzo, questi test dicono se regge ancora.
+
+import assert from "node:assert/strict";
+import { readdirSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { test } from "node:test";
+import { fileURLToPath } from "node:url";
+import { COPPIE_CONTRASTO, misuraContrasti } from "../js/ui/hifi/calcoli.js";
+
+const radice = join(dirname(fileURLToPath(import.meta.url)), "..");
+const senzaCommenti = (testo) => testo.replace(/\/\*[\s\S]*?\*\//g, "");
+const base = senzaCommenti(readFileSync(join(radice, "css", "base.css"), "utf-8"));
+const componenti = senzaCommenti(readFileSync(join(radice, "css", "componenti.css"), "utf-8"));
+
+/** Le regole di un foglio: [{ prelude, corpo }], anche quelle dentro @media e @container. */
+function regole(css) {
+  const trovate = [];
+  const pila = [];
+  let inizio = 0;
+  for (let i = 0; i < css.length; i++) {
+    if (css[i] === "{") {
+      pila.push({ prelude: css.slice(inizio, i).trim(), da: i + 1 });
+      inizio = i + 1;
+    } else if (css[i] === "}") {
+      const aperta = pila.pop();
+      if (aperta) trovate.push({ prelude: aperta.prelude, corpo: css.slice(aperta.da, i) });
+      inizio = i + 1;
+    }
+  }
+  return trovate;
+}
+
+/** Le dichiarazioni di un corpo di regola (senza le regole annidate): [[proprietà, valore]]. */
+function dichiarazioni(corpo) {
+  return corpo
+    .replace(/[^{}]*\{[^{}]*\}/g, "")
+    .split(";")
+    .map((d) => d.trim())
+    .filter((d) => d.includes(":"))
+    .map((d) => {
+      const i = d.indexOf(":");
+      return [d.slice(0, i).trim(), d.slice(i + 1).trim()];
+    });
+}
+
+/** Divide alle virgole che non stanno dentro parentesi ("transform 1s cubic-bezier(.1,.2,.3,.4), opacity 1s"). */
+function dividiVirgole(valore) {
+  const parti = [];
+  let profondita = 0;
+  let pezzo = "";
+  for (const ch of valore) {
+    if (ch === "(") profondita++;
+    if (ch === ")") profondita--;
+    if (ch === "," && profondita === 0) {
+      parti.push(pezzo.trim());
+      pezzo = "";
+    } else pezzo += ch;
+  }
+  if (pezzo.trim()) parti.push(pezzo.trim());
+  return parti;
+}
+
+// I gettoni: le variabili del blocco :root principale di base.css (il primo; il secondo è quello
+// dentro @media prefers-reduced-motion).
+const regoleBase = regole(base);
+const [radiceBase, radiceRiduci] = regoleBase.filter((r) => r.prelude === ":root");
+const gettoni = Object.fromEntries(dichiarazioni(radiceBase?.corpo ?? "").filter(([p]) => p.startsWith("--hf-")));
+
+test("base.css: i gettoni ci sono (colori, ombre, raggi, caratteri, misure, tempi)", () => {
+  assert.ok(Object.keys(gettoni).length > 50, `gettoni trovati: ${Object.keys(gettoni).length}`);
+  for (const nome of ["--hf-metallo", "--hf-vfd", "--hf-ambra", "--hf-led-verde", "--hf-led-arancio", "--hf-fuoco"]) {
+    assert.ok(gettoni[nome], `manca ${nome}`);
+  }
+});
+
+test("contrasti: ogni coppia testo/fondo dello stile regge il suo minimo (testo 4,5:1, grafica 3:1)", () => {
+  const misure = misuraContrasti((nome) => {
+    assert.ok(gettoni[nome], `il gettone ${nome} (in COPPIE_CONTRASTO) non c'è in base.css`);
+    return gettoni[nome];
+  });
+  assert.equal(misure.length, COPPIE_CONTRASTO.length);
+  const deboli = misure
+    .filter((m) => !m.regge)
+    .map((m) => `${m.uso}: ${m.rapporto.toFixed(2)}:1 (serve ${m.minimo}:1)`);
+  assert.deepEqual(deboli, []);
+});
+
+test("ogni gettone usato senza un valore di riserva esiste (in base.css o dichiarato in componenti.css)", () => {
+  const dichiarati = new Set([
+    ...Object.keys(gettoni),
+    ...regole(componenti).flatMap((r) => dichiarazioni(r.corpo).map(([p]) => p)),
+  ]);
+  const usati = [...`${base}\n${componenti}`.matchAll(/var\(\s*(--hf-[\w-]+)\s*\)/g)].map((m) => m[1]);
+  const mancanti = [...new Set(usati.filter((nome) => !dichiarati.has(nome)))];
+  assert.deepEqual(mancanti, [], "gettoni usati ma mai definiti");
+});
+
+test("componenti.css: solo classi col prefisso hf- (convive con lo stile vecchio fino alla Fase 9)", () => {
+  const classi = regole(componenti)
+    .filter((r) => !r.prelude.startsWith("@"))
+    .flatMap((r) => [...r.prelude.matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)].map((m) => m[1]));
+  assert.ok(classi.length > 100);
+  assert.deepEqual([...new Set(classi.filter((c) => !c.startsWith("hf-")))], []);
+});
+
+test("base.css: solo variabili e caratteri, nessuna regola su elementi della pagina", () => {
+  const ammessi = [":root", ":root.hf-fermo", "@font-face", "@media (prefers-reduced-motion: reduce)"];
+  const altri = regoleBase.map((r) => r.prelude).filter((p) => !ammessi.includes(p));
+  assert.deepEqual(altri, []);
+  for (const r of regoleBase.filter((x) => x.prelude.startsWith(":root"))) {
+    const nonVariabili = dichiarazioni(r.corpo).filter(([p]) => !p.startsWith("--hf-"));
+    assert.deepEqual(nonVariabili, [], `${r.prelude}: solo variabili --hf-`);
+  }
+});
+
+test("movimento: le transizioni e le animazioni muovono solo transform e opacity", () => {
+  const ammesse = new Set(["transform", "opacity"]);
+  for (const r of regole(componenti)) {
+    for (const [proprieta, valore] of dichiarazioni(r.corpo)) {
+      if (proprieta === "transition" || proprieta === "transition-property") {
+        for (const parte of dividiVirgole(valore)) {
+          const animata = parte.split(/\s+/)[0];
+          assert.ok(ammesse.has(animata), `${r.prelude}: si anima ${animata}`);
+        }
+      }
+    }
+  }
+  const fotogrammi = regole(componenti).filter((r) => /^(\d+%|from|to)/.test(r.prelude));
+  assert.ok(fotogrammi.length > 0, "c'è almeno un'animazione (lo scorrimento del display)");
+  for (const f of fotogrammi) {
+    for (const [proprieta] of dichiarazioni(f.corpo))
+      assert.ok(ammesse.has(proprieta), `@keyframes anima ${proprieta}`);
+  }
+  // ...e i componenti in JavaScript: le transizioni che scrivono riguardano solo transform.
+  const cartella = join(radice, "js", "ui", "hifi");
+  for (const file of readdirSync(cartella).filter((f) => f.endsWith(".js"))) {
+    const codice = readFileSync(join(cartella, file), "utf-8");
+    for (const m of codice.matchAll(/style\.transition\s*=\s*([^;]+);/g)) {
+      const testo = m[1].replace(/\$\{[^}]*\}/g, "");
+      assert.doesNotMatch(testo, /\b(filter|width|height|top|left|box-shadow|background|color)\b/, `${file}: ${m[1]}`);
+    }
+  }
+});
+
+test("riduci movimento: tutti i tempi dei gettoni vanno a 0 (dal sistema e forzato con hf-fermo)", () => {
+  const tempi = Object.keys(gettoni).filter((nome) => nome.startsWith("--hf-tempo-"));
+  assert.ok(tempi.length >= 3);
+  const forzato = regoleBase.find((r) => r.prelude === ":root.hf-fermo");
+  for (const blocco of [radiceRiduci, forzato]) {
+    assert.ok(blocco, "manca un blocco di riduci movimento");
+    const valori = Object.fromEntries(dichiarazioni(blocco.corpo));
+    for (const nome of tempi) assert.equal(valori[nome], "0ms", `${nome} con riduci movimento`);
+  }
+});
+
+test("misure minime: nessun testo sotto i 12 px, tasti di almeno 44 px", () => {
+  const piccoli = [];
+  for (const r of regole(componenti)) {
+    for (const [proprieta, valore] of dichiarazioni(r.corpo)) {
+      if (proprieta !== "font-size" || valore === "inherit") continue;
+      const px = /^(\d+(?:\.\d+)?)px$/.exec(valore);
+      const conMinimo = /^max\(\s*(\d+)px\s*,/.exec(valore);
+      if (px && Number(px[1]) >= 12) continue;
+      if (conMinimo && Number(conMinimo[1]) >= 12) continue;
+      piccoli.push(`${r.prelude}: ${valore}`);
+    }
+  }
+  assert.deepEqual(piccoli, []);
+  assert.equal(gettoni["--hf-tocco-min"], "44px");
+  assert.equal(gettoni["--hf-testo-min"], "12px");
+  const tasto = regole(componenti).find((r) => r.prelude === ".hf-tasto");
+  const d = Object.fromEntries(dichiarazioni(tasto?.corpo ?? ""));
+  assert.equal(d["min-width"], "var(--hf-tocco-min)");
+  assert.equal(d["min-height"], "var(--hf-tocco-min)");
+});

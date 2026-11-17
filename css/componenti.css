@@ -1,0 +1,1493 @@
+/* componenti.css — i pezzi dello stile hi-fi del Jukebox, ognuno con i suoi stati (normale,
+   premuto, a fuoco, spento). Li mostra tutti anteprima/componenti.html.
+
+   Regole di questo file:
+   - tutte le classi hanno il prefisso hf- (vedi base.css): convivono con css/styles.css finché
+     la Fase 9 non lo toglie. Colori, ombre e tempi vengono dai gettoni di base.css;
+   - le animazioni muovono solo transform e opacity, con i tempi dei gettoni (0 con "riduci
+     movimento"); lo controlla test/gettoni.test.mjs;
+   - le classi hf-forza-premuto e hf-forza-fuoco servono solo alla pagina dei componenti, per
+     mostrare fermo uno stato che di solito dura un attimo;
+   - niente attributi style nel markup (lo scudo CSP della pagina li blocca): le misure che
+     cambiano le scrive il codice con le variabili --hf-… (style.setProperty). */
+
+/* ======================================================================== aiuti ==== */
+
+/* Solo per i lettori di schermo. */
+.hf-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ================================================================ moduli e frontali ==== */
+/* Un apparecchio del rack: cornice di grafite (i fianchi) e frontalino d'alluminio. */
+
+.hf-modulo {
+  border-radius: var(--hf-raggio-modulo);
+  padding: 3px 7px;
+  background: var(--hf-cornice);
+  box-shadow: var(--hf-ombra-modulo);
+}
+
+.hf-frontale {
+  position: relative;
+  border-radius: var(--hf-raggio-frontale);
+  padding: 12px 14px 14px;
+  background: var(--hf-metallo);
+  box-shadow: var(--hf-ombra-frontale);
+  color: var(--hf-serigrafia);
+  font-family: var(--hf-font-serigrafia);
+  font-weight: 500;
+}
+
+/* La riga in alto del frontalino: nome dell'apparecchio a sinistra, un dettaglio a destra. */
+.hf-targhetta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.2;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.hf-marchio {
+  font-size: 15px;
+  letter-spacing: 0.32em;
+}
+
+.hf-dettaglio {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--hf-serigrafia-tenue);
+}
+
+/* Le scritte stampate sopra o sotto i tasti. */
+.hf-serigrafia {
+  font-family: var(--hf-font-serigrafia);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--hf-serigrafia);
+}
+
+/* ========================================================================= tasti ==== */
+/* Rettangolari e bassi, con l'effetto pressione; almeno 44 px per lato. Con un'icona sola
+   serve aria-label. */
+
+.hf-tasto {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  min-width: var(--hf-tocco-min);
+  min-height: var(--hf-tocco-min);
+  height: var(--hf-tasto-alto);
+  margin: 0;
+  padding: 0 14px;
+  border: 1px solid var(--hf-tasto-bordo);
+  border-bottom-color: var(--hf-tasto-bordo-basso);
+  border-radius: var(--hf-raggio-tasto);
+  background: linear-gradient(180deg, var(--hf-tasto-luce) 0%, var(--hf-tasto) 45%, var(--hf-tasto-scuro) 100%);
+  box-shadow: var(--hf-ombra-tasto);
+  color: var(--hf-tasto-testo);
+  font-family: var(--hf-font-serigrafia);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--hf-tempo-premi) ease-out;
+}
+
+.hf-tasto svg {
+  flex: none;
+  width: 22px;
+  height: 22px;
+}
+
+/* Il tasto principale (conferme) e quello pericoloso (cancellazioni): di grafite. */
+.hf-tasto.hf-principale,
+.hf-tasto.hf-pericolo {
+  border-color: #121315;
+  border-bottom-color: #050506;
+  background: linear-gradient(
+    180deg,
+    var(--hf-tasto-grafite-luce) 0%,
+    var(--hf-tasto-grafite) 45%,
+    var(--hf-tasto-grafite-scura) 100%
+  );
+  box-shadow: var(--hf-ombra-tasto-grafite);
+  color: var(--hf-serigrafia-chiara);
+}
+
+.hf-tasto.hf-pericolo {
+  color: var(--hf-pericolo);
+}
+
+/* Piccolo e quadrato (✕ chiudi, ▶ su una riga): sempre 44 × 44. */
+.hf-tasto.hf-piccolo {
+  width: var(--hf-tocco-min);
+  height: var(--hf-tocco-min);
+  padding: 0;
+}
+
+.hf-tasto.hf-piccolo svg {
+  width: 18px;
+  height: 18px;
+}
+
+@media (hover: hover) {
+  .hf-tasto:hover {
+    background: linear-gradient(180deg, #fbfaf6 0%, #e4e0d8 45%, #d2cec4 100%);
+  }
+
+  .hf-tasto.hf-principale:hover,
+  .hf-tasto.hf-pericolo:hover {
+    background: linear-gradient(180deg, #4d4e54 0%, #3a3b40 45%, #2a2b2f 100%);
+  }
+}
+
+/* Premuto: scende di 2 px e lo zoccolo sparisce. */
+.hf-tasto:active,
+.hf-tasto.hf-forza-premuto {
+  transform: translateY(2px);
+  box-shadow: var(--hf-ombra-tasto-premuto);
+}
+
+.hf-tasto.hf-principale:active,
+.hf-tasto.hf-pericolo:active,
+.hf-tasto.hf-principale.hf-forza-premuto {
+  box-shadow:
+    0 0 0 #0b0b0d,
+    inset 0 1px 3px rgb(0 0 0 / 0.5);
+}
+
+/* A ritenuta (aria-pressed="true", per esempio "casuale" acceso): resta un po' giù, come i
+   pulsanti degli impianti veri. Così lo stato non lo dice solo il colore del LED. */
+.hf-tasto[aria-pressed="true"] {
+  transform: translateY(1px);
+  box-shadow:
+    0 1px 0 var(--hf-tasto-zoccolo),
+    inset 0 1px 3px rgb(0 0 0 / 0.18);
+}
+
+/* A fuoco: anello scuro dentro, ambra fuori (l'ambra da sola sul metallo non si vede). */
+.hf-tasto:focus-visible,
+.hf-tasto.hf-forza-fuoco {
+  outline: 2px solid var(--hf-fuoco-interno);
+  outline-offset: 1px;
+  box-shadow: var(--hf-ombra-tasto), var(--hf-anello-fuoco);
+}
+
+.hf-tasto[aria-pressed="true"]:focus-visible {
+  box-shadow:
+    0 1px 0 var(--hf-tasto-zoccolo),
+    inset 0 1px 3px rgb(0 0 0 / 0.18),
+    var(--hf-anello-fuoco);
+}
+
+.hf-tasto.hf-principale:focus-visible,
+.hf-tasto.hf-pericolo:focus-visible,
+.hf-tasto.hf-principale.hf-forza-fuoco {
+  box-shadow: var(--hf-ombra-tasto-grafite), var(--hf-anello-fuoco);
+}
+
+/* Spento: non risponde, la scritta sbiadisce, niente zoccolo. */
+.hf-tasto:disabled,
+.hf-tasto[aria-disabled="true"] {
+  border-color: #a19d94;
+  background: linear-gradient(180deg, #ebe8e1, #d6d2c9);
+  box-shadow: 0 1px 0 var(--hf-tasto-zoccolo);
+  color: var(--hf-tasto-spento);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.hf-tasto:disabled svg,
+.hf-tasto[aria-disabled="true"] svg {
+  opacity: 0.55;
+}
+
+/* Le due icone del tasto ▶/⏸: data-stato="pausa" mostra quella della pausa. */
+.hf-tasto .hf-icona-pausa {
+  display: none;
+}
+
+.hf-tasto[data-stato="pausa"] .hf-icona-suona {
+  display: none;
+}
+
+.hf-tasto[data-stato="pausa"] .hf-icona-pausa {
+  display: block;
+}
+
+/* La parola dentro il tasto "ripeti" (NO, TUTTI, UNO). */
+.hf-tasto-modo {
+  min-width: 3.2em;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-align: left;
+}
+
+/* Un tasto con la sua serigrafia sopra; i blocchi stanno in fila in un gruppo. */
+.hf-tasto-blocco {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+}
+
+.hf-tasto-blocco > .hf-tasto {
+  width: 100%;
+}
+
+.hf-tasti {
+  display: flex;
+  gap: 8px;
+}
+
+.hf-tasti > .hf-tasto-blocco {
+  flex: 1 1 0;
+}
+
+.hf-tasti > .hf-largo {
+  flex-grow: 1.45;
+}
+
+/* =========================================================================== LED ==== */
+/* Verde di default, arancio con hf-arancio; hf-acceso lo accende. La ghiera scura lo stacca
+   dal metallo anche da spento. */
+
+.hf-led {
+  display: inline-block;
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #5f705f, var(--hf-led-verde-spento) 70%);
+  box-shadow:
+    0 0 0 1.5px var(--hf-led-ghiera),
+    0 1px 0 1.5px rgb(255 255 255 / 0.45);
+}
+
+.hf-led.hf-arancio {
+  background: radial-gradient(circle at 35% 30%, #7d5c41, var(--hf-led-arancio-spento) 70%);
+}
+
+.hf-led.hf-acceso {
+  background: radial-gradient(circle at 35% 30%, #f3ffe9, var(--hf-led-verde) 45%, var(--hf-led-verde-scuro));
+  box-shadow:
+    0 0 0 1.5px var(--hf-led-ghiera),
+    0 0 7px 2px rgb(99 255 116 / 0.7);
+}
+
+.hf-led.hf-arancio.hf-acceso {
+  background: radial-gradient(circle at 35% 30%, #fff3e3, var(--hf-led-arancio) 45%, var(--hf-led-arancio-scuro));
+  box-shadow:
+    0 0 0 1.5px var(--hf-led-ghiera),
+    0 0 7px 2px rgb(255 138 30 / 0.7);
+}
+
+/* Una spia: LED e scritta. Per i lettori di schermo c'è uno .hf-sr con "accesa"/"spenta"
+   (lo aggiorna comune.accendiSpia). */
+.hf-spia {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--hf-font-serigrafia);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--hf-serigrafia);
+}
+
+.hf-spie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+}
+
+/* =================================================================== display VFD ==== */
+/* Vetro fumé, caratteri ciano che brillano, segmenti spenti dietro le cifre. Le righe di testo
+   scorrono solo se non ci stanno (display-vfd.js aggiunge hf-lungo); con "riduci movimento"
+   restano ferme con i puntini. */
+
+.hf-vfd {
+  container: hf-vfd / inline-size;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--hf-raggio-vetro);
+  padding: 10px 12px 12px;
+  background: var(--hf-vetro-fondo);
+  box-shadow: var(--hf-ombra-incasso);
+  color: var(--hf-vfd);
+  font-family: var(--hf-font-serigrafia);
+  font-weight: 500;
+}
+
+/* La trama del vetro e il riflesso: fermi, sopra a tutto, non si toccano. */
+.hf-vfd::before,
+.hf-vfd::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hf-vfd::before {
+  background:
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.018) 0 1px, rgb(0 0 0 / 0) 1px 3px),
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.014) 0 1px, rgb(0 0 0 / 0) 1px 3px);
+}
+
+.hf-vfd::after {
+  background: linear-gradient(172deg, rgb(255 255 255 / 0.07) 0 34%, rgb(255 255 255 / 0) 34%);
+}
+
+.hf-vfd-riga1 {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: end;
+  gap: 16px;
+}
+
+.hf-vfd-cifre {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.hf-vfd-etichetta {
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0.16em;
+  color: var(--hf-vfd-tenue);
+}
+
+/* Cifre a segmenti: quelle accese sopra quelle spente ("88:88"), allineate a destra. */
+.hf-seg {
+  display: grid;
+  font-family: var(--hf-font-segmenti);
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.hf-seg-spento,
+.hf-seg-acceso {
+  grid-area: 1 / 1;
+  text-align: right;
+}
+
+.hf-seg-spento {
+  color: var(--hf-vfd-spento);
+}
+
+.hf-seg-acceso {
+  color: var(--hf-vfd);
+  text-shadow: var(--hf-vfd-bagliore);
+}
+
+/* Al posto del tempo, una scritta a punti ("IN NEWPIPE"): alta come le cifre. */
+.hf-vfd-scritta {
+  font-family: var(--hf-font-matrice);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 32px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--hf-vfd);
+  text-shadow: var(--hf-vfd-bagliore);
+}
+
+.hf-vfd-spie {
+  display: flex;
+  flex-wrap: wrap;
+  align-self: start;
+  justify-content: flex-end;
+  gap: 3px 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  line-height: 1.25;
+  letter-spacing: 0.12em;
+}
+
+.hf-vfd-spie li {
+  color: var(--hf-vfd-spia-spenta);
+}
+
+.hf-vfd-spie li.hf-acceso {
+  color: var(--hf-vfd);
+  text-shadow: var(--hf-vfd-bagliore);
+}
+
+/* Una riga di testo a punti. Ferma: puntini se non ci sta. Lunga: scorre avanti e indietro. */
+.hf-vfd-riga {
+  overflow: hidden;
+  font-family: var(--hf-font-matrice);
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-shadow: var(--hf-vfd-bagliore);
+}
+
+.hf-vfd-scorre {
+  display: inline;
+}
+
+.hf-vfd-riga.hf-lungo {
+  text-overflow: clip;
+}
+
+.hf-vfd-riga.hf-lungo .hf-vfd-scorre {
+  display: inline-block;
+  animation: hf-scorri var(--hf-durata, 8s) linear infinite alternate;
+}
+
+/* Fuori dallo schermo o a schermo spento lo scorrimento si ferma (display-vfd.js). */
+.hf-vfd.hf-in-pausa .hf-vfd-riga.hf-lungo .hf-vfd-scorre {
+  animation-play-state: paused;
+}
+
+@keyframes hf-scorri {
+  0%,
+  14% {
+    transform: translateX(0);
+  }
+
+  86%,
+  100% {
+    transform: translateX(var(--hf-distanza, 0));
+  }
+}
+
+.hf-vfd-titolo {
+  margin-top: 12px;
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.hf-vfd-artista {
+  font-size: 17px;
+  line-height: 1.25;
+  color: var(--hf-vfd-tenue);
+}
+
+.hf-vfd-livelli {
+  margin-top: 12px;
+}
+
+.hf-vfd-livelli:empty {
+  display: none;
+}
+
+/* Il display piccolo (mini lettore): una riga che scorre e il tempo. */
+.hf-vfd.hf-compatto {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 10px;
+}
+
+.hf-vfd.hf-compatto .hf-vfd-riga {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.hf-vfd.hf-compatto .hf-seg {
+  flex: none;
+  font-size: 20px;
+}
+
+.hf-vfd.hf-compatto .hf-vfd-scritta {
+  flex: none;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+/* Display larghi (PC): cifre e testi più grandi. */
+@container hf-vfd (min-width: 480px) {
+  .hf-seg {
+    font-size: 40px;
+  }
+
+  .hf-vfd-scritta {
+    font-size: 24px;
+    line-height: 40px;
+  }
+
+  .hf-vfd-titolo {
+    font-size: 26px;
+  }
+
+  .hf-vfd-artista {
+    font-size: 19px;
+  }
+}
+
+/* ========================================================= indicatori di livello ==== */
+/* Ambra a segmenti, due canali, gli ultimi tre rossi. Simulati (livelli.js): si muovono solo
+   mentre suona. Stanno sul vetro di un display. */
+
+.hf-livelli {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 5px 8px;
+}
+
+.hf-liv-nome {
+  font-family: var(--hf-font-serigrafia);
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  color: var(--hf-ambra-tenue);
+}
+
+.hf-liv-barra {
+  display: grid;
+  grid-template-columns: repeat(var(--hf-segmenti, 16), 1fr);
+  gap: 3px;
+  height: 9px;
+}
+
+.hf-liv-seg {
+  border-radius: 1px;
+  background: var(--hf-ambra);
+  box-shadow: 0 0 5px rgb(255 176 46 / 0.55);
+  opacity: 0.13;
+}
+
+.hf-liv-seg.hf-rosso {
+  background: var(--hf-ambra-rossa);
+  box-shadow: 0 0 5px rgb(255 90 42 / 0.55);
+}
+
+.hf-liv-seg.hf-on {
+  opacity: 1;
+}
+
+.hf-liv-scala {
+  display: flex;
+  grid-column: 2;
+  justify-content: space-between;
+  font-family: var(--hf-font-serigrafia);
+  font-size: 12px;
+  line-height: 1;
+  color: var(--hf-ambra-tenue);
+}
+
+/* ====================================================================== manopola ==== */
+/* role="slider": si gira col dito o col mouse in cerchio, con la rotella e con i tasti. La
+   tacca la ruota manopola.js; il quadrante (le tacche attorno) è un SVG. */
+
+.hf-manopola-blocco {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.hf-manopola-zona {
+  --hf-manopola-d: 104px;
+  position: relative;
+  flex: none;
+  width: calc(var(--hf-manopola-d) + 22px);
+  height: calc(var(--hf-manopola-d) + 22px);
+}
+
+.hf-manopola-quadrante {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--hf-serigrafia);
+}
+
+.hf-manopola {
+  position: absolute;
+  top: 11px;
+  left: 11px;
+  width: var(--hf-manopola-d);
+  height: var(--hf-manopola-d);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 26%, rgb(255 255 255 / 0.6), rgb(255 255 255 / 0) 42%),
+    conic-gradient(from 20deg, #d9d7d1, #a8a6a0 25%, #eceae5 45%, #a4a29c 70%, #d9d7d1);
+  box-shadow:
+    0 7px 12px rgb(0 0 0 / 0.45),
+    0 2px 0 #6c6a64,
+    inset 0 0 0 1px rgb(0 0 0 / 0.25);
+  cursor: grab;
+  touch-action: none;
+}
+
+.hf-manopola:active {
+  cursor: grabbing;
+}
+
+.hf-manopola:focus-visible,
+.hf-manopola.hf-forza-fuoco {
+  outline: 2px solid var(--hf-fuoco-interno);
+  outline-offset: 1px;
+  box-shadow:
+    0 7px 12px rgb(0 0 0 / 0.45),
+    0 2px 0 #6c6a64,
+    inset 0 0 0 1px rgb(0 0 0 / 0.25),
+    var(--hf-anello-fuoco);
+}
+
+.hf-manopola-faccia {
+  position: absolute;
+  inset: 11%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 36% 30%, rgb(255 255 255 / 0.7), rgb(255 255 255 / 0) 46%),
+    repeating-radial-gradient(circle, rgb(255 255 255 / 0.1) 0 1px, rgb(0 0 0 / 0.025) 1px 2.5px),
+    conic-gradient(from 200deg, #dcdad4, #b5b3ad 30%, #f0eee9 55%, #b0aea8 80%, #dcdad4);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.18),
+    0 1px 3px rgb(0 0 0 / 0.35);
+}
+
+.hf-manopola-rotore {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.hf-zigrinatura {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: repeating-conic-gradient(rgb(0 0 0 / 0.24) 0 2deg, rgb(255 255 255 / 0.2) 2deg 4deg);
+  -webkit-mask: radial-gradient(circle, rgb(0 0 0 / 0) 0 calc(50% - 6px), #000 calc(50% - 5px));
+  mask: radial-gradient(circle, rgb(0 0 0 / 0) 0 calc(50% - 6px), #000 calc(50% - 5px));
+}
+
+.hf-tacca {
+  position: absolute;
+  top: 15%;
+  left: 50%;
+  width: 4px;
+  height: 15%;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: #2a2b2f;
+  box-shadow:
+    inset 0 1px 1px rgb(0 0 0 / 0.6),
+    0 1px 0 rgb(255 255 255 / 0.6);
+}
+
+/* Spenta (con le app esterne il volume lo decide l'app): sbiadita, non si gira. */
+.hf-manopola[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.55;
+  touch-action: auto; /* spenta, col dito si fa scorrere la pagina */
+}
+
+.hf-manopola-zona.hf-spenta .hf-manopola-quadrante {
+  opacity: 0.35;
+}
+
+.hf-manopola-minmax {
+  display: flex;
+  justify-content: space-between;
+  width: calc(var(--hf-manopola-d, 104px) + 8px);
+  margin-top: -12px;
+}
+
+/* ====================================================== scala del sintonizzatore ==== */
+/* role="radiogroup": stazioni generiche {id, nome, dettaglio} (oggi generi e playlist, domani le
+   stanze della radio). L'indice rosso va sulla stazione scelta; la scala scorre col dito. */
+
+.hf-scala {
+  position: relative;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-radius: var(--hf-raggio-vetro);
+  background:
+    radial-gradient(70% 120% at 50% 50%, var(--hf-scala-bagliore), rgb(70 190 160 / 0) 70%),
+    linear-gradient(180deg, var(--hf-scala-vetro-bordo), var(--hf-scala-vetro) 50%, var(--hf-scala-vetro-bordo));
+  box-shadow: var(--hf-ombra-incasso);
+  font-family: var(--hf-font-serigrafia);
+  font-weight: 500;
+  scrollbar-color: #2f5f56 rgb(0 0 0 / 0);
+  scrollbar-width: thin;
+  overscroll-behavior-x: contain;
+}
+
+/* Il nastro con le stazioni: i margini permettono di centrare anche la prima e l'ultima. */
+.hf-scala-nastro {
+  position: relative;
+  display: flex;
+  width: max-content;
+  min-width: 100%;
+  box-sizing: border-box;
+  padding: 0 calc(50% - 46px);
+}
+
+/* Le due file di tacche, sopra e sotto. */
+.hf-scala-nastro::before,
+.hf-scala-nastro::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 7px;
+  background: repeating-linear-gradient(90deg, var(--hf-scala-tacche) 0 1px, rgb(0 0 0 / 0) 1px 11.5px);
+  pointer-events: none;
+}
+
+.hf-scala-nastro::before {
+  top: 6px;
+}
+
+.hf-scala-nastro::after {
+  bottom: 6px;
+}
+
+.hf-stazione {
+  position: relative;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  /* Larga quanto il nome, tra 92 e 168 px: oltre va a capo (i nomi delle playlist sono lunghi). */
+  min-width: 92px;
+  max-width: 168px;
+  margin: 0;
+  padding: 24px 8px;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  color: var(--hf-scala-testo);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.15;
+  letter-spacing: 0.1em;
+  text-transform: uppercase; /* il nome arriva normale: i lettori di schermo lo leggono come parola */
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* La tacca della stazione. */
+.hf-stazione::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  width: 1px;
+  height: 13px;
+  background: currentColor;
+  opacity: 0.9;
+}
+
+.hf-st-nome {
+  max-width: 100%;
+  text-align: center;
+  overflow-wrap: break-word;
+}
+
+.hf-st-dettaglio {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  color: var(--hf-scala-numeri);
+}
+
+.hf-stazione[aria-checked="true"] {
+  color: var(--hf-scala-acceso);
+  text-shadow: 0 0 6px rgb(143 240 210 / 0.85);
+}
+
+.hf-stazione[aria-checked="true"] .hf-st-dettaglio {
+  color: var(--hf-scala-numeri-acceso);
+}
+
+/* Il fuoco sta dentro il vetro (fuori lo taglierebbe lo scorrimento). */
+.hf-stazione:focus-visible,
+.hf-stazione.hf-forza-fuoco {
+  outline: 3px solid var(--hf-fuoco);
+  outline-offset: -3px;
+}
+
+.hf-scala-indice {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 0;
+  width: 3px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  background: linear-gradient(var(--hf-scala-indice-luce), var(--hf-scala-indice));
+  box-shadow: 0 0 8px 2px rgb(255 90 42 / 0.55);
+  pointer-events: none;
+  transform: translateX(var(--hf-x, 0));
+  transition: transform var(--hf-tempo-indice) cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+
+/* Senza stazioni il nastro non ha margini: la scritta sta al centro del vetro. */
+.hf-scala-nastro:has(> .hf-scala-vuota) {
+  padding: 0;
+}
+
+.hf-scala-vuota {
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 26px 16px;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--hf-scala-testo);
+}
+
+/* ==================================================================== giradischi ==== */
+/* Solo CSS: plinto, piatto con i punti stroboscopici, vinile con i solchi, etichetta col titolo,
+   braccio (SVG). Le misure sono in unità del contenitore (cqw): scala da solo. La rotazione e il
+   braccio li muove giradischi.js. */
+
+.hf-giradischi {
+  container: hf-giradischi / inline-size;
+  position: relative;
+  aspect-ratio: 100 / 82;
+}
+
+.hf-giradischi > * {
+  position: absolute;
+}
+
+.hf-pozzo {
+  top: 3.5cqw;
+  left: 2.5cqw;
+  width: 77cqw;
+  height: 77cqw;
+  border-radius: 50%;
+  background: radial-gradient(circle, #0b0b0c 0 72%, #1b1b1d 100%);
+  box-shadow:
+    inset 0 0.6cqw 1.6cqw rgb(0 0 0 / 0.85),
+    0 0.3cqw 0 rgb(255 255 255 / 0.5);
+}
+
+.hf-disco {
+  top: 5cqw;
+  left: 4cqw;
+  width: 74cqw;
+  height: 74cqw;
+  border-radius: 50%;
+  will-change: transform;
+}
+
+.hf-disco > * {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.hf-piatto {
+  inset: 0;
+  background:
+    radial-gradient(circle, rgb(0 0 0 / 0) 0 92%, rgb(0 0 0 / 0.3) 100%),
+    repeating-conic-gradient(#efefec 0 1.5deg, #8d8c88 1.5deg 3deg);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.4);
+}
+
+.hf-vinile {
+  inset: 2cqw;
+  background:
+    radial-gradient(
+      circle closest-side,
+      #0d0d0e 0 40%,
+      rgb(0 0 0 / 0) 40% 59.4%,
+      #0a0a0b 59.4% 60.6%,
+      rgb(0 0 0 / 0) 60.6% 77.4%,
+      #0a0a0b 77.4% 78.6%,
+      rgb(0 0 0 / 0) 78.6% 93.5%,
+      #0e0e0f 93.5% 98.4%,
+      #2b2b2e 98.4% 100%,
+      rgb(0 0 0 / 0) 100%
+    ),
+    repeating-radial-gradient(circle, #121214 0 1px, #1d1d20 1px 2.2px);
+  box-shadow: 0 0 0 1px #000;
+}
+
+/* L'etichetta: carta e inchiostro cambiano a ogni disco (--hf-carta, --hf-inchiostro). */
+.hf-etichetta {
+  top: 24cqw;
+  left: 24cqw;
+  width: 26cqw;
+  height: 26cqw;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      circle,
+      rgb(0 0 0 / 0) 0 30%,
+      rgb(0 0 0 / 0.14) 30% 31.5%,
+      rgb(0 0 0 / 0) 31.5% 86%,
+      rgb(0 0 0 / 0.2) 86% 88%,
+      rgb(0 0 0 / 0) 88%
+    ),
+    var(--hf-carta, #b8432a);
+  color: var(--hf-inchiostro, #fbf1e3);
+  font-family: var(--hf-font-serigrafia);
+  line-height: 1.1;
+  text-align: center;
+}
+
+.hf-et-lato,
+.hf-et-titolo,
+.hf-et-artista {
+  position: absolute;
+  right: 12%;
+  left: 12%;
+}
+
+.hf-et-lato {
+  top: 13%;
+  font-size: max(12px, 1.9cqw);
+  letter-spacing: 0.14em;
+  opacity: 0.85;
+}
+
+.hf-et-titolo {
+  bottom: 57%;
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: max(12px, 3cqw);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.hf-et-artista {
+  top: 58%;
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: max(12px, 2.4cqw);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* Spazio per la copertina (proposta P6): se c'è, copre la carta dell'etichetta. */
+.hf-et-copertina {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Etichetta piccola (telefono stretto): via la riga "LATO A", al titolo serve spazio. */
+@container hf-giradischi (max-width: 420px) {
+  .hf-et-lato {
+    display: none;
+  }
+}
+
+/* Il riflesso della luce sul disco: resta fermo mentre il disco gira sotto. */
+.hf-riflesso {
+  top: 7cqw;
+  left: 6cqw;
+  width: 70cqw;
+  height: 70cqw;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 300deg,
+    rgb(255 255 255 / 0) 0deg,
+    rgb(255 255 255 / 0.13) 22deg,
+    rgb(255 255 255 / 0) 46deg,
+    rgb(255 255 255 / 0) 180deg,
+    rgb(255 255 255 / 0.09) 202deg,
+    rgb(255 255 255 / 0) 226deg
+  );
+  pointer-events: none;
+}
+
+.hf-perno {
+  top: 40.8cqw;
+  left: 39.8cqw;
+  width: 2.4cqw;
+  height: 2.4cqw;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 35%, #fff, #b9b7b1 55%, #6f6d68);
+  box-shadow: 0 0.2cqw 0.4cqw rgb(0 0 0 / 0.6);
+}
+
+.hf-base-braccio {
+  top: 6cqw;
+  left: 80cqw;
+  width: 14cqw;
+  height: 14cqw;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgb(0 0 0 / 0) 0 58%, rgb(0 0 0 / 0.25) 60%, rgb(0 0 0 / 0) 63%),
+    radial-gradient(circle at 40% 35%, #f6f5f1, #c2bfb8 55%, #8d8a84);
+  box-shadow:
+    0 0.5cqw 1.4cqw rgb(0 0 0 / 0.5),
+    inset 0 0 0 1px rgb(0 0 0 / 0.25);
+}
+
+.hf-supporto-braccio {
+  top: 58cqw;
+  left: 85.2cqw;
+  width: 3.6cqw;
+  height: 7cqw;
+  border-radius: 0.8cqw;
+  background: linear-gradient(90deg, #232428, #4d4e53 50%, #232428);
+  box-shadow: 0 0.4cqw 0.8cqw rgb(0 0 0 / 0.5);
+}
+
+/* Il braccio gira attorno al suo perno. Alzato (data-su="si") ha l'ombra più lontana: cambia di
+   colpo, non con un'animazione (si animano solo transform e opacity). */
+.hf-braccio {
+  top: 0;
+  left: 83cqw;
+  width: 8cqw;
+  height: 82cqw;
+  transform-origin: 4cqw 13cqw;
+  filter: drop-shadow(0.4cqw 0.7cqw 0.35cqw rgb(0 0 0 / 0.55));
+}
+
+.hf-braccio[data-su="si"] {
+  filter: drop-shadow(1.4cqw 2.6cqw 1.2cqw rgb(0 0 0 / 0.42));
+}
+
+.hf-braccio-forma {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* ============================================================ cassetto e vani ==== */
+/* "A seguire" e i risultati: una fila di vani numerati come i cassetti di un caricatore di CD.
+   Tutto il vano apre (o suona, nella coda) grazie al tasto hf-vano-corpo che lo copre; un tasto
+   hf-vano-azione a destra fa la seconda cosa (▶, togli). */
+
+.hf-cassetto {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hf-vano {
+  position: relative;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+  box-sizing: border-box;
+  min-height: 52px;
+  padding: 6px 12px 8px 6px;
+  border: 1px solid #9a968d;
+  border-radius: 3px;
+  background: var(--hf-metallo);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.8),
+    0 1px 0 rgb(255 255 255 / 0.6);
+  color: var(--hf-serigrafia);
+  font-family: var(--hf-font-serigrafia);
+  font-weight: 500;
+  transition: transform var(--hf-tempo-premi) ease-out;
+}
+
+.hf-vano.hf-con-azione {
+  grid-template-columns: 40px minmax(0, 1fr) auto var(--hf-tocco-min);
+  padding-right: 6px;
+}
+
+/* La maniglia del cassetto. */
+.hf-vano::after {
+  content: "";
+  position: absolute;
+  right: 8px;
+  bottom: 2px;
+  left: 8px;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #2a2b2f, #6b6862);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.6);
+}
+
+.hf-vano-num {
+  display: grid;
+  place-items: center;
+  height: 34px;
+  border-radius: 3px;
+  background: #050909;
+  box-shadow:
+    inset 0 2px 5px #000,
+    0 1px 0 rgb(255 255 255 / 0.7);
+  color: var(--hf-vfd);
+  font-family: var(--hf-font-segmenti);
+  font-size: 17px;
+  font-weight: 700;
+  text-shadow: var(--hf-vfd-bagliore);
+}
+
+/* Il tasto invisibile che copre tutto il vano (il suo ::before si allarga a tutto il cassetto). */
+.hf-vano-corpo {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  min-height: var(--hf-tocco-min);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hf-vano-corpo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.hf-vano-corpo:focus-visible {
+  outline: none;
+}
+
+.hf-vano-titolo,
+.hf-vano-artista {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.hf-vano-titolo {
+  font-size: 16px;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  color: #1f2024;
+}
+
+.hf-vano-artista {
+  font-size: 13px;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+  color: var(--hf-serigrafia-tenue);
+}
+
+.hf-vano-dati {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.hf-vano-durata {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  color: #2e2f33;
+}
+
+/* Il segno discreto dei brani che hanno il file sul telefono. */
+.hf-vano-file {
+  padding: 1px 4px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  color: var(--hf-serigrafia-tenue);
+}
+
+.hf-vano-azione {
+  position: relative; /* sopra il tasto che copre il vano */
+}
+
+/* Premuto e a fuoco: lo fa tutto il cassetto, non solo il testo. */
+.hf-vano:has(.hf-vano-corpo:active),
+.hf-vano.hf-forza-premuto {
+  transform: translateY(1px);
+}
+
+.hf-vano:has(.hf-vano-corpo:focus-visible),
+.hf-vano.hf-forza-fuoco {
+  outline: 2px solid var(--hf-fuoco-interno);
+  outline-offset: 1px;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.8),
+    var(--hf-anello-fuoco);
+}
+
+/* In corso (si sente): il numero si accende d'ambra, con una striscia a sinistra. */
+.hf-vano.hf-in-corso .hf-vano-num {
+  color: var(--hf-ambra);
+  text-shadow:
+    0 0 4px rgb(255 176 46 / 0.6),
+    0 0 12px rgb(255 176 46 / 0.25);
+}
+
+.hf-vano.hf-in-corso::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  bottom: 8px;
+  left: -1px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--hf-ambra);
+  box-shadow: 0 0 6px rgb(255 176 46 / 0.7);
+}
+
+/* Spento (non si può suonare con le impostazioni di adesso): numero spento, titolo tenue. */
+.hf-vano.hf-spento .hf-vano-num,
+.hf-vano.hf-vuoto .hf-vano-num {
+  color: var(--hf-vfd-spento);
+  text-shadow: none;
+}
+
+.hf-vano.hf-spento .hf-vano-titolo {
+  color: var(--hf-serigrafia-tenue);
+}
+
+/* ================================================================== campo di testo ==== */
+/* Si scrive in una finestrella di display: caratteri ciano su vetro. */
+
+.hf-etichetta-campo {
+  display: block;
+  margin: 0 0 6px;
+  font-family: var(--hf-font-serigrafia);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--hf-serigrafia);
+}
+
+.hf-campo {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--hf-tocco-min);
+  margin: 0;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: var(--hf-raggio-vetro);
+  background: var(--hf-vetro-fondo);
+  box-shadow: var(--hf-ombra-incasso);
+  color: var(--hf-vfd);
+  caret-color: var(--hf-vfd);
+  font-family: var(--hf-font-serigrafia);
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.hf-campo::placeholder {
+  color: var(--hf-vfd-tenue);
+  opacity: 0.75;
+}
+
+.hf-campo:focus-visible,
+.hf-campo.hf-forza-fuoco {
+  outline: 2px solid var(--hf-fuoco-interno);
+  outline-offset: 1px;
+  box-shadow: var(--hf-ombra-incasso), var(--hf-anello-fuoco);
+}
+
+/* ============================================================ finestra a comparsa ==== */
+/* Un apparecchio che sale dal basso sul telefono e sta al centro sul PC, sopra un velo scuro.
+   Markup: .hf-velo > .hf-finestra (role="dialog") > .hf-frontale con testa, corpo e azioni. */
+
+.hf-velo {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 12px;
+  background: var(--hf-velo);
+}
+
+.hf-finestra {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: min(100%, 520px);
+  max-height: calc(100dvh - 24px);
+  border-radius: var(--hf-raggio-modulo);
+  padding: 3px 7px 7px;
+  background: var(--hf-cornice);
+  box-shadow:
+    var(--hf-ombra-modulo),
+    0 18px 40px rgb(0 0 0 / 0.5);
+  transition:
+    transform var(--hf-tempo-finestra) ease-out,
+    opacity var(--hf-tempo-finestra) ease-out;
+}
+
+@starting-style {
+  .hf-finestra {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+.hf-finestra > .hf-frontale {
+  overflow-y: auto;
+}
+
+.hf-finestra-testa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -4px -6px 10px 0;
+}
+
+.hf-finestra-titolo {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.hf-finestra-corpo {
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.hf-finestra-corpo p {
+  margin: 0 0 10px;
+}
+
+.hf-finestra-azioni {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+@media (min-width: 700px) {
+  .hf-velo {
+    align-items: center;
+  }
+}
+
+/* ======================================================================== avviso ==== */
+/* Una striscia di display in basso. hf-ok: è andata bene (verde); hf-errore: qualcosa non va
+   (ambra, e role="alert"). Un tasto a destra se c'è qualcosa da fare. La distanza dal fondo la
+   decide la schermata (--hf-avviso-dal-fondo: sopra la barra delle sezioni). */
+
+.hf-avviso {
+  position: fixed;
+  bottom: calc(var(--hf-avviso-dal-fondo, 16px) + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  width: min(calc(100% - 24px), 520px);
+  min-height: 52px;
+  padding: 8px 8px 8px 14px;
+  border-radius: var(--hf-raggio-modulo);
+  background: var(--hf-vetro-fondo);
+  box-shadow:
+    inset 0 0 0 1px #000,
+    0 0 0 3px var(--hf-grafite),
+    0 10px 24px rgb(0 0 0 / 0.55);
+  color: var(--hf-vfd);
+  font-family: var(--hf-font-serigrafia);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  transform: translateX(-50%);
+  transition:
+    transform var(--hf-tempo-avviso) ease-out,
+    opacity var(--hf-tempo-avviso) ease-out;
+}
+
+@starting-style {
+  .hf-avviso {
+    opacity: 0;
+    transform: translate(-50%, 12px);
+  }
+}
+
+.hf-avviso-testo {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.hf-avviso.hf-ok {
+  color: var(--hf-led-verde);
+}
+
+.hf-avviso.hf-errore {
+  color: var(--hf-ambra);
+}
+
+/* ================================================== nella pagina dei componenti ==== */
+/* Finestra e avviso fermi dentro la pagina, invece che sopra a tutto. */
+
+.hf-velo.hf-in-pagina {
+  position: static;
+  z-index: auto;
+  display: block;
+  padding: 0;
+  background: none;
+}
+
+.hf-avviso.hf-in-pagina {
+  position: static;
+  width: auto;
+  transform: none;
+}
+
+/* Un pezzo con l'attributo hidden non si vede, anche se qui sopra ha un suo display. */
+[class^="hf-"][hidden],
+[class*=" hf-"][hidden] {
+  display: none;
+}

@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Lo stesso scudo dell'app (index.html): se un componente usasse stili o script dentro la pagina,
+     qui non funzionerebbe e la console lo direbbe. Così nella Fase 9 non ci sono sorprese. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<title>Componenti hi-fi</title>
+<meta name="description" content="Jukebox: il catalogo dei pezzi dello stile hi-fi (Fase 8 del restauro), tutti gli stati, con dati inventati.">
+<link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/componenti.css">
+<link rel="stylesheet" href="componenti.css">
+</head>
+<body>
+<header class="pz-testata">
+  <h1>Jukebox · i pezzi dello stile hi-fi</h1>
+  <p class="pz-intro">Tutti i componenti della Fase 8, in tutti gli stati, con dati inventati. Sono gli stessi file che userà l'app (<code>css/base.css</code>, <code>css/componenti.css</code>, <code>js/ui/hifi/</code>). Si usano anche da tastiera: Tab per spostarsi, frecce sulla manopola e sulla scala.</p>
+  <div class="pz-comandi">
+    <label class="pz-interruttore"><input type="checkbox" id="pz-riduci"> Simula «riduci movimento»</label>
+    <label class="pz-interruttore"><input type="checkbox" id="pz-veloce"> Tempo finto ×12</label>
+  </div>
+  <nav aria-label="Componenti">
+    <ul class="pz-indice">
+      <li><a href="#insieme">Insieme</a></li>
+      <li><a href="#gettoni">Gettoni</a></li>
+      <li><a href="#tasti">Tasti</a></li>
+      <li><a href="#led">LED e spie</a></li>
+      <li><a href="#display">Display</a></li>
+      <li><a href="#livelli">Livelli</a></li>
+      <li><a href="#manopola">Manopola</a></li>
+      <li><a href="#scala">Scala</a></li>
+      <li><a href="#giradischi">Giradischi</a></li>
+      <li><a href="#cassetto">Cassetto</a></li>
+      <li><a href="#finestra">Finestra e campo</a></li>
+      <li><a href="#avviso">Avviso</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main class="pz-pagina">
+
+  <!-- ======================================================= insieme ==== -->
+  <section class="pz-sezione" id="insieme" aria-labelledby="t-insieme">
+    <h2 id="t-insieme">Insieme</h2>
+    <p class="pz-nota">I pezzi montati come nella schermata Suona approvata, con un tempo finto e senza audio. Premi ▶: il disco accelera, il braccio scende, le barre si muovono; in pausa il disco frena e il braccio si alza; ⏭ cambia disco; ■ ferma tutto.</p>
+    <div class="pz-rack pz-insieme">
+      <div class="pz-colonna">
+        <section class="hf-modulo" aria-label="Giradischi">
+          <div class="hf-frontale">
+            <div class="hf-targhetta">
+              <span class="hf-marchio">Jukebox</span>
+              <span class="hf-spia" aria-hidden="true"><span class="hf-led" id="pz-led-giri"></span>33⅓ <span class="hf-led"></span>45</span>
+            </div>
+            <div id="pz-insieme-giradischi"></div>
+          </div>
+        </section>
+        <section class="hf-modulo" aria-label="Display">
+          <div class="hf-frontale pz-frontale-display" id="pz-insieme-display"></div>
+        </section>
+      </div>
+      <div class="pz-colonna">
+        <section class="hf-modulo" aria-label="Comandi">
+          <div class="hf-frontale">
+            <div class="pz-comandi-insieme">
+              <div class="pz-trasporto">
+                <div class="hf-tasti">
+                  <div class="hf-tasto-blocco">
+                    <span class="hf-serigrafia" aria-hidden="true">Prec.</span>
+                    <button type="button" class="hf-tasto" id="pz-indietro" aria-label="Brano precedente">
+                      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="6" width="2.6" height="12" fill="currentColor"/><path d="M20 6 9 12l11 6z" fill="currentColor"/></svg>
+                    </button>
+                  </div>
+                  <div class="hf-tasto-blocco hf-largo">
+                    <span class="hf-serigrafia" aria-hidden="true">Play/Pausa</span>
+                    <button type="button" class="hf-tasto" id="pz-suona" data-stato="suona" aria-label="Riproduci">
+                      <svg class="hf-icona-suona" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg>
+                      <svg class="hf-icona-pausa" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="6.5" y="5" width="3.8" height="14" fill="currentColor"/><rect x="13.7" y="5" width="3.8" height="14" fill="currentColor"/></svg>
+                    </button>
+                  </div>
+                  <div class="hf-tasto-blocco">
+                    <span class="hf-serigrafia" aria-hidden="true">Succ.</span>
+                    <button type="button" class="hf-tasto" id="pz-avanti" aria-label="Brano successivo">
+                      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6l11 6-11 6z" fill="currentColor"/><rect x="17.4" y="6" width="2.6" height="12" fill="currentColor"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="hf-tasti">
+                  <div class="hf-tasto-blocco">
+                    <span class="hf-serigrafia" aria-hidden="true">Casuale</span>
+                    <button type="button" class="hf-tasto" id="pz-casuale" aria-pressed="false" aria-label="Casuale">
+                      <span class="hf-led hf-arancio"></span>
+                      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h3.5l9 10H21M3 17h3.5l3-3.3M13.6 10.3 15.5 7H21M18 4l3 3-3 3M18 14l3 3-3 3"/></svg>
+                    </button>
+                  </div>
+                  <div class="hf-tasto-blocco">
+                    <span class="hf-serigrafia" aria-hidden="true">Ripeti</span>
+                    <button type="button" class="hf-tasto" id="pz-ripeti" aria-label="Ripeti: no">
+                      <span class="hf-led hf-arancio"></span>
+                      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11V9a3 3 0 0 1 3-3h12M16 3l3 3-3 3M20 13v2a3 3 0 0 1-3 3H5M8 21l-3-3 3-3"/></svg>
+                      <span class="hf-tasto-modo" aria-hidden="true">NO</span>
+                    </button>
+                  </div>
+                  <div class="hf-tasto-blocco">
+                    <span class="hf-serigrafia" aria-hidden="true">Stop</span>
+                    <button type="button" class="hf-tasto" id="pz-ferma" aria-label="Ferma">
+                      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="6.5" y="6.5" width="11" height="11" fill="currentColor"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="hf-spie" id="pz-insieme-spie">
+                  <span class="hf-spia" data-spia="suona"><span class="hf-led"></span>Riproduzione<span class="hf-sr">: spenta</span></span>
+                  <span class="hf-spia" data-spia="coda"><span class="hf-led"></span>Coda<span class="hf-sr">: spenta</span></span>
+                </div>
+              </div>
+              <div class="hf-manopola-blocco">
+                <span class="hf-serigrafia" aria-hidden="true">Volume</span>
+                <div id="pz-insieme-manopola"></div>
+                <span class="hf-manopola-minmax hf-serigrafia" aria-hidden="true"><span>Min</span><span>Max</span></span>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="hf-modulo" aria-label="Sintonia dei generi">
+          <div class="hf-frontale">
+            <div class="hf-targhetta"><span>Sintonia</span><span class="hf-dettaglio">Generi · 13 stazioni</span></div>
+            <div id="pz-insieme-scala"></div>
+          </div>
+        </section>
+        <section class="hf-modulo" aria-label="A seguire">
+          <div class="hf-frontale">
+            <div class="hf-targhetta"><span>A seguire</span><span class="hf-dettaglio" id="pz-insieme-conta"></span></div>
+            <ol class="hf-cassetto" id="pz-insieme-cassetto"></ol>
+          </div>
+        </section>
+      </div>
+    </div>
+    <div class="pz-sposta">
+      <label for="pz-posizione">Sposta il brano (per vedere il braccio)</label>
+      <input type="range" id="pz-posizione" min="0" max="1000" step="1" value="150">
+    </div>
+    <p class="hf-sr" role="status" id="pz-annuncio"></p>
+  </section>
+
+  <!-- ======================================================= gettoni ==== -->
+  <section class="pz-sezione" id="gettoni" aria-labelledby="t-gettoni">
+    <h2 id="t-gettoni">Gettoni</h2>
+    <p class="pz-nota">I colori di <code>css/base.css</code> e i contrasti misurati qui, con i valori veri della pagina (gli stessi che controlla <code>test/gettoni.test.mjs</code>). Testo: almeno 4,5:1. Elementi grafici (LED, fuoco, indice della scala): almeno 3:1. Sul metallo e sul vetro si misura il punto peggiore.</p>
+    <div class="pz-carta">
+      <ul class="pz-contrasti" id="pz-contrasti"></ul>
+    </div>
+    <div class="pz-carta">
+      <h3>Colori</h3>
+      <div class="pz-campioni" id="pz-campioni"></div>
+    </div>
+    <div class="pz-rack">
+      <figure class="pz-prova">
+        <div class="hf-vfd pz-caratteri">
+          <span class="hf-seg" aria-hidden="true"><span class="hf-seg-spento">88:88</span><span class="hf-seg-acceso">12:34</span></span>
+          <span class="hf-vfd-riga">Città di vetro · àèéìòù ÀÈÉÌÒÙ</span>
+        </div>
+        <figcaption>DSEG7 (cifre a segmenti) e Doto (testi a punti, con le accentate)</figcaption>
+      </figure>
+      <figure class="pz-prova">
+        <div class="hf-modulo"><div class="hf-frontale">
+          <div class="hf-targhetta"><span class="hf-marchio">Jukebox</span><span class="hf-dettaglio">Serigrafia · Volume · Sintonia</span></div>
+          <p class="pz-campione-testo">Barlow Condensed: le scritte stampate sul metallo.</p>
+        </div></div>
+        <figcaption>Barlow Condensed (serigrafia) sul frontalino d'alluminio</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ========================================================= tasti ==== -->
+  <section class="pz-sezione" id="tasti" aria-labelledby="t-tasti">
+    <h2 id="t-tasti">Tasti</h2>
+    <p class="pz-nota">Rettangolari e bassi, alti 46 px (mai sotto i 44 px). Premuti scendono di 2 px; a fuoco hanno un anello scuro dentro e ambra fuori (l'ambra da sola sul metallo non si vedrebbe); spenti sbiadiscono e non rispondono. «Premuto» e «a fuoco» qui sono fermi apposta.</p>
+    <div class="pz-rack">
+      <figure class="pz-prova">
+        <div class="hf-modulo"><div class="hf-frontale"><div class="pz-fila">
+          <button type="button" class="hf-tasto" aria-label="Riproduci (normale)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg></button>
+          <button type="button" class="hf-tasto hf-forza-premuto" aria-label="Riproduci (premuto)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg></button>
+          <button type="button" class="hf-tasto hf-forza-fuoco" aria-label="Riproduci (a fuoco)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg></button>
+          <button type="button" class="hf-tasto" disabled aria-label="Riproduci (spento)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg></button>
+        </div></div></div>
+        <figcaption>Con l'icona: normale · premuto · a fuoco · spento</figcaption>
+      </figure>
+      <figure class="pz-prova">
+        <div class="hf-modulo"><div class="hf-frontale"><div class="pz-fila">
+          <button type="button" class="hf-tasto">Annulla</button>
+          <button type="button" class="hf-tasto hf-principale">Conferma</button>
+          <button type="button" class="hf-tasto hf-pericolo">Elimina</button>
+          <button type="button" class="hf-tasto" disabled>Riprova</button>
+        </div></div></div>
+        <figcaption>Con la scritta: normale · principale (conferme) · pericoloso (cancellazioni) · spento</figcaption>
+      </figure>
+      <figure class="pz-prova">
+        <div class="hf-modulo"><div class="hf-frontale"><div class="pz-fila">
+          <button type="button" class="hf-tasto hf-piccolo" aria-label="Chiudi"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button type="button" class="hf-tasto hf-piccolo" aria-label="Suona"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg></button>
+          <button type="button" class="hf-tasto hf-piccolo hf-forza-fuoco" aria-label="Chiudi (a fuoco)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button type="button" class="hf-tasto hf-principale hf-forza-fuoco">A fuoco</button>
+        </div></div></div>
+        <figcaption>Piccoli, 44 × 44: chiudi · suona · a fuoco; principale a fuoco</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- =================================================== LED e spie ==== -->
+  <section class="pz-sezione" id="led" aria-labelledby="t-led">
+    <h2 id="t-led">Tasti con LED, LED e spie</h2>
+    <p class="pz-nota">Un tasto acceso (casuale) resta un po' giù e il suo LED si accende: lo stato non lo dice solo il colore. «Ripeti» gira tra NO, TUTTI e UNO. Ogni LED ha una ghiera scura che lo stacca dal metallo; le spie dicono «accesa» o «spenta» anche ai lettori di schermo.</p>
+    <div class="pz-rack">
+      <figure class="pz-prova">
+        <div class="hf-modulo"><div class="hf-frontale">
+          <div class="hf-tasti">
+            <div class="hf-tasto-blocco">
+              <span class="hf-serigrafia" aria-hidden="true">Casuale</span>
+              <button type="button" class="hf-tasto" data-prova="casuale" aria-pressed="false" aria-label="Casuale">
+                <span class="hf-led hf-arancio"></span>
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h3.5l9 10H21M3 17h3.5l3-3.3M13.6 10.3 15.5 7H21M18 4l3 3-3 3M18 14l3 3-3 3"/></svg>
+              </button>
+            </div>
+            <div class="hf-tasto-blocco">
+              <span class="hf-serigrafia" aria-hidden="true">Ripeti</span>
+              <button type="button" class="hf-tasto" data-prova="ripeti" aria-label="Ripeti: no">
+                <span class="hf-led hf-arancio"></span>
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11V9a3 3 0 0 1 3-3h12M16 3l3 3-3 3M20 13v2a3 3 0 0 1-3 3H5M8 21l-3-3 3-3"/></svg>
+                <span class="hf-tasto-modo" aria-hidden="true">NO</span>
+              </button>
+            </div>
+            <div class="hf-tasto-blocco">
+              <span class="hf-serigrafia" aria-hidden="true">Casuale acceso</span>
+              <button type="button" class="hf-tasto" aria-pressed="true" aria-label="Casuale (acceso)">
+                <span class="hf-led hf-arancio hf-acceso"></span>
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h3.5l9 10H21M3 17h3.5l3-3.3M13.6 10.3 15.5 7H21M18 4l3 3-3 3M18 14l3 3-3 3"/></svg>
+              </button>
+            </div>
+          </div>
+        </div></div>
+        <figcaption>Casuale e ripeti si toccano; a destra casuale acceso, fermo</figcaption>
+      </figure>
+      <figure class="pz-prova">
+        <div class="hf-modulo"><div class="hf-frontale">
+          <div class="hf-spie">
+            <span class="hf-spia"><span class="hf-led hf-acceso"></span>Riproduzione<span class="hf-sr">: accesa</span></span>
+            <span class="hf-spia"><span class="hf-led hf-acceso"></span>Coda<span class="hf-sr">: accesa</span></span>
+            <span class="hf-spia"><span class="hf-led hf-arancio hf-acceso"></span>Casuale<span class="hf-sr">: accesa</span></span>
+            <span class="hf-spia"><span class="hf-led hf-arancio"></span>Ripeti<span class="hf-sr">: spenta</span></span>
+            <span class="hf-spia"><span class="hf-led"></span>Solo Jukebox<span class="hf-sr">: spenta</span></span>
+            <span class="hf-spia"><span class="hf-led hf-arancio"></span>Rete assente<span class="hf-sr">: spenta</span></span>
+          </div>
+        </div></div>
+        <figcaption>Spie verdi e arancio, accese e spente (quelle che la Fase 9 collega allo stato vero)</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ======================================================= display ==== -->
+  <section class="pz-sezione" id="display" aria-labelledby="t-display">
+    <h2 id="t-display">Display VFD</h2>
+    <p class="pz-nota">Fondo fumé, caratteri ciano con bagliore, segmenti spenti appena visibili. Il testo che non ci sta scorre avanti e indietro; quello corto resta fermo; con «riduci movimento» resta fermo con i puntini. Con un'app esterna, al posto del tempo c'è la scritta. Il display piccolo è per il mini lettore.</p>
+    <div class="pz-rack">
+      <figure class="pz-prova"><div class="hf-modulo"><div class="hf-frontale pz-frontale-display" data-display="suona"></div></div><figcaption>In riproduzione, titolo corto</figcaption></figure>
+      <figure class="pz-prova"><div class="hf-modulo"><div class="hf-frontale pz-frontale-display" data-display="lungo"></div></div><figcaption>Titolo lungo: scorre</figcaption></figure>
+      <figure class="pz-prova"><div class="hf-modulo"><div class="hf-frontale pz-frontale-display" data-display="pausa"></div></div><figcaption>In pausa</figcaption></figure>
+      <figure class="pz-prova"><div class="hf-modulo"><div class="hf-frontale pz-frontale-display" data-display="esterna"></div></div><figcaption>Con un'app esterna (NewPipe)</figcaption></figure>
+      <figure class="pz-prova"><div class="hf-modulo"><div class="hf-frontale pz-frontale-display" data-display="set"></div></div><figcaption>Un set di due ore: il tempo con le ore</figcaption></figure>
+      <figure class="pz-prova"><div class="hf-modulo"><div class="hf-frontale pz-frontale-display" data-display="vuoto"></div></div><figcaption>Nessun disco</figcaption></figure>
+      <figure class="pz-prova">
+        <div class="hf-modulo"><div class="hf-frontale pz-frontale-display" data-display="avviso"></div></div>
+        <div class="pz-fila"><button type="button" class="hf-tasto" id="pz-mostra-avviso-display">Mostra un avviso</button></div>
+        <figcaption>Un avviso per un attimo al posto dei testi («VOLUME 64»)</figcaption>
+      </figure>
+      <figure class="pz-prova"><div class="pz-compatti"><div data-display="compatto"></div><div data-display="compatto-lungo"></div></div><figcaption>Compatto (mini lettore): corto e lungo</figcaption></figure>
+    </div>
+  </section>
+
+  <!-- ======================================================= livelli ==== -->
+  <section class="pz-sezione" id="livelli" aria-labelledby="t-livelli">
+    <h2 id="t-livelli">Indicatori di livello</h2>
+    <p class="pz-nota">Ambra a segmenti, due canali, gli ultimi tre rossi. Sono simulati: si muovono solo mentre suona (e solo se si vedono), seguono il volume e con «riduci movimento» restano spenti.</p>
+    <div class="pz-rack">
+      <figure class="pz-prova"><div class="hf-vfd" data-prova-livelli="forte"></div><figcaption>Suona, volume 80</figcaption></figure>
+      <figure class="pz-prova"><div class="hf-vfd" data-prova-livelli="piano"></div><figcaption>Suona, volume 25</figcaption></figure>
+      <figure class="pz-prova"><div class="hf-vfd" data-prova-livelli="pausa"></div><figcaption>In pausa: spenti</figcaption></figure>
+    </div>
+  </section>
+
+  <!-- ====================================================== manopola ==== -->
+  <section class="pz-sezione" id="manopola" aria-labelledby="t-manopola">
+    <h2 id="t-manopola">Manopola del volume</h2>
+    <p class="pz-nota">Si gira col dito o col mouse in cerchio, con la rotella, con le frecce (±1), Pagina su/giù (±10), Inizio (muto) e Fine (pieno). Il volume segue la curva dei potenziometri: a metà corsa la musica suona a circa metà forza. «Ascolta» fa sentire un accordo col volume della manopola. Con un'app esterna la manopola è spenta: il volume lo decide l'app.</p>
+    <div class="pz-rack">
+      <figure class="pz-prova">
+        <div class="hf-modulo"><div class="hf-frontale">
+          <div class="pz-manopola-prova">
+            <div class="hf-manopola-blocco">
+              <span class="hf-serigrafia" aria-hidden="true">Volume</span>
+              <div id="pz-manopola-vera"></div>
+              <span class="hf-manopola-minmax hf-serigrafia" aria-hidden="true"><span>Min</span><span>Max</span></span>
+            </div>
+            <div class="pz-manopola-lato">
+              <div id="pz-manopola-display"></div>
+              <button type="button" class="hf-tasto" id="pz-ascolta" aria-pressed="false">Ascolta</button>
+              <button type="button" class="hf-tasto" id="pz-esterna" aria-pressed="false">Suona in NewPipe</button>
+            </div>
+          </div>
+        </div></div>
+        <figcaption>Da provare: col dito, col mouse, con la tastiera</figcaption>
+      </figure>
+      <figure class="pz-prova">
+        <div class="hf-modulo"><div class="hf-frontale"><div class="pz-fila pz-centro">
+          <div class="hf-manopola-blocco"><span class="hf-serigrafia" aria-hidden="true">A fuoco</span><div id="pz-manopola-fuoco"></div></div>
+          <div class="hf-manopola-blocco"><span class="hf-serigrafia" aria-hidden="true">Spenta</span><div id="pz-manopola-spenta"></div></div>
+        </div></div></div>
+        <figcaption>A fuoco (fermo) · spenta (app esterna)</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ========================================================= scala ==== -->
+  <section class="pz-sezione" id="scala" aria-labelledby="t-scala">
+    <h2 id="t-scala">Scala del sintonizzatore</h2>
+    <p class="pz-nota">Riceve una lista di «stazioni» qualunque: oggi generi e playlist, domani le stanze della radio. Si sceglie toccando o con le frecce, Pagina su/giù, Inizio e Fine (col Tab si entra sulla stazione scelta); l'indice rosso ci va sopra e la scala scorre per tenerla al centro. Col dito la scala scorre liberamente.</p>
+    <div class="pz-rack">
+      <figure class="pz-prova pz-largo">
+        <div class="hf-modulo"><div class="hf-frontale">
+          <div class="hf-targhetta"><span>Sintonia</span><span class="hf-dettaglio" id="pz-scala-generi-dettaglio"></span></div>
+          <div id="pz-scala-generi"></div>
+        </div></div>
+        <figcaption>Generi (13 stazioni)</figcaption>
+      </figure>
+      <figure class="pz-prova">
+        <div class="hf-modulo"><div class="hf-frontale">
+          <div class="hf-targhetta"><span>Sintonia</span><span class="hf-dettaglio">Playlist</span></div>
+          <div id="pz-scala-playlist"></div>
+        </div></div>
+        <figcaption>Le stesse stazioni, fatte di playlist</figcaption>
+      </figure>
+      <figure class="pz-prova">
+        <div class="hf-modulo"><div class="hf-frontale">
+          <div class="hf-targhetta"><span>Sintonia</span><span class="hf-dettaglio">Stanze</span></div>
+          <div id="pz-scala-vuota"></div>
+        </div></div>
+        <figcaption>Senza stazioni</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ==================================================== giradischi ==== -->
+  <section class="pz-sezione" id="giradischi" aria-labelledby="t-giradischi">
+    <h2 id="t-giradischi">Giradischi</h2>
+    <p class="pz-nota">Solo CSS, misure in proporzione: si adatta a qualunque larghezza. L'etichetta cambia colore da un disco all'altro (sempre lo stesso per lo stesso brano). Quello vero, che si muove, è in cima alla pagina; qui i tre stati fermi.</p>
+    <div class="pz-rack">
+      <figure class="pz-prova"><div class="hf-modulo"><div class="hf-frontale" data-giradischi="fermo"></div></div><figcaption>Fermo: braccio a riposo</figcaption></figure>
+      <figure class="pz-prova"><div class="hf-modulo"><div class="hf-frontale" data-giradischi="suona"></div></div><figcaption>Suona: il disco gira, il braccio è sul solco</figcaption></figure>
+      <figure class="pz-prova"><div class="hf-modulo"><div class="hf-frontale" data-giradischi="pausa"></div></div><figcaption>In pausa: disco fermo, braccio alzato</figcaption></figure>
+    </div>
+  </section>
+
+  <!-- ====================================================== cassetto ==== -->
+  <section class="pz-sezione" id="cassetto" aria-labelledby="t-cassetto">
+    <h2 id="t-cassetto">Cassetto con i vani</h2>
+    <p class="pz-nota">Le righe come i cassetti di un caricatore di CD. Tutto il vano si tocca (nella coda: suona quel brano; nei risultati: apre la scheda); il tasto a destra fa la seconda cosa. In corso il numero è ambra; spento si legge ma non suona (il tasto dice perché); «FILE» è il segno dei brani che sono sul telefono.</p>
+    <div class="pz-rack">
+      <figure class="pz-prova">
+        <div class="hf-modulo"><div class="hf-frontale">
+          <div class="hf-targhetta"><span>A seguire</span><span class="hf-dettaglio">4 brani in coda</span></div>
+          <ol class="hf-cassetto" data-cassetto="coda">
+            <li class="hf-vano hf-in-corso">
+              <span class="hf-vano-num" aria-hidden="true">1</span>
+              <button type="button" class="hf-vano-corpo" aria-label="In corso: Notte sul lungomare di I Cavalieri del Vento" data-esito="È il brano in corso">
+                <span class="hf-vano-titolo">Notte sul lungomare</span><span class="hf-vano-artista">I Cavalieri del Vento</span>
+              </button>
+              <span class="hf-vano-dati"><span class="hf-vano-durata">4:12</span></span>
+            </li>
+            <li class="hf-vano">
+              <span class="hf-vano-num" aria-hidden="true">2</span>
+              <button type="button" class="hf-vano-corpo" aria-label="Suona ora Perché sì di Orchestra Bàlsamo" data-esito="Suona ora «Perché sì»">
+                <span class="hf-vano-titolo">Perché sì</span><span class="hf-vano-artista">Orchestra Bàlsamo</span>
+              </button>
+              <span class="hf-vano-dati"><span class="hf-vano-durata">3:05</span></span>
+            </li>
+            <li class="hf-vano hf-forza-premuto">
+              <span class="hf-vano-num" aria-hidden="true">3</span>
+              <button type="button" class="hf-vano-corpo" aria-label="Suona ora Swing all'alba (premuto)" data-esito="Suona ora «Swing all'alba»">
+                <span class="hf-vano-titolo">Swing all'alba</span><span class="hf-vano-artista">Big Band dell'Ufficio Tecnico · premuto</span>
+              </button>
+              <span class="hf-vano-dati"><span class="hf-vano-durata">2:51</span></span>
+            </li>
+            <li class="hf-vano hf-forza-fuoco">
+              <span class="hf-vano-num" aria-hidden="true">4</span>
+              <button type="button" class="hf-vano-corpo" aria-label="Suona ora Café Ottanta (a fuoco)" data-esito="Suona ora «Café Ottanta»">
+                <span class="hf-vano-titolo">Café Ottanta</span><span class="hf-vano-artista">Duo Lumière · a fuoco</span>
+              </button>
+              <span class="hf-vano-dati"><span class="hf-vano-durata">5:20</span></span>
+            </li>
+            <li class="hf-vano hf-vuoto" aria-hidden="true">
+              <span class="hf-vano-num">5</span>
+              <span class="hf-vano-testo"><span class="hf-vano-artista">Vano vuoto</span></span>
+            </li>
+          </ol>
+        </div></div>
+        <figcaption>«A seguire»: in corso · normale · premuto · a fuoco · vuoto</figcaption>
+      </figure>
+      <figure class="pz-prova">
+        <div class="hf-modulo"><div class="hf-frontale">
+          <div class="hf-targhetta"><span>Risultati</span><span class="hf-dettaglio">«notte» · 3 dischi</span></div>
+          <ol class="hf-cassetto" data-cassetto="risultati">
+            <li class="hf-vano hf-con-azione">
+              <span class="hf-vano-num" aria-hidden="true">1</span>
+              <button type="button" class="hf-vano-corpo" aria-label="Notte sul lungomare di I Cavalieri del Vento, sul telefono: apri la scheda" data-esito="Apre la scheda di «Notte sul lungomare»">
+                <span class="hf-vano-titolo">Notte sul lungomare</span><span class="hf-vano-artista">I Cavalieri del Vento</span>
+              </button>
+              <span class="hf-vano-dati"><span class="hf-vano-file" aria-hidden="true">FILE</span><span class="hf-vano-durata">4:12</span></span>
+              <button type="button" class="hf-tasto hf-piccolo hf-vano-azione" aria-label="Suona Notte sul lungomare" data-esito="Suona «Notte sul lungomare»"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg></button>
+            </li>
+            <li class="hf-vano hf-con-azione">
+              <span class="hf-vano-num" aria-hidden="true">2</span>
+              <button type="button" class="hf-vano-corpo" aria-label="Notte bianca di Marta Ferri: apri la scheda" data-esito="Apre la scheda di «Notte bianca»">
+                <span class="hf-vano-titolo">Notte bianca</span><span class="hf-vano-artista">Marta Ferri</span>
+              </button>
+              <span class="hf-vano-dati"><span class="hf-vano-durata">3:37</span></span>
+              <button type="button" class="hf-tasto hf-piccolo hf-vano-azione" aria-label="Suona Notte bianca (si apre in NewPipe)" data-esito="Apre «Notte bianca» in NewPipe"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg></button>
+            </li>
+            <li class="hf-vano hf-con-azione hf-spento">
+              <span class="hf-vano-num" aria-hidden="true">3</span>
+              <button type="button" class="hf-vano-corpo" aria-label="Notti d'estate di Trio Bassa Fedeltà: apri la scheda" data-esito="Apre la scheda di «Notti d'estate»">
+                <span class="hf-vano-titolo">Notti d'estate</span><span class="hf-vano-artista">Trio Bassa Fedeltà · spento</span>
+              </button>
+              <span class="hf-vano-dati"><span class="hf-vano-durata">6:02</span></span>
+              <button type="button" class="hf-tasto hf-piccolo hf-vano-azione" aria-disabled="true" aria-label="Notti d'estate: non si può suonare. Non è sul telefono e «Solo Jukebox» è acceso." data-esito="Non si può suonare: non è sul telefono e «Solo Jukebox» è acceso"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg></button>
+            </li>
+          </ol>
+        </div></div>
+        <figcaption>Risultati: con il file sul telefono · normale · spento (il tasto dice perché)</figcaption>
+      </figure>
+    </div>
+    <p class="pz-esito" id="pz-esito-cassetto" role="status">Tocca un vano o un tasto.</p>
+  </section>
+
+  <!-- ===================================================== finestra ==== -->
+  <section class="pz-sezione" id="finestra" aria-labelledby="t-finestra">
+    <h2 id="t-finestra">Finestra a comparsa e campo di testo</h2>
+    <p class="pz-nota">Un apparecchio che sale dal basso sul telefono e sta al centro sul PC, sopra un velo scuro. Esc o un tocco fuori la chiudono, Invio conferma, il fuoco resta dentro e alla chiusura torna al tasto da cui era partito. Il campo di testo è una finestrella di display.</p>
+    <div class="pz-rack">
+      <figure class="pz-prova">
+        <div class="hf-velo hf-in-pagina">
+          <section class="hf-finestra" aria-labelledby="pz-finestra-ferma-titolo">
+            <div class="hf-frontale">
+              <div class="hf-finestra-testa">
+                <h3 class="hf-finestra-titolo" id="pz-finestra-ferma-titolo">Eliminare la playlist?</h3>
+                <button type="button" class="hf-tasto hf-piccolo" aria-label="Chiudi"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+              </div>
+              <div class="hf-finestra-corpo"><p>«Swing per ballare» sparisce da tutti e due i telefoni. I brani restano nel catalogo.</p></div>
+              <div class="hf-finestra-azioni">
+                <button type="button" class="hf-tasto">Annulla</button>
+                <button type="button" class="hf-tasto hf-pericolo">Elimina</button>
+              </div>
+            </div>
+          </section>
+        </div>
+        <figcaption>Ferma nella pagina: una conferma pericolosa</figcaption>
+      </figure>
+      <figure class="pz-prova">
+        <div class="hf-modulo"><div class="hf-frontale">
+          <label class="hf-etichetta-campo" for="pz-campo-1">Nome della playlist</label>
+          <input class="hf-campo" id="pz-campo-1" type="text" placeholder="Per esempio: Swing per ballare" autocomplete="off">
+          <label class="hf-etichetta-campo pz-spazio" for="pz-campo-2">A fuoco, con il testo</label>
+          <input class="hf-campo hf-forza-fuoco" id="pz-campo-2" type="text" value="Città di vetro" autocomplete="off">
+          <div class="pz-fila pz-spazio">
+            <button type="button" class="hf-tasto hf-principale" id="pz-apri-testo">Apri: nuova playlist</button>
+            <button type="button" class="hf-tasto" id="pz-apri-conferma">Apri: conferma</button>
+          </div>
+        </div></div>
+        <figcaption>Campo di testo vuoto e a fuoco · le due finestre vere</figcaption>
+      </figure>
+    </div>
+    <p class="pz-esito" id="pz-esito-finestra" role="status"></p>
+  </section>
+
+  <!-- ======================================================= avviso ==== -->
+  <section class="pz-sezione" id="avviso" aria-labelledby="t-avviso">
+    <h2 id="t-avviso">Avviso</h2>
+    <p class="pz-nota">Una striscia di display in basso: neutro (ciano), riuscito (verde), errore (ambra), e con un tasto se c'è qualcosa da fare. I tasti qui sotto lo fanno comparire in fondo alla finestra, per 3 secondi.</p>
+    <div class="pz-rack">
+      <figure class="pz-prova pz-largo">
+        <div class="pz-avvisi">
+          <div class="hf-avviso hf-in-pagina"><span class="hf-avviso-testo">Dati del 24/10/2026, non aggiornati: rete assente.</span></div>
+          <div class="hf-avviso hf-in-pagina hf-ok"><span class="hf-led hf-acceso"></span><span class="hf-avviso-testo">Salvato.</span></div>
+          <div class="hf-avviso hf-in-pagina hf-errore"><span class="hf-led hf-arancio hf-acceso"></span><span class="hf-avviso-testo">Non riesco a suonare «Notte sul lungomare»: passo al prossimo.</span></div>
+          <div class="hf-avviso hf-in-pagina"><span class="hf-avviso-testo">Versione nuova pronta.</span><button type="button" class="hf-tasto">Aggiorna</button></div>
+        </div>
+        <figcaption>Neutro · riuscito · errore · con un tasto</figcaption>
+      </figure>
+      <figure class="pz-prova pz-largo">
+        <div class="pz-fila">
+          <button type="button" class="hf-tasto" data-avviso="neutro">Neutro</button>
+          <button type="button" class="hf-tasto" data-avviso="ok">Riuscito</button>
+          <button type="button" class="hf-tasto" data-avviso="errore">Errore</button>
+          <button type="button" class="hf-tasto" data-avviso="azione">Con un tasto</button>
+        </div>
+        <figcaption>Fallo comparire</figcaption>
+      </figure>
+    </div>
+  </section>
+
+</main>
+
+<!-- La finestra vera (una alla volta) e l'avviso vero, sopra a tutto. -->
+<div class="hf-velo" id="pz-velo" hidden>
+  <div class="hf-finestra" role="dialog" aria-modal="true" aria-labelledby="pz-finestra-titolo">
+    <div class="hf-frontale">
+      <div class="hf-finestra-testa">
+        <!-- biome-ignore lint/a11y/useHeadingContent: il titolo lo scrive componenti.js quando apre la finestra; finché è vuoto la finestra resta nascosta -->
+        <h2 class="hf-finestra-titolo" id="pz-finestra-titolo"></h2>
+        <button type="button" class="hf-tasto hf-piccolo" data-chiudi aria-label="Chiudi"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
+      <div class="hf-finestra-corpo" id="pz-finestra-corpo"></div>
+      <div class="hf-finestra-azioni" id="pz-finestra-azioni"></div>
+    </div>
+  </div>
+</div>
+<div class="hf-avviso" id="pz-avviso" role="status" hidden></div>
+
+<script type="module" src="componenti.js"></script>
+</body>
+</html>

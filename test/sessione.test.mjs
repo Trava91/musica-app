@@ -17,6 +17,7 @@ class LettoreFinto {
     this.stato = "fermo";
     this.posizione = 0;
     this.durata = 0;
+    this.volume = 0; // lo imposta la sessione appena nasce (i test lo controllano)
     this.rotti = new Set(rotti); // id dei brani il cui file non si riesce a suonare
     this.negato = negato; // il browser vuole un tocco prima di far partire l'audio
     /** @type {string[]} */
@@ -656,6 +657,8 @@ describe("stato() e ascolta()", () => {
       "sorgente",
       "tasto",
       "totale",
+      "volume",
+      "volumeAttivo",
     ]);
   });
 
@@ -692,5 +695,73 @@ describe("stato() e ascolta()", () => {
     s.casuale();
     assert.ok(visti > 0);
     assert.equal(n, visti);
+  });
+});
+
+// ====================================================================== volume ====
+
+describe("volume della manopola", () => {
+  test("senza indicazione parte pieno, come prima che ci fosse la manopola", () => {
+    const { s, lettore } = prepara();
+    assert.equal(s.stato().volume, 1);
+    assert.equal(lettore.volume, 1);
+  });
+
+  test("parte da quello ricordato e lo passa al lettore", () => {
+    const lettore = new LettoreFinto();
+    const s = new Sessione({ lettore, volume: 0.4 });
+    assert.equal(s.stato().volume, 0.4);
+    assert.equal(lettore.volume, 0.4);
+  });
+
+  test("impostaVolume: arriva al lettore e lo dice a chi ascolta (per ricordarlo)", () => {
+    const { s, lettore, eventi } = prepara();
+    s.impostaVolume(0.62);
+    assert.equal(lettore.volume, 0.62);
+    assert.equal(s.stato().volume, 0.62);
+    assert.deepEqual(
+      eventi.filter((e) => e.tipo === "volume"),
+      [{ tipo: "volume", volume: 0.62 }],
+    );
+  });
+
+  test("impostaVolume: oltre i limiti si ferma a 0 o a 1; uguale a prima non avvisa", () => {
+    const { s, eventi } = prepara();
+    s.impostaVolume(7);
+    assert.equal(s.stato().volume, 1);
+    s.impostaVolume(-3);
+    assert.equal(s.stato().volume, 0);
+    s.impostaVolume(0);
+    assert.deepEqual(
+      eventi.filter((e) => e.tipo === "volume").map((e) => e.volume),
+      [0],
+    );
+  });
+
+  test("impostaVolume: un valore che non è un numero si ignora (mai a tutto volume per sbaglio)", () => {
+    const { s, lettore } = prepara();
+    s.impostaVolume(0.3);
+    for (const sbagliato of [Number.NaN, Number.POSITIVE_INFINITY, undefined, null, "0.9"]) {
+      s.impostaVolume(/** @type {any} */ (sbagliato));
+    }
+    assert.equal(s.stato().volume, 0.3);
+    assert.equal(lettore.volume, 0.3);
+  });
+
+  test("volumeAttivo: acceso senza coda e con i file del telefono", async () => {
+    const { s } = prepara();
+    assert.equal(s.stato().volumeAttivo, true);
+    s.suonaLista(LISTA, trova("a"), "Ricerca");
+    await s.partenza;
+    assert.equal(s.stato().motore, "file");
+    assert.equal(s.stato().volumeAttivo, true);
+  });
+
+  test("volumeAttivo: spento quando la musica la suona un'app esterna (il volume lo decide lei)", () => {
+    const { s, aperti } = prepara({ file: [] });
+    s.suonaLista(LISTA, trova("a"), "Ricerca");
+    assert.equal(aperti.length, 1);
+    assert.equal(s.stato().motore, "newpipe");
+    assert.equal(s.stato().volumeAttivo, false);
   });
 });
