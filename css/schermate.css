@@ -253,6 +253,62 @@ p {
   flex: 1 1 auto;
 }
 
+/* I filtri attivi sopra i risultati: un tasto per filtro, con la ✕ per toglierlo. */
+.hf-gruppo,
+.hf-etichette {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.hf-etichette {
+  margin-bottom: 10px;
+}
+
+.hf-etichette[hidden] {
+  display: none;
+}
+
+.hf-etichette-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hf-etichetta-filtro {
+  gap: 8px;
+  padding-inline: 12px;
+  font-size: 13px;
+}
+
+.hf-etichetta-filtro > svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+/* Gli artisti e i generi che corrispondono a quello che si scrive: un cassetto breve sopra i risultati. */
+.hf-suggerimenti {
+  margin-bottom: 14px;
+}
+
+.hf-suggerimenti > .hf-titoletto {
+  margin: 0 0 8px;
+}
+
+/* L'elenco degli artisti: le lettere come i tasti di una pulsantiera. */
+.hf-lettere {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--hf-tocco-min), 1fr));
+  gap: 6px;
+}
+
+.hf-lettera {
+  width: 100%;
+  font-size: 15px;
+}
+
 /* Con che cosa suona il Jukebox (NewPipe, Solo Jukebox…): una spia sotto la ricerca. */
 .hf-motore {
   color: var(--hf-serigrafia-tenue);

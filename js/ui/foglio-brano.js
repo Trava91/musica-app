@@ -1,5 +1,6 @@
 // foglio-brano.js — la scheda di un brano (dati, dove si trova, altri brani dello stesso
-// artista) e il foglio "Aggiungi a playlist". "Suona" e "Apri" passano alla sessione.
+// artista) e il foglio "Aggiungi a playlist". "Suona", "Suona dopo", "In fondo alla coda" e "Apri"
+// passano alla sessione; "Vai all'artista" e "Vai al genere" portano alle loro pagine.
 
 import * as cercaMod from "../nucleo/cerca.js";
 import * as motori from "../nucleo/motori.js";
@@ -18,6 +19,8 @@ import {
 } from "./base.js";
 import { nuovaManuale, salvaPlaylist } from "./azioni-playlist.js";
 import { mostraLista, nomeGenere } from "./riga-brano.js";
+import { artistiDi, vaiAArtista } from "./vista-artisti.js";
+import { vaiAGenere } from "./vista-generi.js";
 
 /**
  * Apre la scheda del brano `b`. contesto: da dove è stato aperto ({lista, nome} o {coda: true}),
@@ -37,6 +40,8 @@ export function apriFoglioBrano(app, b, contesto = {}) {
       return `<li><span class="hf-fonti-nome"><span class="hf-sigla" aria-hidden="true">${esc(SIGLA_PIATT[cod] || cod)}</span>${esc(NOMI_PIATT[cod] || cod)}</span>${azione}</li>`;
     })
     .join("");
+  const haArtista = Boolean(b._normA && artistiDi(app).perId.has(b._normA)); // ha una pagina (brani scelti)
+  const vociGenere = voci.filter((v) => v.indici.includes(b.g));
   const altriArtista = cercaMod
     .perArtista(catalogo.brani, b._normA)
     .filter((x) => x.id !== b.id)
@@ -63,6 +68,18 @@ export function apriFoglioBrano(app, b, contesto = {}) {
           <button class="hf-tasto hf-principale" type="button" id="foglio-suona">▶ Suona${motore ? ` (${esc(NOMI_MOTORE[motore] || motore)})` : ""}</button>
           <button class="hf-tasto" type="button" id="foglio-aggiungi">+ Playlist</button>
         </div>
+        <div class="hf-azioni">
+          <button class="hf-tasto" type="button" id="foglio-dopo">Suona dopo</button>
+          <button class="hf-tasto" type="button" id="foglio-fondo">In fondo alla coda</button>
+        </div>
+        ${
+          haArtista || vociGenere.length
+            ? `<div class="hf-azioni">
+          ${haArtista ? `<button class="hf-tasto" type="button" id="foglio-artista" aria-label="${esc(`Vai all'artista ${b.a}`)}">Vai all'artista</button>` : ""}
+          ${vociGenere.length ? `<button class="hf-tasto" type="button" id="foglio-genere" aria-label="${esc(`Vai al genere ${vociGenere[0].nome}`)}">Vai al genere</button>` : ""}
+        </div>`
+            : ""
+        }
         <div class="hf-parte"><h3 class="hf-titoletto">Dove si trova</h3><ul class="hf-fonti">${fonti}</ul></div>
         ${altriArtista.length ? `<div class="hf-parte"><h3 class="hf-titoletto">Altri di ${esc(b.a)}</h3><ol class="hf-cassetto" id="foglio-altri-artista"></ol></div>` : ""}
       </div>
@@ -74,6 +91,17 @@ export function apriFoglioBrano(app, b, contesto = {}) {
     else app.sessione.suonaLista(contesto.lista || [b], b, contesto.nome || "Brano singolo");
   });
   $("#foglio-aggiungi").addEventListener("click", () => apriAggiungiAPlaylist(app, b));
+  // Il feedback («suona dopo», «in fondo alla coda») lo dà la sessione con un avviso, sopra la finestra.
+  $("#foglio-dopo").addEventListener("click", () => app.sessione.accoda(b, { dopoCorrente: true }));
+  $("#foglio-fondo").addEventListener("click", () => app.sessione.accoda(b));
+  $("#foglio-artista")?.addEventListener("click", () => {
+    chiudiFinestra("foglio-overlay");
+    vaiAArtista(app, b._normA);
+  });
+  $("#foglio-genere")?.addEventListener("click", () => {
+    chiudiFinestra("foglio-overlay");
+    vaiAGenere(app, vociGenere[0].indici, { svuotaTesto: true });
+  });
   for (const btn of $$("button[data-cod]", el)) {
     btn.addEventListener("click", () => app.sessione.apriFonte([btn.dataset.cod, btn.dataset.rif]));
   }

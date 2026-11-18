@@ -13,7 +13,7 @@ let dialogoAperto = false;
  *   corpo = HTML già ripulito con esc(); annulla = il valore se si chiude senza scegliere;
  *   campo = un campo di testo (la risposta del pulsante principale è il testo scritto).
  */
-function dialogo({ titolo, corpo = "", pulsanti, annulla, campo = null }) {
+function dialogo({ titolo, corpo = "", pulsanti, annulla, campo = null, colonna = false }) {
   if (dialogoAperto) return Promise.resolve(annulla);
   dialogoAperto = true;
   return new Promise((risolvi) => {
@@ -26,7 +26,7 @@ function dialogo({ titolo, corpo = "", pulsanti, annulla, campo = null }) {
         ${corpo}
         ${campo ? `<div class="hf-campo-riga"><label class="hf-etichetta-campo" for="dialogo-campo">${esc(campo.etichetta)}</label><input id="dialogo-campo" class="hf-campo" type="text" autocomplete="off" value="${esc(campo.valore ?? "")}"></div>` : ""}
       </div>
-      <div class="hf-finestra-azioni">${pulsanti
+      <div class="hf-finestra-azioni${colonna ? " hf-colonna" : ""}">${pulsanti
         .map(
           (p, i) =>
             `<button type="button" class="${p.classe || (p.principale ? "hf-tasto hf-principale" : "hf-tasto")}" data-i="${i}">${esc(p.etichetta)}</button>`,
@@ -78,6 +78,21 @@ export function chiediConferma({ titolo, testo = "", conferma = "Conferma", peri
       },
     ],
     annulla: false,
+  });
+}
+
+/**
+ * Un elenco di scelte, una sotto l'altra, con Annulla in fondo. Il valore della scelta toccata, o
+ * null se si annulla. Corpo: una frase facoltativa sopra le scelte.
+ * @param {{ titolo: string, testo?: string, scelte: { etichetta: string, valore: any }[] }} o
+ */
+export function chiediScelta({ titolo, testo = "", scelte }) {
+  return dialogo({
+    titolo,
+    corpo: testo ? `<p>${esc(testo)}</p>` : "",
+    pulsanti: [...scelte, { etichetta: "Annulla", valore: null }],
+    annulla: null,
+    colonna: true,
   });
 }
 

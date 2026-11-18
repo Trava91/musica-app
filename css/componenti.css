@@ -1133,6 +1133,12 @@
   padding-right: 6px;
 }
 
+/* Con la seconda azione (+ per metterlo in coda, ✕ per toglierlo da «A seguire») una colonna in più. */
+.hf-vano.hf-con-seconda {
+  grid-template-columns: var(--hf-vano-num, 40px) minmax(0, 1fr) auto var(--hf-tocco-min) var(--hf-tocco-min);
+  column-gap: 8px;
+}
+
 /* La maniglia del cassetto. */
 .hf-vano::after {
   content: "";
@@ -1249,7 +1255,8 @@
   color: var(--hf-serigrafia-tenue);
 }
 
-.hf-vano-azione {
+.hf-vano-azione,
+.hf-vano-seconda {
   position: relative; /* sopra il tasto che copre il vano */
 }
 
@@ -1297,6 +1304,15 @@
 
 .hf-vano.hf-spento .hf-vano-titolo {
   color: var(--hf-serigrafia-tenue);
+}
+
+/* Il vano dei suggerimenti: al posto del numero una sigla (ART, GEN) in lettere normali, perché le
+   cifre a segmenti non sanno fare le lettere. */
+.hf-vano-num.hf-vano-sigla {
+  font-family: var(--hf-font-serigrafia);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
 }
 
 /* Un cassetto senza vani: una frase e, se c'è, il tasto per uscirne. */
@@ -1771,6 +1787,13 @@ textarea.hf-campo {
   justify-content: flex-end;
   gap: 10px;
   margin-top: 16px;
+}
+
+/* Le scelte di un elenco (il menu del +): una sotto l'altra, a tutta larghezza. */
+.hf-finestra-azioni.hf-colonna {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
 }
 
 @media (min-width: 700px) {

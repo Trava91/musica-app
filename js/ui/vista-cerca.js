@@ -1,5 +1,6 @@
 // vista-cerca.js — la scheda Cerca: il campo di ricerca nel frontalino, i tasti rapidi (ordine,
-// filtri), la sintonia dei generi (la scala del sintonizzatore) e i risultati nel cassetto.
+// filtri, artisti), la sintonia dei generi (la scala del sintonizzatore) e i risultati nel cassetto,
+// con sopra i suggerimenti (artisti e generi) e le etichette dei filtri attivi (suggerimenti.js).
 // Disegna dallo stato e traduce i tocchi in cambi di stato; il ▶ delle righe va alla sessione
 // (riga-brano.js). Contiene anche la riga con il motore in uso.
 
@@ -13,6 +14,8 @@ import { $, debounce } from "./base.js";
 import { apriFiltri } from "./foglio-filtri.js";
 import { creaScala } from "./hifi/scala.js";
 import { aggiungiLista, mostraLista } from "./riga-brano.js";
+import { collegaSuggerimenti, disegnaEtichette, disegnaSuggerimenti } from "./suggerimenti.js";
+import { vaiAgliArtisti } from "./vista-artisti.js";
 
 const NOMI_ORDINE = { artista: "artista", recenti: "recenti", bpm: "BPM" };
 const GIRO_ORDINE = [undefined, "artista", "recenti", "bpm"];
@@ -39,6 +42,8 @@ export function collegaCerca(app) {
   );
   $("#cerca-altri").addEventListener("click", () => mostraAltri(app));
   $("#cerca-filtri-btn").addEventListener("click", () => apriFiltri(app));
+  $("#rapido-artisti").addEventListener("click", () => vaiAgliArtisti(app));
+  collegaSuggerimenti(app);
   $("#rapido-ordine").addEventListener("click", () => {
     const { ordine } = app.stato.leggi();
     app.stato.cambia({ ordine: GIRO_ORDINE[(GIRO_ORDINE.indexOf(ordine) + 1) % GIRO_ORDINE.length] });
@@ -129,19 +134,6 @@ function togliFiltri(app) {
   app.stato.cambia({ filtri: { ...FILTRI_DEFAULT } });
 }
 
-function contaFiltriAttivi(f) {
-  let n = 0;
-  if (f.macro?.length) n++;
-  if (f.piattaforme?.length) n++;
-  if (f.raccolta !== undefined && f.raccolta !== null) n++;
-  if (f.anno) n++;
-  if (f.bpm) n++;
-  if (f.camelot?.length) n++;
-  if (f.soloScelti === false) n++;
-  if (f.tipo && f.tipo !== "canzoni") n++;
-  return n;
-}
-
 export function disegnaCerca(app) {
   const { catalogo, filtri, ordine, voci } = app.stato.leggi();
   if (!catalogo) return;
@@ -155,7 +147,8 @@ export function disegnaCerca(app) {
     performance.now() - inizioRicerca,
     `${numero(risultati.length)} risultati, ${testo.trim() ? "con testo" : "senza testo"}`,
   );
-  const nAttivi = contaFiltriAttivi(filtri);
+  const nAttivi = disegnaEtichette(app, filtri);
+  disegnaSuggerimenti(app, testo);
   const badge = $("#cerca-filtri-badge");
   badge.hidden = nAttivi === 0;
   badge.textContent = String(nAttivi);

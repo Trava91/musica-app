@@ -27,6 +27,8 @@
  * @property {number[]} [r]      indici delle raccolte
  * @property {number} [x]        1 = esplorazione (non scelto da Nicolò)
  * @property {string} [q]        quando è stato aggiunto
+ * @property {string} [_normA]   artista normalizzato (lo aggiunge cerca.preparaIndice: è l'id dell'artista)
+ * @property {string} [_normT]   titolo normalizzato (idem)
  */
 
 /**

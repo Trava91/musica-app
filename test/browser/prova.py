@@ -1,4 +1,4 @@
-"""Prova automatica nel browser: undici giri sull'app vera, con un catalogo FINTO di 200 brani.
+"""Prova automatica nel browser: dodici giri sull'app vera, con un catalogo FINTO di 200 brani.
 
 Giri: 1. avvio -> la lista si vede; 2. si scrive un artista -> compaiono i suoi brani;
 3. si apre un brano -> si vede la scheda; 4. si crea una playlist manuale (con la finestra
@@ -8,6 +8,8 @@ deve dire che l'ha ignorato.
 Giri dello stile hi-fi (Fase 9 del restauro): 5b. il disco gira solo mentre si sente la musica e in
 pausa frena, col braccio alzato; 5c. a 320, 360, 768 e 1.280 px nessuna schermata scorre di lato, e
 da 700 px la schermata Suona sta a sinistra, sempre in vista.
+Giro della Fase 10 (10): dalla ricerca all'artista, «indietro» del telefono, l'elenco A–Z, le etichette
+dei filtri, la coda composta a mano e le scorciatoie da tastiera.
 Giri sugli errori (ognuno in un browser pulito): 6. un file "audio" rovinato -> avviso e si passa
 al brano dopo; 7. l'avvio senza rete -> errore con Riprova, e Riprova funziona; 8. avvio senza
 rete ma con una copia dei dati -> si parte e lo si dice; 9. un token rifiutato -> errore con
@@ -272,8 +274,191 @@ def giro_token_rifiutato(browser, base: str, problemi: list[str]) -> None:
     pagina.context.close()
 
 
+def prossimi_in_coda(pagina) -> list[str]:
+    """Gli id dei brani di «A seguire», nell'ordine in cui suoneranno."""
+    return pagina.eval_on_selector_all("#riproduzione-prossimi .hf-vano[data-id]", "els => els.map(e => e.dataset.id)")
+
+
+def scheda_visibile(pagina) -> str:
+    """Quale schermata della colonna delle sezioni si vede (cerca, artista, artisti, generi…)."""
+    return pagina.evaluate("() => document.querySelector('#schermi .hf-schermo:not([hidden])')?.dataset.schermo")
+
+
+def giro_artisti_coda_e_tastiera(browser, base: str, catalogo: dict, cartella_audio: Path, problemi: list[str]) -> None:
+    """Fase 10: dalla ricerca all'artista in un tocco, «indietro» del telefono, l'elenco A–Z, le etichette
+    dei filtri, la coda composta a mano (tre brani accodati mentre suona una playlist) e le scorciatoie
+    da tastiera del PC."""
+    brani = catalogo["brani"]
+    titolo = {b["id"]: b["t"] for b in brani}
+    scelti = [b for b in brani if b.get("x") != 1 and b.get("k") != "set" and b.get("a")]
+    pagina = nuova_pagina(browser, problemi)
+    pagina.goto(f"{base}/?dati=/dati/catalogo.json")
+    pagina.wait_for_selector("#cerca-risultati .hf-vano[data-id]")
+
+    # --- cambiando scheda la pagina scorre dov'era, al ritorno ---
+    pagina.click("#cerca-altri")
+    pagina.evaluate("() => document.querySelector('#schermi').scrollTo(0, 900)")
+    pagina.wait_for_timeout(200)
+    dove = pagina.evaluate("() => document.querySelector('#schermi').scrollTop")
+    assert dove > 300, f"la lista dovrebbe essere lunga abbastanza da scorrere: {dove}"
+    pagina.click("[data-tab='generi']")
+    pagina.click("[data-tab='cerca']")
+    pagina.wait_for_timeout(300)
+    dopo = pagina.evaluate("() => document.querySelector('#schermi').scrollTop")
+    assert abs(dopo - dove) < 5, f"tornando a Cerca la pagina doveva stare a {dove}, sta a {dopo}"
+    pagina.evaluate("() => document.querySelector('#schermi').scrollTo(0, 0)")
+    passo(f"posizione: tornando alla scheda Cerca la lista è ancora dov'era ({dove} px)")
+
+    # --- scrivendo si propone l'artista: un tocco e si è sulla sua pagina, coi brani per tipo ---
+    inizio = scelti[0]["a"][:5]
+    pagina.fill("#cerca-testo", inizio)
+    expect(pagina.locator("#cerca-suggerimenti")).to_be_visible()
+    suggerito = pagina.locator("#cerca-suggerimenti [data-sugg='artista']").first
+    nome = suggerito.locator(".hf-vano-titolo").inner_text()
+    suggerito.click()
+    expect(pagina.locator("#t-artista")).to_have_text(nome)
+    righe = pagina.locator("[data-schermo='artista'] .hf-vano[data-id]").count()
+    assert righe >= 1, "la pagina dell'artista non ha brani"
+    expect(pagina.locator("#artista-sotto")).to_have_text(f"{righe} brani")
+    assert pagina.locator("[data-schermo='artista'] [data-gruppo='originale']").count() == 1, (
+        "manca il gruppo Originali"
+    )
+    expect(pagina.locator("[data-tab='cerca']")).to_have_attribute("aria-current", "page")
+    pagina.set_viewport_size({"width": 320, "height": 800})
+    pagina.wait_for_timeout(200)
+    fuori = pagina.evaluate(SCORRE_DI_LATO)
+    assert not fuori, f"a 320 px la pagina dell'artista scorre di lato: {fuori}"
+    pagina.set_viewport_size({"width": 390, "height": 844})
+    passo(f"artista: scrivendo '{inizio}' si propone '{nome}', un tocco e si vedono i suoi {righe} brani per tipo")
+
+    # --- «indietro» torna alla ricerca com'era; con una finestra aperta chiude la finestra ---
+    pagina.go_back()
+    expect(pagina.locator("[data-schermo='cerca']")).to_be_visible()
+    expect(pagina.locator("#cerca-testo")).to_have_value(inizio)
+    prima = pagina.locator("#cerca-risultati .hf-vano[data-id]").first.get_attribute("data-id")
+    pagina.click(f"#cerca-risultati .hf-vano[data-id='{prima}'] .hf-vano-corpo")
+    expect(pagina.locator("#foglio-overlay")).to_be_visible()
+    pagina.go_back()
+    expect(pagina.locator("#foglio-overlay")).to_be_hidden()
+    assert scheda_visibile(pagina) == "cerca", "chiudendo la finestra con «indietro» si è lasciata anche la scheda"
+    pagina.click(f"#cerca-risultati .hf-vano[data-id='{prima}'] .hf-vano-seconda")
+    expect(pagina.locator("#dialogo")).to_be_visible()
+    pagina.go_back()
+    expect(pagina.locator("#dialogo-overlay")).to_be_hidden()
+    pagina.click("[data-tab='generi']")
+    pagina.click("[data-tab='playlist']")
+    pagina.go_back()
+    expect(pagina.locator("[data-tab='generi']")).to_have_attribute("aria-current", "page")
+    pagina.go_back()
+    expect(pagina.locator("[data-tab='cerca']")).to_have_attribute("aria-current", "page")
+    expect(pagina.locator("#cerca-testo")).to_have_value(inizio)
+    passo("indietro: chiude la finestra o il menu aperto, poi torna di scheda in scheda; la ricerca resta com'era")
+
+    # --- l'elenco A–Z: una lettera alla volta, un tocco porta all'artista ---
+    pagina.click("#rapido-artisti")
+    expect(pagina.locator("[data-schermo='artisti']")).to_be_visible()
+    expect(pagina.locator("[data-tab='cerca']")).to_have_attribute("aria-current", "page")
+    lettere = pagina.locator("#artisti-lettere [data-lettera]")
+    assert lettere.count() >= 3, "l'elenco A–Z dovrebbe avere varie lettere"
+    expect(lettere.first).to_have_attribute("aria-pressed", "true")
+    pagina.click("#artisti-lettere [data-lettera]:nth-child(2)")
+    primo = pagina.locator("#artisti-lista .hf-vano[data-id]").first
+    nome_elenco = primo.locator(".hf-vano-titolo").inner_text()
+    primo.locator(".hf-vano-corpo").click()
+    expect(pagina.locator("#t-artista")).to_have_text(nome_elenco)
+    pagina.go_back()
+    expect(pagina.locator("[data-schermo='artisti']")).to_be_visible()
+    pagina.go_back()
+    passo(
+        f"artisti A–Z: {lettere.count()} lettere, un tocco su '{nome_elenco}' porta alla sua pagina, indietro torna all'elenco"
+    )
+
+    # --- i filtri attivi diventano etichette con la ✕ ---
+    pagina.fill("#cerca-testo", "")
+    pagina.click("[data-tab='generi']")
+    pagina.click(".hf-tasto-genere:not(.hf-tutti) >> nth=0")
+    expect(pagina.locator("[data-schermo='cerca']")).to_be_visible()
+    etichette = pagina.locator("#cerca-etichette [data-chiave]")
+    expect(etichette).to_have_count(1)
+    pagina.click("#cerca-etichette [data-chiave='macro']")
+    expect(pagina.locator("#cerca-etichette")).to_be_hidden()
+    expect(pagina.locator("#cerca-filtri-badge")).to_be_hidden()
+    passo("filtri: il genere scelto compare come etichetta; la ✕ lo toglie")
+
+    # --- la coda a mano: tre brani accodati mentre suona una playlist (sul PC: tutto in vista) ---
+    pagina.set_viewport_size({"width": 1280, "height": 900})
+    pagina.click("[data-tab='cerca']")
+    pagina.wait_for_selector("#cerca-risultati .hf-vano[data-id]")
+    i1, i2, i3, i4 = pagina.eval_on_selector_all(
+        "#cerca-risultati .hf-vano[data-id]", "els => els.slice(0, 4).map(e => e.dataset.id)"
+    )
+    for i in (i1, i2, i3, i4):
+        scrivi_wav(cartella_audio / f"{i}.wav", secondi=20)
+    pagina.click("[data-tab='impostazioni']")
+    pagina.set_input_files("#imp-file-input", [str(cartella_audio / f"{i}.wav") for i in (i1, i2, i3, i4)])
+    expect(pagina.locator("#imp-file-info")).to_contain_text("4 brani sul telefono")
+    pagina.click("[data-tab='cerca']")
+    pagina.click(f"#cerca-risultati .hf-vano[data-id='{i1}'] .hf-vano-azione")
+    expect(pagina.locator("#rip-principale")).to_have_attribute("aria-label", "Pausa")
+    assert prossimi_in_coda(pagina) == [i2, i3, i4], (
+        f"la playlist di file dovrebbe avere i 4 brani: {prossimi_in_coda(pagina)}"
+    )
+
+    def dal_menu(brano: str, scelta: str) -> None:
+        pagina.click(f"#cerca-risultati .hf-vano[data-id='{brano}'] .hf-vano-seconda")
+        pagina.click(f"#dialogo button:has-text('{scelta}')")
+
+    dal_menu(i4, "Suona dopo")
+    expect(pagina.locator("#toast")).to_contain_text("suona dopo")
+    dal_menu(i2, "In fondo alla coda")
+    expect(pagina.locator("#toast")).to_contain_text("in fondo alla coda")
+    dal_menu(i3, "Suona dopo")
+    assert prossimi_in_coda(pagina) == [i3, i4, i2], f"ordine della coda sbagliato: {prossimi_in_coda(pagina)}"
+    # Dalla scheda del brano: gli stessi due gesti.
+    pagina.click(f"#cerca-risultati .hf-vano[data-id='{i2}'] .hf-vano-corpo")
+    pagina.click("#foglio-dopo")
+    pagina.click("#foglio-chiudi")
+    assert prossimi_in_coda(pagina) == [i2, i3, i4], f"dalla scheda: {prossimi_in_coda(pagina)}"
+    # Si può togliere un brano dalla coda.
+    pagina.click(f"#riproduzione-prossimi .hf-vano[data-id='{i3}'] .hf-vano-seconda")
+    assert prossimi_in_coda(pagina) == [i2, i4], f"dopo togli: {prossimi_in_coda(pagina)}"
+    pagina.click("#rip-avanti")
+    expect(pagina.locator("#rip-display")).to_contain_text(titolo[i2])
+    assert prossimi_in_coda(pagina) == [i4], f"dopo ⏭: {prossimi_in_coda(pagina)}"
+    passo(
+        "coda: «Suona dopo», «In fondo alla coda» (dal + e dalla scheda) e ✕ comandano l'ordine; ⏭ passa al primo accodato"
+    )
+
+    # --- le scorciatoie da tastiera ---
+    pagina.evaluate("() => document.activeElement.blur()")
+    pagina.keyboard.press("Space")
+    expect(pagina.locator("#rip-principale")).to_have_attribute("aria-label", "Riprendi")
+    pagina.keyboard.press("Space")
+    expect(pagina.locator("#rip-principale")).to_have_attribute("aria-label", "Pausa")
+    pagina.keyboard.press("/")
+    assert pagina.evaluate("() => document.activeElement.id") == "cerca-testo", "«/» deve portare alla ricerca"
+    pagina.keyboard.type(" a/ b")
+    expect(pagina.locator("#cerca-testo")).to_have_value(" a/ b")  # mentre si scrive i tasti sono del campo
+    expect(pagina.locator("#rip-principale")).to_have_attribute("aria-label", "Pausa")
+    pagina.fill("#cerca-testo", "")
+    pagina.evaluate("() => document.activeElement.blur()")
+    pagina.keyboard.press("ArrowRight")  # la coda aveva solo i4 dopo i2
+    expect(pagina.locator("#rip-display")).to_contain_text(titolo[i4])
+    pagina.keyboard.press("ArrowLeft")
+    expect(pagina.locator("#rip-display")).to_contain_text(titolo[i2])
+    # Con una finestra aperta le scorciatoie non scattano.
+    pagina.click(f"#cerca-risultati .hf-vano[data-id='{i1}'] .hf-vano-corpo")
+    pagina.keyboard.press("Space")
+    expect(pagina.locator("#rip-principale")).to_have_attribute("aria-label", "Pausa")
+    pagina.keyboard.press("Escape")
+    passo(
+        "tastiera: «/» porta alla ricerca, Spazio pausa e riprendi, ← → cambiano brano; mai mentre si scrive o con una finestra"
+    )
+    pagina.context.close()
+
+
 def prova(catalogo: dict, cartella_audio: Path) -> list[str]:
-    """Gli undici giri. Lancia AssertionError (o un errore di Playwright) al primo che non torna."""
+    """I dodici giri. Lancia AssertionError (o un errore di Playwright) al primo che non torna."""
     brani = catalogo["brani"]
     # Brani visibili con i filtri di default (le "scelte", non l'esplorazione) e con un artista.
     scelti = [b for b in brani if b.get("x") != 1 and b.get("k") != "set" and b.get("a")]
@@ -424,10 +609,14 @@ def prova(catalogo: dict, cartella_audio: Path) -> list[str]:
             giro_avvio_con_copia(browser, base, problemi)
             giro = "9. token rifiutato"
             giro_token_rifiutato(browser, base, problemi)
+            giro = "10. artisti, coda e tastiera"
+            giro_artisti_coda_e_tastiera(browser, base, catalogo, cartella_audio, problemi)
         except (AssertionError, ErrorePlaywright) as errore:
             immagine = Path(tempfile.gettempdir()) / "jukebox-prova-errore.png"
             try:
-                (PAGINE_DEI_GIRI_ERRORE[-1] if giro[:1] in "6789" else pagina).screenshot(path=str(immagine))
+                (PAGINE_DEI_GIRI_ERRORE[-1] if giro[:1] in "6789" or giro.startswith("10") else pagina).screenshot(
+                    path=str(immagine)
+                )
                 problemi.append(f"(schermata salvata in {immagine})")
             except ErrorePlaywright:
                 pass
@@ -448,7 +637,7 @@ def main() -> int:
         for riga in problemi:
             print(f"  - {riga}", file=sys.stderr)
         return 1
-    print("\nProva nel browser: 11 giri riusciti, nessun errore nella console.")
+    print("\nProva nel browser: 12 giri riusciti, nessun errore nella console.")
     return 0
 
 

@@ -337,13 +337,32 @@ export class Sessione {
   }
 
   /**
-   * Mette un brano nella coda attuale, dopo il corrente o in fondo. false se non c'è una coda o
-   * se il brano è il corrente. `da` = chi lo mette (oggi sempre "io").
+   * "Suona dopo" (`dopoCorrente`) e "In fondo alla coda": mette un brano nella coda attuale e lo dice
+   * a chi ascolta. Senza una coda il brano diventa la coda e parte, come l'«aggiungi alla coda» di
+   * Spotify a lettore fermo; a coda finita col motore "file" riparte da lui. false se non si può:
+   * nessun motore lo suona, non è sul telefono e la coda è di file, o è già il brano che si ha davanti.
+   * `da` = chi lo mette (oggi sempre "io": è il punto dei limiti per utente della social radio).
    * @param {Brano} brano @param {{ da?: string, dopoCorrente?: boolean }} [opts]
    */
   accoda(brano, { da = "io", dopoCorrente = false } = {}) {
-    if (!this.coda?.accoda(brano, { da, dopoCorrente })) return false;
+    if (!this.coda) return this.suonaLista([brano], brano, "In coda");
+    const ctx = this.leggiCtx();
+    if (!motoreBrano(brano, ctx).motore) {
+      this.avvisa(motivoSenzaMotore(brano, ctx), "err");
+      return false;
+    }
+    if (this.motore === "file" && !this.puoSuonare(brano)) {
+      this.avvisa(`«${titoloCompleto(brano)}» non è sul telefono: non lo posso mettere in questa coda.`, "err");
+      return false;
+    }
+    const finita = !this.coda.corrente;
+    if (!this.coda.accoda(brano, { da, dopoCorrente })) {
+      this.avvisa(`«${titoloCompleto(brano)}» è il brano che hai davanti.`);
+      return false;
+    }
     this.emetti({ tipo: "coda" });
+    this.avvisa(`«${titoloCompleto(brano)}» ${dopoCorrente ? "suona dopo" : "in fondo alla coda"}.`);
+    if (finita && this.motore === "file") this.suona(this.coda.corrente); // la coda era finita: riparte da lui
     return true;
   }
 

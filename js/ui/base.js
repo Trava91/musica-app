@@ -208,6 +208,9 @@ export function vaiA(app, scheda) {
   app.stato.cambia({ scheda });
 }
 
+// Le pagine degli artisti si raggiungono da Cerca: lì resta giù il tasto della barra.
+const TASTO_DI = { artista: "cerca", artisti: "cerca" };
+
 // Quale sezione si vede, quale tasto della barra è giù e, sul telefono, se si vede Suona.
 function mostraScheda(s) {
   const larga = vistaLarga();
@@ -216,7 +219,7 @@ function mostraScheda(s) {
   $("#app").dataset.vista = !larga && s.scheda === "riproduzione" ? "suona" : "sezioni";
   const attiva = larga ? sezione : s.scheda;
   for (const b of $$("[data-tab]")) {
-    if (b.dataset.tab === attiva) b.setAttribute("aria-current", "page");
+    if (b.dataset.tab === (TASTO_DI[attiva] ?? attiva)) b.setAttribute("aria-current", "page");
     else b.removeAttribute("aria-current");
   }
   for (const sez of $$(".hf-schermo")) sez.hidden = sez.dataset.schermo !== sezione;

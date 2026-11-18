@@ -24,6 +24,9 @@ import { Stato } from "./nucleo/stato.js";
 import { dataBreve } from "./nucleo/testo.js";
 import { registraServiceWorker } from "./ui/aggiornamento.js";
 import { apriLink, collegaFinestre, collegaSchede, debounce, mostraAvviso, vaiA } from "./ui/base.js";
+import { collegaNavigazione } from "./ui/navigazione.js";
+import { collegaTastiera } from "./ui/tastiera.js";
+import { collegaArtisti } from "./ui/vista-artisti.js";
 import { collegaAvvio, mostra, mostraAvvio, mostraOnboarding } from "./ui/vista-avvio.js";
 import { collegaCerca } from "./ui/vista-cerca.js";
 import { collegaGeneri } from "./ui/vista-generi.js";
@@ -69,6 +72,10 @@ collegaGeneri(app);
 collegaPlaylist(app);
 collegaSuona(app);
 collegaImpostazioni(app);
+collegaArtisti(app);
+// Per ultimi: ascoltano tutto il resto (le schede e le finestre) e le scorciatoie da tastiera.
+collegaNavigazione(app);
+collegaTastiera(app);
 
 // --- i dati ------------------------------------------------------------------------
 // Un catalogo nuovo: se degli id sono cambiati, i file sul telefono li seguono.

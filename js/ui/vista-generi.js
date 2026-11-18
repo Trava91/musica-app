@@ -6,14 +6,21 @@ import { $, esc } from "./base.js";
 
 const DIPENDENZE = ["scheda", "catalogo", "filtri"];
 
+/**
+ * Mette un genere (le sue voci: una lista di indici) nei filtri e porta alla ricerca. `svuotaTesto`:
+ * toglie anche quello che era scritto nel campo, per vedere tutto il genere.
+ */
+export function vaiAGenere(app, indici, { svuotaTesto = false } = {}) {
+  if (svuotaTesto) $("#cerca-testo").value = "";
+  app.stato.cambia({ filtri: { ...app.stato.leggi().filtri, macro: [...indici] }, scheda: "cerca" });
+}
+
 export function collegaGeneri(app) {
   // Un solo ascoltatore per tutta la pulsantiera.
   $("#generi-lista").addEventListener("click", (e) => {
     const el = e.target.closest?.(".hf-tasto-genere");
     if (!el) return;
-    const { filtri, voci } = app.stato.leggi();
-    const macro = el.dataset.idx === "tutti" ? [] : [...voci[Number(el.dataset.idx)].indici];
-    app.stato.cambia({ filtri: { ...filtri, macro }, scheda: "cerca" });
+    vaiAGenere(app, el.dataset.idx === "tutti" ? [] : app.stato.leggi().voci[Number(el.dataset.idx)].indici);
   });
   app.stato.ascolta((cambiati, s) => {
     if (s.scheda === "generi" && cambiati.some((k) => DIPENDENZE.includes(k))) disegnaGeneri(app);

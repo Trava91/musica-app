@@ -5,8 +5,9 @@
 import { voceDi } from "../nucleo/generi.js";
 import { motivoSenzaMotore, motoreBrano } from "../nucleo/motori.js";
 import { durataFmt, sottotitolo, titoloCompleto } from "../nucleo/testo.js";
-import { $, $$, esc, SIGLA_PIATT, SVG_APRI, SVG_PAUSA, SVG_PLAY } from "./base.js";
+import { $, $$, esc, SIGLA_PIATT, SVG_APRI, SVG_CHIUDI, SVG_PAUSA, SVG_PLAY } from "./base.js";
 import { apriFoglioBrano } from "./foglio-brano.js";
+import { apriMenuCoda } from "./menu-coda.js";
 
 /** Il nome del genere come lo mostra il jukebox (house e techno → "Tech house"). */
 export function nomeGenere(voci, g) {
@@ -34,13 +35,18 @@ function etichettaInCorso(d) {
 // La larghezza del numero dei vani: la stessa per tutto il cassetto, quanto serve al numero più alto
 // (fino a 99 basta quella di sempre).
 const CIFRA_PX = 13;
-function allargaNumeri(contenitore, massimo) {
+export function allargaNumeri(contenitore, massimo) {
   const cifre = String(Math.max(1, massimo)).length;
   contenitore.style.setProperty("--hf-vano-num", `${Math.max(40, 14 + cifre * CIFRA_PX)}px`);
 }
 
-// Il vano del brano: numero, titolo, artista, i dati in piccolo, FILE e durata a destra, il tasto ▶.
-function rigaBrano(b, n, d, { play = true } = {}) {
+// Le due azioni in più di un vano: il "+" (menu «Suona dopo» / «In fondo alla coda») e, nel cassetto
+// «A seguire», la ✕ che toglie il brano dalla coda.
+const SVG_PIU = `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`;
+
+// Il vano del brano: numero, titolo, artista, i dati in piccolo, FILE e durata a destra, il tasto ▶ e
+// la seconda azione (+ o ✕). `nellaCoda`: il vano sta in «A seguire».
+function rigaBrano(b, n, d, { play = true, nellaCoda = false } = {}) {
   const piatt = [...new Set(b.s.map(([c]) => SIGLA_PIATT[c] || c))].join(" ");
   const meta = [b.b ? `${Math.round(b.b)} BPM` : "", b.c || "", nomeGenere(d.voci, b.g), b.y || "", piatt]
     .filter(Boolean)
@@ -53,12 +59,22 @@ function rigaBrano(b, n, d, { play = true } = {}) {
   const etichettaPlay = spento
     ? `${titoloCompleto(b)}: non si può suonare. ${motivoSenzaMotore(b, d.ctx)}`
     : `Suona ${titoloCompleto(b)}`;
-  const classi = ["hf-vano", play ? "hf-con-azione" : "", inCorso ? "hf-in-corso" : "", spento ? "hf-spento" : ""]
+  const classi = [
+    "hf-vano",
+    play ? "hf-con-azione hf-con-seconda" : "",
+    inCorso ? "hf-in-corso" : "",
+    spento ? "hf-spento" : "",
+  ]
     .filter(Boolean)
     .join(" ");
   const tasto = play
     ? `<button class="hf-tasto hf-piccolo hf-vano-azione" type="button" data-etichetta="${esc(etichettaPlay)}" aria-label="${esc(inCorso ? etichettaInCorso(d) : etichettaPlay)}"${spento && !inCorso ? ` aria-disabled="true" title="${esc(motivoSenzaMotore(b, d.ctx))}"` : ""}>${inCorso ? iconaInCorso(d) : SVG_PLAY}</button>`
     : "";
+  const seconda = !play
+    ? ""
+    : nellaCoda
+      ? `<button class="hf-tasto hf-piccolo hf-vano-seconda" type="button" data-azione="togli" aria-label="${esc(`Togli ${titoloCompleto(b)} dalla coda`)}">${SVG_CHIUDI}</button>`
+      : `<button class="hf-tasto hf-piccolo hf-vano-seconda" type="button" data-azione="coda" aria-label="${esc(`Metti ${titoloCompleto(b)} in coda`)}">${SVG_PIU}</button>`;
   return `<li class="${classi}" data-id="${esc(b.id)}">
       <span class="hf-vano-num" aria-hidden="true">${n}</span>
       <button class="hf-vano-corpo" type="button" aria-label="${esc(`${titoloCompleto(b)} di ${b.a || "artista sconosciuto"}${file ? ", sul telefono" : ""}`)}: apri la scheda">
@@ -67,7 +83,7 @@ function rigaBrano(b, n, d, { play = true } = {}) {
         ${meta ? `<span class="hf-vano-nota">${esc(meta)}</span>` : ""}
       </button>
       <span class="hf-vano-dati">${file ? `<span class="hf-vano-file" aria-hidden="true">FILE</span>` : ""}${b.d ? `<span class="hf-vano-durata">${durataFmt(b.d)}</span>` : ""}</span>
-      ${tasto}
+      ${tasto}${seconda}
     </li>`;
 }
 
@@ -88,7 +104,8 @@ export function mostraLista(app, contenitore, righe, contesto, opzioni = {}) {
   const inizio = opzioni.inizio ?? 0;
   allargaNumeri(contenitore, inizio + righe.length);
   contenitore.innerHTML =
-    righe.map((b, i) => rigaBrano(b, inizio + i + 1, d, opzioni)).join("") || statoVuoto(opzioni.vuoto);
+    righe.map((b, i) => rigaBrano(b, inizio + i + 1, d, { ...opzioni, nellaCoda: Boolean(contesto.coda) })).join("") ||
+    statoVuoto(opzioni.vuoto);
   if (!liste.has(contenitore)) collegaLista(app, contenitore);
   liste.set(contenitore, { righe, contesto, azioneVuoto: opzioni.vuoto?.azione?.fai });
 }
@@ -103,7 +120,11 @@ export function aggiungiLista(app, contenitore, nuove, inizio) {
   if (!lista || !nuove.length) return;
   const d = datiRighe(app);
   allargaNumeri(contenitore, inizio + nuove.length);
-  contenitore.insertAdjacentHTML("beforeend", nuove.map((b, i) => rigaBrano(b, inizio + i + 1, d)).join(""));
+  const nellaCoda = Boolean(lista.contesto.coda);
+  contenitore.insertAdjacentHTML(
+    "beforeend",
+    nuove.map((b, i) => rigaBrano(b, inizio + i + 1, d, { nellaCoda })).join(""),
+  );
   lista.righe = lista.righe.concat(nuove);
 }
 
@@ -123,7 +144,7 @@ function collegaLista(app, contenitore) {
       liste.get(contenitore)?.azioneVuoto?.();
       return;
     }
-    const tasto = e.target.closest?.(".hf-vano-corpo, .hf-vano-azione");
+    const tasto = e.target.closest?.(".hf-vano-corpo, .hf-vano-azione, .hf-vano-seconda");
     const riga = tasto?.closest(".hf-vano");
     const lista = liste.get(contenitore);
     if (!riga || !lista || !contenitore.contains(riga)) return;
@@ -131,7 +152,10 @@ function collegaLista(app, contenitore) {
     if (!b) return;
     const { contesto } = lista;
     if (tasto.classList.contains("hf-vano-corpo")) apriFoglioBrano(app, b, contesto);
-    else if (contesto.coda) app.sessione.premiRiga(b, { coda: true });
+    else if (tasto.classList.contains("hf-vano-seconda")) {
+      if (tasto.dataset.azione === "togli") app.sessione.togli(b.id);
+      else apriMenuCoda(app, b);
+    } else if (contesto.coda) app.sessione.premiRiga(b, { coda: true });
     else app.sessione.premiRiga(b, { lista: contesto.lista || lista.righe, nome: contesto.nome });
   });
 }

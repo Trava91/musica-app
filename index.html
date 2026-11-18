@@ -204,6 +204,7 @@
             <div class="hf-tasti-rapidi">
               <button id="rapido-ordine" class="hf-tasto" type="button"><span class="hf-led hf-arancio"></span><span id="rapido-ordine-testo">Ordine: auto</span></button>
               <button id="cerca-filtri-btn" class="hf-tasto" type="button"><span class="hf-led hf-arancio"></span>Filtri<span id="cerca-filtri-badge" class="hf-numerino" hidden>0</span></button>
+              <button id="rapido-artisti" class="hf-tasto" type="button">Artisti A–Z</button>
             </div>
             <p id="stato-motore" class="hf-nota hf-motore"></p>
           </div>
@@ -219,6 +220,11 @@
         <section class="hf-modulo" aria-labelledby="t-risultati">
           <div class="hf-frontale">
             <div class="hf-targhetta"><h2 class="hf-targhetta-titolo" id="t-risultati">Risultati</h2><span class="hf-dettaglio"><span id="cerca-riepilogo"></span> · <span id="cerca-ordine-testo"></span></span></div>
+            <fieldset id="cerca-etichette" class="hf-etichette" hidden><legend class="hf-sr">Filtri attivi</legend><div id="cerca-etichette-lista" class="hf-etichette-lista"></div></fieldset>
+            <div id="cerca-suggerimenti" class="hf-suggerimenti" hidden>
+              <h3 class="hf-titoletto">Artisti e generi</h3>
+              <ul id="cerca-sugg-lista" class="hf-cassetto"></ul>
+            </div>
             <ol id="cerca-risultati" class="hf-cassetto"></ol>
             <button id="cerca-altri" type="button" class="hf-tasto hf-tutto" hidden>Mostra altri</button>
           </div>
@@ -231,6 +237,31 @@
           <div class="hf-frontale">
             <div class="hf-targhetta"><h2 class="hf-targhetta-titolo" id="t-generi">Generi</h2><span class="hf-dettaglio">Premi un tasto per cercare</span></div>
             <div id="generi-lista" class="hf-pulsantiera"></div>
+          </div>
+        </section>
+      </section>
+
+      <!-- ---- Artista: i suoi brani per tipo (i gruppi li disegna la vista) ---- -->
+      <section class="hf-schermo" data-schermo="artista" aria-labelledby="t-artista" hidden>
+        <section class="hf-modulo">
+          <div class="hf-frontale">
+            <div class="hf-targhetta"><h2 class="hf-targhetta-titolo" id="t-artista">Artista</h2><span class="hf-dettaglio" id="artista-sotto"></span></div>
+            <div class="hf-azioni">
+              <button id="artista-suona" class="hf-tasto hf-principale" type="button">▶ Suona tutto</button>
+              <button id="artista-elenco" class="hf-tasto" type="button">Tutti gli artisti</button>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- ---- Artisti A–Z ---- -->
+      <section class="hf-schermo" data-schermo="artisti" aria-labelledby="t-artisti" hidden>
+        <section class="hf-modulo">
+          <div class="hf-frontale">
+            <div class="hf-targhetta"><h2 class="hf-targhetta-titolo" id="t-artisti">Artisti</h2><span class="hf-dettaglio" id="artisti-sotto"></span></div>
+            <fieldset class="hf-gruppo"><legend class="hf-sr">Lettera iniziale</legend><div id="artisti-lettere" class="hf-lettere"></div></fieldset>
+            <ol id="artisti-lista" class="hf-cassetto hf-spazio"></ol>
+            <button id="artisti-altri" type="button" class="hf-tasto hf-tutto" hidden>Mostra altri</button>
           </div>
         </section>
       </section>
