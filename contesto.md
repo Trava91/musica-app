@@ -98,6 +98,16 @@ piano (aggancio a `aggiorna.py`), e solo a revisione chiusa.
   sezioni in basso (con il mini lettore), da 700 px due colonne con Suona sempre a sinistra, da
   1.100 px il rack a tre zone. `styles.css` e i caratteri anni '50 sono stati tolti; nuova icona.
   Provata via cavo sul telefono il 18/11 (NewPipe però non si apre: punto aperto nel piano).
+  **Fase 10 (18/11/2026):** ricerca e navigazione. Scrivendo compaiono sopra i risultati gli
+  artisti e i generi che corrispondono (`nucleo/artisti.js`: `suggerimenti`); la **pagina
+  dell'artista** (`ui/vista-artisti.js`) ha i brani per tipo e «Suona tutto», e c'è l'**elenco A–Z**
+  (tasto «Artisti A–Z» della ricerca). **Metti in coda**: il «+» su ogni riga e la scheda del brano
+  danno «Suona dopo» e «In fondo alla coda» (`sessione.accoda`: senza coda il brano diventa la
+  coda e parte), la ✕ in «A seguire» toglie. I filtri attivi sono etichette con la ✕
+  (`nucleo/etichette-filtri.js`). **Indietro** del telefono chiude la finestra o torna alla scheda
+  di prima (`nucleo/percorso.js` + `ui/navigazione.js`, che ricorda anche dove era scesa ogni
+  lista); scorciatoie da tastiera sul PC (`nucleo/scorciatoie.js` + `ui/tastiera.js`): `/`
+  ricerca, Spazio pausa, ← → brano.
 - **M1 (28/09/2026):** ricerca e filtri, playlist coi filtri e a mano, motori,
   link verso NewPipe/Spotify, coda, 5 schede.
 - **Estetica (01–02/10/2026):** jukebox anni '50 in blu notte con neon, dal
@@ -117,10 +127,10 @@ piano (aggancio a `aggiorna.py`), e solo a revisione chiusa.
 - **Solo Jukebox (03/11/2026):** interruttore nelle Impostazioni (spento di
   default): acceso, il Jukebox non apre mai app esterne, i brani senza file
   appaiono spenti e un ▶ su uno di loro parte dal prossimo della lista che c'è.
-- **Test:** 437 Node (`test/*.test.mjs`, dati inventati) + 50 Python
+- **Test:** 492 Node (`test/*.test.mjs`, dati inventati) + 50 Python
   (`strumenti/test_*.py`); `npm run verifica` lancia lint, tipi e tutti i test;
-  `npm run prova` fa 11 giri nel browser sull'app vera, errori compresi, giradischi e disposizione a
-  320/360/768/1.280 px (dal 16/11/2026, restauro);
+  `npm run prova` fa 12 giri nel browser sull'app vera, errori compresi, giradischi, disposizione a
+  320/360/768/1.280 px, artisti, coda, «indietro» e tastiera (dal 16/11/2026, restauro);
   `npm run prova:componenti` prova nel browser la pagina dei componenti hi-fi (dal 17/11/2026).
 - **Errori e velocità (restauro, fasi 6-7, 16/11/2026):** la Diagnostica (Impostazioni) elenca gli
   ultimi 20 errori e le misure di velocità (avvio, indice, ricerca…), con il tasto Copia; l'avvio ha
