@@ -34,6 +34,7 @@
       <li><a href="#giradischi">Giradischi</a></li>
       <li><a href="#cassetto">Cassetto</a></li>
       <li><a href="#finestra">Finestra e campo</a></li>
+      <li><a href="#moduli">Moduli e scelte</a></li>
       <li><a href="#avviso">Avviso</a></li>
     </ul>
   </nav>
@@ -479,6 +480,89 @@
       </figure>
     </div>
     <p class="pz-esito" id="pz-esito-finestra" role="status"></p>
+  </section>
+
+  <!-- ======================================================= moduli ==== -->
+  <section class="pz-sezione" id="moduli" aria-labelledby="t-moduli">
+    <h2 id="t-moduli">Moduli e scelte</h2>
+    <p class="pz-nota">I pezzi aggiunti con la Fase 9 per i fogli (Filtri, Costruttore) e le Impostazioni: le scelte da spuntare (tasti con il LED), l'interruttore a levetta, il menu a tendina, il campo «da – a», l'elenco a scomparsa, il selettore delle sezioni (la barra dell'app: la sezione aperta ha il tasto giù e il LED acceso), la terza riga dei vani e il cassetto vuoto.</p>
+    <div class="pz-rack">
+      <figure class="pz-prova">
+        <div class="hf-modulo"><div class="hf-frontale">
+          <span class="hf-etichetta-campo">Piattaforme</span>
+          <div class="hf-scelte">
+            <label class="hf-scelta-casella"><input type="checkbox" checked><span class="hf-scelta-tasto"><span class="hf-led"></span>Spotify</span></label>
+            <label class="hf-scelta-casella"><input type="checkbox"><span class="hf-scelta-tasto"><span class="hf-led"></span>YouTube</span></label>
+            <label class="hf-scelta-casella"><input type="checkbox"><span class="hf-scelta-tasto"><span class="hf-led"></span>SoundCloud</span></label>
+            <label class="hf-scelta-casella"><input type="checkbox" checked><span class="hf-scelta-tasto"><span class="hf-led"></span>File</span></label>
+          </div>
+          <label class="hf-interruttore pz-spazio"><input type="checkbox"><span class="hf-levetta" aria-hidden="true"></span><span>Solo Jukebox: suona solo i brani sul telefono</span></label>
+          <label class="hf-interruttore"><input type="checkbox" checked><span class="hf-levetta" aria-hidden="true"></span><span>Usa NewPipe per YouTube e SoundCloud</span></label>
+        </div></div>
+        <figcaption>Scelte (spuntate: giù e LED acceso) · interruttore spento e acceso</figcaption>
+      </figure>
+      <figure class="pz-prova">
+        <div class="hf-modulo"><div class="hf-frontale">
+          <label class="hf-etichetta-campo" for="pz-menu">Ordine</label>
+          <select class="hf-menu" id="pz-menu">
+            <option>Automatico</option>
+            <option>Artista</option>
+            <option>Recenti</option>
+            <option>BPM</option>
+          </select>
+          <span class="hf-etichetta-campo pz-spazio">BPM</span>
+          <div class="hf-minmax">
+            <input class="hf-campo hf-corto" type="number" value="118" aria-label="BPM, da">
+            <span aria-hidden="true">–</span>
+            <input class="hf-campo hf-corto" type="number" placeholder="max" aria-label="BPM, a">
+          </div>
+          <details class="hf-dettagli pz-spazio">
+            <summary>3 brani ignorati perché incompleti</summary>
+            <p class="hf-nota">b1 — senza fonti · b2 — senza fonti · b3 — id doppio</p>
+          </details>
+          <div class="pz-fila pz-spazio">
+            <button type="button" class="hf-tasto"><span class="hf-led hf-arancio hf-acceso"></span>Filtri<span class="hf-numerino">2</span></button>
+          </div>
+        </div></div>
+        <figcaption>Menu a tendina · campo «da – a» · elenco a scomparsa · numero dei filtri attivi</figcaption>
+      </figure>
+      <figure class="pz-prova pz-largo">
+        <nav class="hf-selettore pz-selettore" aria-label="Sezioni (prova)">
+          <button type="button" class="hf-tasto hf-selettore-tasto" aria-current="page"><span class="hf-led"></span>Cerca</button>
+          <button type="button" class="hf-tasto hf-selettore-tasto"><span class="hf-led"></span>Generi</button>
+          <button type="button" class="hf-tasto hf-selettore-tasto"><span class="hf-led"></span>Playlist</button>
+          <button type="button" class="hf-tasto hf-selettore-tasto"><span class="hf-led"></span>Suona</button>
+          <button type="button" class="hf-tasto hf-selettore-tasto"><span class="hf-led"></span>Altro</button>
+        </nav>
+        <figcaption>Il selettore delle sezioni: aperta «Cerca»</figcaption>
+      </figure>
+      <figure class="pz-prova">
+        <div class="hf-modulo"><div class="hf-frontale">
+          <div class="hf-targhetta"><span>Risultati</span><span class="hf-dettaglio">128 dischi · per artista</span></div>
+          <ol class="hf-cassetto">
+            <li class="hf-vano hf-con-azione">
+              <span class="hf-vano-num" aria-hidden="true">1</span>
+              <button type="button" class="hf-vano-corpo" aria-label="Verde acqua di Marta Ferri, sul telefono: apri la scheda">
+                <span class="hf-vano-titolo">Verde acqua</span><span class="hf-vano-artista">Marta Ferri</span>
+                <span class="hf-vano-nota">124 BPM · 8A · Disco · 1998 · SP YT</span>
+              </button>
+              <span class="hf-vano-dati"><span class="hf-vano-file" aria-hidden="true">FILE</span><span class="hf-vano-durata">3:37</span></span>
+              <button type="button" class="hf-tasto hf-piccolo hf-vano-azione" aria-label="Suona Verde acqua"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg></button>
+            </li>
+          </ol>
+        </div></div>
+        <figcaption>Un vano con la terza riga (i dati del brano)</figcaption>
+      </figure>
+      <figure class="pz-prova">
+        <div class="hf-modulo"><div class="hf-frontale">
+          <div class="hf-targhetta"><span>Playlist</span><span class="hf-dettaglio">nessuna</span></div>
+          <ol class="hf-cassetto">
+            <li class="hf-stato-vuoto"><p>Nessuna playlist ancora.</p><button type="button" class="hf-tasto">Crea la prima playlist</button></li>
+          </ol>
+        </div></div>
+        <figcaption>Un cassetto vuoto: la frase e il tasto per uscirne</figcaption>
+      </figure>
+    </div>
   </section>
 
   <!-- ======================================================= avviso ==== -->

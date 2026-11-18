@@ -132,12 +132,19 @@ export function creaScala(
     elemento: vetro,
     /** Un elenco nuovo di stazioni, con quella scelta (id, o null). */
     stazioni: disegna,
-    /** La stazione scelta decisa da fuori (non chiama onScegli). */
+    /**
+     * La stazione scelta decisa da fuori (non chiama onScegli). Un id che non c'è (o null) toglie la
+     * scelta: nessuna stazione sintonizzata, l'indice sparisce.
+     */
     imposta(id, { liscio = true } = {}) {
-      scegli(
-        elenco.findIndex((s) => s.id === String(id)),
-        { avvisa: false, liscio },
-      );
+      const i = elenco.findIndex((s) => s.id === String(id));
+      if (i >= 0) {
+        scegli(i, { avvisa: false, liscio });
+        return;
+      }
+      scelto = -1;
+      segna();
+      posiziona(false);
     },
     get scelta() {
       return elenco[scelto]?.id ?? null;

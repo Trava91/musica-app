@@ -1,0 +1,892 @@
+/* schermate.css — la disposizione delle schermate del Jukebox nello stile hi-fi (Fase 9 del
+   restauro): il rack su cui stanno i moduli, la barra delle sezioni, il mini lettore, ogni
+   schermata e le tre disposizioni:
+   - sotto i 700 px (telefono): moduli impilati a tutta larghezza, barra delle sezioni in basso;
+   - da 700 px: due colonne, a sinistra giradischi e lettore (sempre in vista), a destra le sezioni;
+   - da 1.100 px: il rack a tre zone (giradischi e display · comandi e "A seguire" · sezioni).
+   I pezzi (tasti, display, cassetti, finestre…) sono in componenti.css, colori e misure in base.css.
+
+   Regole, controllate da test/gettoni.test.mjs come per componenti.css: solo classi col prefisso
+   hf-; si animano solo transform e opacity (e con "riduci movimento" niente); nessun testo sotto i
+   12 px. Niente attributi style nel markup (lo scudo CSP li blocca). */
+
+/* =========================================================================== base ==== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* L'attributo hidden vince sempre: i pezzi hanno un loro display e altrimenti lo annullerebbero. */
+[hidden] {
+  /* biome-ignore lint/complexity/noImportantStyles: l'attributo hidden deve vincere su ogni display dei pezzi */
+  display: none !important;
+}
+
+html {
+  height: 100%;
+  color-scheme: dark;
+  -webkit-text-size-adjust: 100%;
+  --hf-avviso-dal-fondo: 84px; /* sopra la barra delle sezioni */
+}
+
+/* Col mini lettore in vista l'avviso sale ancora un po'. */
+html:has(.hf-mini:not([hidden])) {
+  --hf-avviso-dal-fondo: 150px;
+}
+
+body {
+  height: 100%;
+  margin: 0;
+  background: radial-gradient(120% 60% at 50% 0%, #1a1b1f 0%, rgb(26 27 31 / 0) 70%), var(--hf-rack);
+  color: var(--hf-serigrafia-chiara);
+  font-family: var(--hf-font-serigrafia);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  letter-spacing: inherit;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font: inherit;
+  letter-spacing: inherit;
+}
+
+p {
+  margin: 0;
+}
+
+/* ================================================================ l'app e il rack ==== */
+
+.hf-app {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    "vista"
+    "mini"
+    "barra";
+  max-width: 1680px;
+  height: 100dvh;
+  margin: 0 auto;
+}
+
+.hf-suona,
+.hf-schermi {
+  grid-area: vista;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.hf-mini {
+  grid-area: mini;
+}
+
+.hf-barra {
+  grid-area: barra;
+}
+
+.hf-avvio {
+  grid-area: 1 / 1 / -1 / -1;
+}
+
+/* Le sezioni e le colonne di Suona: moduli uno sotto l'altro. */
+.hf-schermo,
+.hf-suona-colonna {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.hf-schermo {
+  padding: 10px 8px 18px;
+}
+
+.hf-suona-rack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 8px 18px;
+}
+
+/* Sul telefono si vede o la schermata Suona o la sezione scelta (data-vista su .hf-app). */
+@media (width < 700px) {
+  .hf-app[data-vista="suona"] > .hf-schermi,
+  .hf-app[data-vista="sezioni"] > .hf-suona {
+    display: none;
+  }
+}
+
+/* ============================================================ barra delle sezioni ==== */
+
+.hf-barra {
+  padding: 6px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+  background: var(--hf-cornice);
+  box-shadow:
+    0 -1px 0 #000,
+    0 -8px 16px rgb(0 0 0 / 0.45);
+}
+
+/* ================================================================== mini lettore ==== */
+/* Sopra la barra, nelle sezioni del telefono: il display piccolo (tutto si tocca: apre Suona) e
+   il tasto ▶/⏸. */
+
+.hf-mini {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-top: 1px solid #000;
+  background: var(--hf-cornice);
+}
+
+.hf-mini-zona {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.hf-mini-apri {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--hf-raggio-vetro);
+  background: none;
+  cursor: pointer;
+}
+
+.hf-mini-apri:focus-visible {
+  outline: 3px solid var(--hf-fuoco);
+  outline-offset: 2px;
+}
+
+/* ===================================================================== moduli ==== */
+
+/* Il titolo stampato a sinistra della targhetta (h1/h2 per i lettori di schermo). */
+.hf-targhetta-titolo {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Una fila di tasti che va a capo se non ci sta. */
+.hf-azioni {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Un po' d'aria sopra (dopo un paragrafo, prima di una fila di tasti). */
+.hf-spazio {
+  margin-top: 12px;
+}
+
+/* Nomi tecnici (il repo, localStorage) dentro il testo. */
+.hf-frontale code {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+/* Un tasto che prende tutta la larghezza ("Mostra altri"). */
+.hf-tasto.hf-tutto {
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* Una riga di modulo: etichetta e campo (o scelte) sotto. */
+.hf-campo-riga {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+
+.hf-campo-riga > .hf-etichetta-campo {
+  margin: 0;
+}
+
+/* Scritte sul rack, fuori dai moduli (la versione in fondo alle Impostazioni). */
+.hf-sul-rack {
+  padding: 4px 0 8px;
+  color: var(--hf-serigrafia-chiara);
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* ===================================================================== ricerca ==== */
+
+.hf-ricerca {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hf-tasti-rapidi {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hf-tasti-rapidi > .hf-tasto {
+  flex: 1 1 auto;
+}
+
+/* Con che cosa suona il Jukebox (NewPipe, Solo Jukebox…): una spia sotto la ricerca. */
+.hf-motore {
+  color: var(--hf-serigrafia-tenue);
+}
+
+/* =================================================================== pulsantiera ==== */
+/* La scheda Generi: un tasto per genere, nome con il LED e quanti dischi. */
+
+.hf-pulsantiera {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 128px), 1fr));
+  gap: 8px;
+}
+
+.hf-tasto.hf-tasto-genere {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 5px;
+  height: auto;
+  min-height: 60px;
+  padding: 8px 12px;
+  white-space: normal;
+  text-align: left;
+}
+
+.hf-tasto.hf-tasto-genere.hf-tutti {
+  grid-column: 1 / -1;
+}
+
+.hf-genere-nome {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+}
+
+.hf-genere-conta {
+  color: var(--hf-serigrafia-tenue);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: none;
+}
+
+/* ======================================================================= suona ==== */
+
+.hf-frontale-giradischi {
+  padding: 10px 12px 12px;
+}
+
+.hf-velocita {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hf-frontale-display {
+  padding: 10px;
+}
+
+/* La barra della posizione nel brano, sotto il vetro: si trascina col dito. */
+.hf-posizione {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  color: var(--hf-serigrafia);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+}
+
+.hf-posizione > input {
+  width: 100%;
+  height: var(--hf-tocco-min);
+  margin: 0;
+  background: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.hf-posizione > input::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--hf-vfd-tenue) var(--hf-pos, 0%), #050a0a var(--hf-pos, 0%));
+  box-shadow:
+    inset 0 1px 3px #000,
+    0 1px 0 rgb(255 255 255 / 0.7);
+}
+
+.hf-posizione > input::-moz-range-track {
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--hf-vfd-tenue) var(--hf-pos, 0%), #050a0a var(--hf-pos, 0%));
+  box-shadow:
+    inset 0 1px 3px #000,
+    0 1px 0 rgb(255 255 255 / 0.7);
+}
+
+.hf-posizione > input::-webkit-slider-thumb {
+  width: 16px;
+  height: 28px;
+  margin-top: -10px;
+  border: 1px solid var(--hf-tasto-bordo);
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--hf-tasto-luce), var(--hf-tasto) 45%, var(--hf-tasto-scuro));
+  box-shadow: var(--hf-ombra-tasto);
+  appearance: none;
+}
+
+.hf-posizione > input::-moz-range-thumb {
+  width: 16px;
+  height: 28px;
+  border: 1px solid var(--hf-tasto-bordo);
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--hf-tasto-luce), var(--hf-tasto) 45%, var(--hf-tasto-scuro));
+  box-shadow: var(--hf-ombra-tasto);
+}
+
+.hf-posizione > input:focus-visible {
+  border-radius: 3px;
+  outline: 2px solid var(--hf-fuoco-interno);
+  outline-offset: 1px;
+  box-shadow: var(--hf-anello-fuoco);
+}
+
+/* "Sta suonando un altro brano: tocca per tornarci" (quando si guarda un brano diverso). */
+.hf-altro-in-corso {
+  display: block;
+  width: 100%;
+  min-height: var(--hf-tocco-min);
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: var(--hf-raggio-vetro);
+  background: var(--hf-vetro-fondo);
+  box-shadow: var(--hf-ombra-incasso);
+  color: var(--hf-vfd);
+  font-size: 14px;
+  line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hf-altro-in-corso:focus-visible {
+  outline: 2px solid var(--hf-fuoco-interno);
+  outline-offset: 1px;
+  box-shadow: var(--hf-ombra-incasso), var(--hf-anello-fuoco);
+}
+
+.hf-coda-finita {
+  margin-top: 10px;
+}
+
+/* La sorgente della coda (il nome della playlist) e il suo piano di riproduzione. */
+.hf-sorgente {
+  overflow-wrap: anywhere;
+  font-size: 15px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.hf-piano {
+  margin: 4px 0 14px;
+}
+
+/* I comandi: trasporto, funzioni, spie e manopola. La disposizione segue la larghezza del modulo. */
+.hf-frontale-comandi {
+  container: hf-comandi / inline-size;
+}
+
+.hf-comandi {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "trasporto trasporto"
+    "funzioni funzioni"
+    "spie volume";
+  align-items: end;
+  gap: 12px 14px;
+}
+
+.hf-trasporto {
+  grid-area: trasporto;
+}
+
+.hf-funzioni {
+  grid-area: funzioni;
+}
+
+.hf-comandi > .hf-spie {
+  flex-direction: column;
+  grid-area: spie;
+  align-items: flex-start;
+  align-self: center;
+  gap: 12px;
+}
+
+.hf-comandi > .hf-manopola-blocco {
+  grid-area: volume;
+}
+
+.hf-tasti > .hf-tasto-blocco {
+  min-width: 0;
+}
+
+@container hf-comandi (min-width: 440px) {
+  .hf-comandi {
+    grid-template-areas:
+      "trasporto volume"
+      "funzioni volume"
+      "spie volume";
+  }
+
+  .hf-comandi > .hf-spie {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+  }
+}
+
+@container hf-comandi (min-width: 620px) {
+  .hf-comandi {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "trasporto spie volume"
+      "funzioni spie volume";
+  }
+
+  .hf-comandi > .hf-spie {
+    flex-direction: column;
+    gap: 14px;
+  }
+}
+
+/* ===================================================================== finestre ==== */
+
+/* Le domande (Conferma, nome della playlist) stanno sopra gli altri fogli. */
+.hf-velo.hf-velo-dialogo {
+  z-index: 55;
+}
+
+.hf-scheda-dati {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.hf-scheda-dati > p {
+  margin: 0;
+}
+
+.hf-scheda-artista {
+  color: var(--hf-serigrafia);
+  font-size: 17px;
+  line-height: 1.3;
+}
+
+.hf-parte {
+  margin-top: 20px;
+}
+
+/* "Dove si trova": una riga per piattaforma, con la sigla in una finestrella e il tasto Apri. */
+.hf-fonti {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hf-fonti > li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 54px;
+  border-bottom: 1px solid rgb(0 0 0 / 0.14);
+  color: var(--hf-serigrafia);
+  font-size: 16px;
+}
+
+.hf-fonti > li:last-child {
+  border-bottom: 0;
+}
+
+.hf-fonti-nome {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.hf-sigla {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  min-width: 44px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 3px;
+  background: #050909;
+  box-shadow:
+    inset 0 2px 4px #000,
+    0 1px 0 rgb(255 255 255 / 0.7);
+  color: var(--hf-vfd);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-shadow: var(--hf-vfd-bagliore);
+}
+
+.hf-fonte-file {
+  overflow-wrap: anywhere;
+  color: var(--hf-serigrafia-tenue);
+  font-size: 13px;
+}
+
+/* Il conteggio dal vivo del costruttore: un display. */
+.hf-conteggio {
+  margin: 16px 0;
+  text-align: center;
+}
+
+.hf-conteggio > .hf-vfd-riga {
+  font-size: 22px;
+}
+
+/* Gli elenchi dentro le finestre (file non riconosciuti) e nella Diagnostica. */
+.hf-elenco {
+  max-height: 30dvh;
+  margin: 6px 0 0;
+  padding-left: 18px;
+  overflow-y: auto;
+  color: var(--hf-serigrafia);
+  font-size: 14px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+/* ================================================================ impostazioni ==== */
+
+.hf-ordine-motori {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hf-ordine-motori > li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 52px;
+  padding: 3px 4px 3px 12px;
+  border: 1px solid #9a968d;
+  border-radius: 3px;
+  background: var(--hf-metallo);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.8);
+  color: var(--hf-serigrafia);
+  font-size: 16px;
+}
+
+.hf-frecce {
+  display: flex;
+  gap: 6px;
+}
+
+/* Il vetro della Diagnostica: le misure e gli ultimi errori, da leggere o copiare. */
+.hf-diagnostica {
+  max-height: 40dvh;
+  margin: 10px 0;
+  padding: 8px 12px;
+  overflow-y: auto;
+  border-radius: var(--hf-raggio-vetro);
+  background: var(--hf-vetro-fondo);
+  box-shadow: var(--hf-ombra-incasso);
+  color: var(--hf-vfd);
+  font-size: 13px;
+  line-height: 1.35;
+  user-select: text;
+}
+
+.hf-diagnostica > ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hf-diagnostica > ul + ul {
+  margin-top: 10px;
+}
+
+.hf-diagnostica li {
+  padding: 4px 0;
+  border-bottom: 1px solid rgb(125 249 230 / 0.12);
+  overflow-wrap: anywhere;
+}
+
+.hf-diagnostica > p {
+  color: var(--hf-vfd-tenue);
+}
+
+.hf-controllo-dati {
+  margin-top: 8px;
+}
+
+/* ============================================================= avvio e token ==== */
+
+.hf-primo,
+.hf-avvio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 16px 8px;
+}
+
+.hf-primo > .hf-modulo,
+.hf-avvio > .hf-modulo {
+  width: min(100%, 480px);
+}
+
+.hf-passi {
+  margin: 10px 0 0;
+  padding-left: 22px;
+  color: var(--hf-serigrafia);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.hf-passi > li + li {
+  margin-top: 6px;
+}
+
+.hf-modulo-token {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+/* L'esito della verifica del token: un LED e la frase. */
+.hf-esito {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 24px;
+  color: var(--hf-serigrafia);
+  font-size: 15px;
+}
+
+.hf-esito:empty {
+  display: none;
+}
+
+.hf-esito.hf-ok::before,
+.hf-esito.hf-errore::before {
+  content: "";
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.hf-esito.hf-ok::before {
+  background: radial-gradient(circle at 35% 30%, #f3ffe9, var(--hf-led-verde) 45%, var(--hf-led-verde-scuro));
+  box-shadow:
+    0 0 0 1.5px var(--hf-led-ghiera),
+    0 0 7px 2px rgb(99 255 116 / 0.7);
+}
+
+.hf-esito.hf-errore::before {
+  background: radial-gradient(circle at 35% 30%, #fff3e3, var(--hf-led-arancio) 45%, var(--hf-led-arancio-scuro));
+  box-shadow:
+    0 0 0 1.5px var(--hf-led-ghiera),
+    0 0 7px 2px rgb(255 138 30 / 0.7);
+}
+
+/* Lo stato dell'avvio sul vetro: cosa si sta leggendo, o cosa non va. */
+.hf-avvio-vetro {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 64px;
+  margin: 4px 0 0;
+}
+
+.hf-avvio-testo {
+  color: var(--hf-vfd);
+  font-size: 17px;
+  line-height: 1.35;
+  text-shadow: var(--hf-vfd-bagliore);
+}
+
+.hf-avvio-testo.hf-errore {
+  color: var(--hf-ambra);
+  text-shadow: none;
+}
+
+/* Un piccolo disco che gira mentre si aspetta (fermo con "riduci movimento"). */
+.hf-ruota {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background:
+    conic-gradient(
+      rgb(255 255 255 / 0.32) 0 26deg,
+      rgb(255 255 255 / 0) 26deg 180deg,
+      rgb(255 255 255 / 0.14) 180deg 206deg,
+      rgb(255 255 255 / 0) 206deg
+    ),
+    radial-gradient(circle, var(--hf-ambra) 0 17%, #0d0d0e 19% 100%);
+  box-shadow: 0 0 0 2px var(--hf-grafite-bordo);
+  animation: hf-gira 1.2s linear infinite;
+}
+
+.hf-avvio .hf-azioni {
+  margin-top: 14px;
+}
+
+/* La rotella d'attesa sopra tutto (aggiornamento dei dati). */
+.hf-attesa {
+  position: fixed;
+  inset: 0;
+  z-index: 58;
+  display: grid;
+  place-items: center;
+  background: rgb(5 6 8 / 0.45);
+}
+
+.hf-attesa::after {
+  content: "";
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background:
+    conic-gradient(
+      rgb(255 255 255 / 0.32) 0 26deg,
+      rgb(255 255 255 / 0) 26deg 180deg,
+      rgb(255 255 255 / 0.14) 180deg 206deg,
+      rgb(255 255 255 / 0) 206deg
+    ),
+    radial-gradient(circle, var(--hf-ambra) 0 17%, #0d0d0e 19% 100%);
+  box-shadow:
+    0 0 0 3px var(--hf-grafite),
+    0 8px 18px rgb(0 0 0 / 0.6);
+  animation: hf-gira 1.2s linear infinite;
+}
+
+@keyframes hf-gira {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hf-ruota,
+  .hf-attesa::after {
+    animation: none;
+  }
+}
+
+:root.hf-fermo .hf-ruota,
+:root.hf-fermo .hf-attesa::after {
+  animation: none;
+}
+
+/* ========================================================== da 700 px: due colonne ==== */
+/* A sinistra la schermata Suona, sempre in vista (il mini lettore non serve, né il tasto Suona
+   della barra); a destra la barra delle sezioni, in alto, e la sezione scelta. Le due colonne
+   scorrono ognuna per conto suo. */
+
+@media (width >= 700px) {
+  html,
+  html:has(.hf-mini:not([hidden])) {
+    --hf-avviso-dal-fondo: 16px;
+  }
+
+  .hf-app {
+    grid-template-columns: minmax(320px, 1fr) minmax(0, 1.15fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      "suona barra"
+      "suona vista";
+  }
+
+  .hf-suona {
+    grid-area: suona;
+    box-shadow:
+      1px 0 0 #000,
+      2px 0 0 rgb(255 255 255 / 0.04);
+  }
+
+  .hf-mini {
+    display: none;
+  }
+
+  .hf-barra {
+    padding: 10px 8px 4px;
+    background: none;
+    box-shadow: none;
+  }
+
+  .hf-barra > [data-tab="riproduzione"] {
+    display: none;
+  }
+
+  .hf-schermo {
+    padding-top: 6px;
+  }
+}
+
+/* ======================================================= da 1.100 px: tre zone ==== */
+/* La schermata Suona si allarga e si divide in due (giradischi e display · comandi e "A
+   seguire"), come nell'anteprima approvata; le sezioni sono la terza zona. */
+
+@media (width >= 1100px) {
+  .hf-app {
+    grid-template-columns: minmax(0, 2fr) minmax(380px, 1fr);
+  }
+
+  .hf-suona-rack {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 14px;
+    padding: 14px;
+  }
+
+  .hf-suona-colonna {
+    gap: 14px;
+  }
+}

@@ -1105,10 +1105,12 @@
   list-style: none;
 }
 
+/* --hf-vano-num: la larghezza del numero, la stessa per tutti i vani di un cassetto (con i numeri a
+   tre o quattro cifre la allarga chi disegna la lista). */
 .hf-vano {
   position: relative;
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
+  grid-template-columns: var(--hf-vano-num, 40px) minmax(0, 1fr) auto;
   align-items: center;
   column-gap: 12px;
   box-sizing: border-box;
@@ -1127,7 +1129,7 @@
 }
 
 .hf-vano.hf-con-azione {
-  grid-template-columns: 40px minmax(0, 1fr) auto var(--hf-tocco-min);
+  grid-template-columns: var(--hf-vano-num, 40px) minmax(0, 1fr) auto var(--hf-tocco-min);
   padding-right: 6px;
 }
 
@@ -1210,6 +1212,18 @@
   color: var(--hf-serigrafia-tenue);
 }
 
+/* Una terza riga, facoltativa: i dati del brano (BPM, tonalità, genere, anno, piattaforme). */
+.hf-vano-nota {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  line-height: 1.3;
+  letter-spacing: 0.06em;
+  color: var(--hf-serigrafia-tenue);
+}
+
 .hf-vano-dati {
   display: flex;
   flex-direction: column;
@@ -1285,6 +1299,24 @@
   color: var(--hf-serigrafia-tenue);
 }
 
+/* Un cassetto senza vani: una frase e, se c'è, il tasto per uscirne. */
+.hf-stato-vuoto {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 4px 6px;
+  color: var(--hf-serigrafia);
+  font-family: var(--hf-font-serigrafia);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.hf-stato-vuoto > p {
+  margin: 0;
+}
+
 /* ================================================================== campo di testo ==== */
 /* Si scrive in una finestrella di display: caratteri ciano su vetro. */
 
@@ -1328,6 +1360,339 @@
   outline: 2px solid var(--hf-fuoco-interno);
   outline-offset: 1px;
   box-shadow: var(--hf-ombra-incasso), var(--hf-anello-fuoco);
+}
+
+/* Un campo più stretto (numeri: BPM, anno) e uno su più righe. */
+.hf-campo.hf-corto {
+  display: inline-block;
+  width: 6.5em;
+}
+
+textarea.hf-campo {
+  min-height: 76px;
+  resize: vertical;
+  line-height: 1.35;
+}
+
+/* Due campi "da – a" sulla stessa riga. */
+.hf-minmax {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--hf-serigrafia);
+  font-family: var(--hf-font-serigrafia);
+  font-size: 16px;
+}
+
+/* =================================================================== selettore ==== */
+/* La fila dei tasti delle sezioni, come il selettore degli ingressi di un amplificatore: la
+   sezione aperta (aria-current) ha il tasto giù e il LED acceso. */
+
+.hf-selettore {
+  display: flex;
+  gap: 6px;
+}
+
+.hf-tasto.hf-selettore-tasto {
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  height: auto;
+  min-height: 54px;
+  padding: 6px 2px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+
+.hf-tasto.hf-selettore-tasto[aria-current="page"] {
+  transform: translateY(1px);
+  box-shadow:
+    0 1px 0 var(--hf-tasto-zoccolo),
+    inset 0 1px 3px rgb(0 0 0 / 0.18);
+}
+
+.hf-tasto.hf-selettore-tasto[aria-current="page"] > .hf-led {
+  background: radial-gradient(circle at 35% 30%, #f3ffe9, var(--hf-led-verde) 45%, var(--hf-led-verde-scuro));
+  box-shadow:
+    0 0 0 1.5px var(--hf-led-ghiera),
+    0 0 7px 2px rgb(99 255 116 / 0.7);
+}
+
+/* ===================================================================== scelte ==== */
+/* Una casella da spuntare fatta tasto con LED (generi, piattaforme, tipi): spuntata resta un
+   po' giù e il LED si accende. La casella vera resta nella pagina (fuoco, lettori di schermo). */
+
+.hf-scelte {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hf-scelta-casella {
+  position: relative;
+  display: inline-flex;
+}
+
+.hf-scelta-casella > input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.hf-scelta-tasto {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  min-height: var(--hf-tocco-min);
+  padding: 0 12px;
+  border: 1px solid var(--hf-tasto-bordo);
+  border-bottom-color: var(--hf-tasto-bordo-basso);
+  border-radius: var(--hf-raggio-tasto);
+  background: linear-gradient(180deg, var(--hf-tasto-luce) 0%, var(--hf-tasto) 45%, var(--hf-tasto-scuro) 100%);
+  box-shadow: var(--hf-ombra-tasto);
+  color: var(--hf-tasto-testo);
+  font-family: var(--hf-font-serigrafia);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none; /* il tocco lo prende la casella vera, che sta sopra */
+  transition: transform var(--hf-tempo-premi) ease-out;
+}
+
+.hf-scelta-casella > input:checked + .hf-scelta-tasto {
+  transform: translateY(1px);
+  box-shadow:
+    0 1px 0 var(--hf-tasto-zoccolo),
+    inset 0 1px 3px rgb(0 0 0 / 0.18);
+}
+
+.hf-scelta-casella > input:checked + .hf-scelta-tasto > .hf-led {
+  background: radial-gradient(circle at 35% 30%, #f3ffe9, var(--hf-led-verde) 45%, var(--hf-led-verde-scuro));
+  box-shadow:
+    0 0 0 1.5px var(--hf-led-ghiera),
+    0 0 7px 2px rgb(99 255 116 / 0.7);
+}
+
+.hf-scelta-casella > input:focus-visible + .hf-scelta-tasto {
+  outline: 2px solid var(--hf-fuoco-interno);
+  outline-offset: 1px;
+  box-shadow: var(--hf-ombra-tasto), var(--hf-anello-fuoco);
+}
+
+/* ============================================================ interruttore ==== */
+/* Una levetta (casella vera nascosta sotto): acceso, la levetta va a destra e la fessura si
+   illumina di verde. Il testo accanto dice cosa fa. */
+
+.hf-interruttore {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--hf-tocco-min);
+  color: var(--hf-serigrafia);
+  font-family: var(--hf-font-serigrafia);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.25;
+  cursor: pointer;
+}
+
+.hf-interruttore > input {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 44px;
+  height: 26px;
+  margin: -13px 0 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.hf-levetta {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  background: linear-gradient(180deg, #17181b, var(--hf-grafite));
+  box-shadow:
+    inset 0 2px 5px rgb(0 0 0 / 0.8),
+    0 1px 0 rgb(255 255 255 / 0.7);
+  pointer-events: none;
+}
+
+.hf-levetta::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #fff, #cfccc5 55%, #8f8c85);
+  box-shadow: 0 2px 3px rgb(0 0 0 / 0.55);
+  transition: transform var(--hf-tempo-premi) ease-out;
+}
+
+.hf-interruttore > input:checked + .hf-levetta {
+  background: linear-gradient(180deg, var(--hf-led-verde-scuro), #2f7a3a);
+  box-shadow:
+    inset 0 2px 5px rgb(0 0 0 / 0.55),
+    0 0 8px rgb(99 255 116 / 0.45),
+    0 1px 0 rgb(255 255 255 / 0.7);
+}
+
+.hf-interruttore > input:checked + .hf-levetta::after {
+  transform: translateX(18px);
+}
+
+.hf-interruttore > input:focus-visible + .hf-levetta {
+  outline: 2px solid var(--hf-fuoco-interno);
+  outline-offset: 1px;
+  box-shadow:
+    inset 0 2px 5px rgb(0 0 0 / 0.8),
+    var(--hf-anello-fuoco);
+}
+
+/* ================================================================== menu a tendina ==== */
+/* Un <select> che sembra un tasto, con la freccia disegnata a destra. */
+
+.hf-menu {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--hf-tocco-min);
+  margin: 0;
+  padding: 0 40px 0 12px;
+  border: 1px solid var(--hf-tasto-bordo);
+  border-bottom-color: var(--hf-tasto-bordo-basso);
+  border-radius: var(--hf-raggio-tasto);
+  appearance: none;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23222327' stroke-width='2'/%3E%3C/svg%3E")
+    no-repeat right 14px center / 12px 8px,
+    linear-gradient(180deg, var(--hf-tasto-luce) 0%, var(--hf-tasto) 45%, var(--hf-tasto-scuro) 100%);
+  box-shadow: var(--hf-ombra-tasto);
+  color: var(--hf-tasto-testo);
+  font-family: var(--hf-font-serigrafia);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.hf-menu:focus-visible {
+  outline: 2px solid var(--hf-fuoco-interno);
+  outline-offset: 1px;
+  box-shadow: var(--hf-ombra-tasto), var(--hf-anello-fuoco);
+}
+
+/* =================================================================== testi ==== */
+/* Testo corrente sul metallo (spiegazioni, dettagli di un brano), un titoletto stampato, un
+   collegamento, un elenco a scomparsa e un numero piccolo a segmenti (quanti filtri). */
+
+.hf-nota {
+  margin: 0;
+  color: var(--hf-serigrafia-tenue);
+  font-family: var(--hf-font-serigrafia);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+}
+
+.hf-titoletto {
+  margin: 0 0 8px;
+  color: var(--hf-serigrafia);
+  font-family: var(--hf-font-serigrafia);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.hf-collegamento {
+  color: var(--hf-serigrafia);
+  font-family: var(--hf-font-serigrafia);
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.hf-collegamento:focus-visible {
+  border-radius: 2px;
+  outline: 2px solid var(--hf-fuoco-interno);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px var(--hf-fuoco);
+}
+
+.hf-dettagli > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--hf-tocco-min);
+  color: var(--hf-serigrafia);
+  font-family: var(--hf-font-serigrafia);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+/* La freccina: punta a destra da chiuso, in giù da aperto. */
+.hf-dettagli > summary::before {
+  content: "";
+  flex: none;
+  width: 0;
+  height: 0;
+  border-top: 5px solid rgb(0 0 0 / 0);
+  border-bottom: 5px solid rgb(0 0 0 / 0);
+  border-left: 7px solid currentColor;
+  transition: transform var(--hf-tempo-premi) ease-out;
+}
+
+.hf-dettagli[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.hf-dettagli > summary::-webkit-details-marker {
+  display: none;
+}
+
+.hf-dettagli > summary:focus-visible {
+  outline: 2px solid var(--hf-fuoco-interno);
+  outline-offset: 1px;
+  box-shadow: 0 0 0 6px var(--hf-fuoco);
+}
+
+.hf-numerino {
+  display: inline-grid;
+  place-items: center;
+  min-width: 28px;
+  height: 24px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: #050909;
+  box-shadow:
+    inset 0 2px 4px #000,
+    0 1px 0 rgb(255 255 255 / 0.7);
+  color: var(--hf-vfd);
+  font-family: var(--hf-font-segmenti);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-shadow: var(--hf-vfd-bagliore);
 }
 
 /* ============================================================ finestra a comparsa ==== */

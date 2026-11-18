@@ -407,6 +407,15 @@ a:focus-visible,
   min-width: 0;
 }
 
+/* -------------------------------------------------------------------- moduli ---- */
+
+/* Il selettore delle sezioni sta su una striscia di grafite, come la barra dell'app. */
+.pz-selettore {
+  padding: 6px 8px 8px;
+  border-radius: 6px;
+  background: var(--hf-cornice);
+}
+
 /* --------------------------------------------------------------------- avviso ---- */
 
 .pz-avvisi {

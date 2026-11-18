@@ -1,15 +1,15 @@
-// vista-generi.js — la scheda Generi: una pulsantiera con un tasto per voce di genere, i più
-// pieni in alto. Un tasto mette quel genere nei filtri e porta alla ricerca.
+// vista-generi.js — la scheda Generi: una pulsantiera con un tasto per voce di genere (LED, nome e
+// quanti dischi), i più pieni in alto. Un tasto mette quel genere nei filtri e porta alla ricerca.
 
 import * as cercaMod from "../nucleo/cerca.js";
-import { $, codiceSelezione, esc } from "./base.js";
+import { $, esc } from "./base.js";
 
 const DIPENDENZE = ["scheda", "catalogo", "filtri"];
 
 export function collegaGeneri(app) {
   // Un solo ascoltatore per tutta la pulsantiera.
   $("#generi-lista").addEventListener("click", (e) => {
-    const el = e.target.closest?.(".tasto-genere");
+    const el = e.target.closest?.(".hf-tasto-genere");
     if (!el) return;
     const { filtri, voci } = app.stato.leggi();
     const macro = el.dataset.idx === "tutti" ? [] : [...voci[Number(el.dataset.idx)].indici];
@@ -18,6 +18,14 @@ export function collegaGeneri(app) {
   app.stato.ascolta((cambiati, s) => {
     if (s.scheda === "generi" && cambiati.some((k) => DIPENDENZE.includes(k))) disegnaGeneri(app);
   });
+}
+
+// Un tasto della pulsantiera: acceso (giù, LED verde) se il filtro attivo è esattamente quella voce.
+function tasto({ idx, nome, conta, acceso, tutti = false }) {
+  return `<button class="hf-tasto hf-tasto-genere${tutti ? " hf-tutti" : ""}" type="button" data-idx="${idx}" aria-pressed="${acceso}">
+      <span class="hf-genere-nome"><span class="hf-led${acceso ? " hf-acceso" : ""}"></span>${esc(nome)}</span>
+      <span class="hf-genere-conta">${esc(conta)}</span>
+    </button>`;
 }
 
 export function disegnaGeneri(app) {
@@ -30,7 +38,6 @@ export function disegnaGeneri(app) {
   const scelti = filtri.macro || [];
   const n = (x) => x.toLocaleString("it-IT");
   // Tasti in ordine di quantità, come una pulsantiera: i generi più pieni in alto.
-  // Acceso = il filtro attivo è esattamente quella voce.
   const ordine = voci
     .map((v, i) => ({
       nome: v.nome,
@@ -39,17 +46,13 @@ export function disegnaGeneri(app) {
       acceso: v.indici.length === scelti.length && v.indici.every((x) => scelti.includes(x)),
     }))
     .sort((a, b) => b.conta - a.conta);
-  const tasto = (
-    g,
-    pos,
-  ) => `<button class="tasto-genere${g.acceso ? " acceso" : ""}" type="button" data-idx="${g.i}" aria-pressed="${g.acceso}">
-        <span class="tasto-nome">${esc(g.nome)}</span>
-        <span class="tasto-sotto"><span class="codice-mini">${codiceSelezione(pos)}</span>${n(g.conta)} dischi</span>
-      </button>`;
   const totale = conteggi.reduce((s, x) => s + x, 0) + senzaGenere;
   $("#generi-lista").innerHTML =
-    `<button class="tasto-genere largo${scelti.length ? "" : " acceso"}" type="button" data-idx="tutti" aria-pressed="${!scelti.length}">
-        <span class="tasto-nome">Tutti i generi</span>
-        <span class="tasto-sotto">${n(totale)} dischi${senzaGenere ? ` · ${n(senzaGenere)} ancora senza genere` : ""}</span>
-      </button>${ordine.map(tasto).join("")}`;
+    tasto({
+      idx: "tutti",
+      nome: "Tutti i generi",
+      conta: `${n(totale)} dischi${senzaGenere ? ` · ${n(senzaGenere)} ancora senza genere` : ""}`,
+      acceso: !scelti.length,
+      tutti: true,
+    }) + ordine.map((g) => tasto({ idx: g.i, nome: g.nome, conta: `${n(g.conta)} dischi`, acceso: g.acceso })).join("");
 }

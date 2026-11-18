@@ -1,10 +1,13 @@
-"""Prova automatica nel browser: nove giri sull'app vera, con un catalogo FINTO di 200 brani.
+"""Prova automatica nel browser: undici giri sull'app vera, con un catalogo FINTO di 200 brani.
 
 Giri: 1. avvio -> la lista si vede; 2. si scrive un artista -> compaiono i suoi brani;
 3. si apre un brano -> si vede la scheda; 4. si crea una playlist manuale (con la finestra
 dell'app, non quella del sistema); 5. si importano 2 file audio di prova e si fa partire uno -> il
 tasto dice "Pausa". In più: il catalogo ha un brano rotto apposta (senza fonti) e Impostazioni
 deve dire che l'ha ignorato.
+Giri dello stile hi-fi (Fase 9 del restauro): 5b. il disco gira solo mentre si sente la musica e in
+pausa frena, col braccio alzato; 5c. a 320, 360, 768 e 1.280 px nessuna schermata scorre di lato, e
+da 700 px la schermata Suona sta a sinistra, sempre in vista.
 Giri sugli errori (ognuno in un browser pulito): 6. un file "audio" rovinato -> avviso e si passa
 al brano dopo; 7. l'avvio senza rete -> errore con Riprova, e Riprova funziona; 8. avvio senza
 rete ma con una copia dei dati -> si parte e lo si dice; 9. un token rifiutato -> errore con
@@ -88,6 +91,78 @@ def passo(testo: str) -> None:
 
 PAGINE_DEI_GIRI_ERRORE: list = []  # l'ultima serve a fotografare la schermata se un giro fallisce
 
+# Il disco della schermata Suona: l'animazione che lo fa girare (stato e velocità) e il braccio.
+DISCO = """() => {
+  const disco = document.querySelector('#rip-giradischi .hf-disco');
+  const giro = disco.getAnimations()[0];
+  return {
+    stato: giro ? giro.playState : null,
+    velocita: giro ? giro.playbackRate : 0,
+    su: document.querySelector('#rip-giradischi .hf-braccio').dataset.su,
+    led: document.querySelector('#rip-led-giri').classList.contains('hf-acceso'),
+  };
+}"""
+
+# Cosa scorre di lato: la pagina, o una delle due colonne (che hanno overflow-x nascosto: un pezzo
+# troppo largo lì non farebbe scorrere, verrebbe tagliato).
+SCORRE_DI_LATO = """() => {
+  const fuori = [];
+  if (document.documentElement.scrollWidth > window.innerWidth) fuori.push('pagina');
+  for (const el of document.querySelectorAll('#suona, #schermi')) {
+    if (el.offsetParent !== null && el.scrollWidth > el.clientWidth + 1) fuori.push(`${el.id}: ${el.scrollWidth} > ${el.clientWidth}`);
+  }
+  return fuori;
+}"""
+
+
+def giro_disco(pagina) -> None:
+    """Il brano suona in pausa: ▶ lo fa ripartire, il disco arriva a 33⅓ col braccio sul solco; ⏸ lo
+    ferma, il disco frena fino a fermarsi e il braccio si alza. Il tasto ▶ sta sotto il giradischi:
+    premendolo la colonna scorre e il disco esce dallo schermo (fuori vista si ferma, apposta), quindi
+    dopo ogni tocco si torna in cima."""
+    in_cima = "() => document.querySelector('#suona').scrollTo(0, 0)"
+    pagina.click("[data-tab='riproduzione']")
+    expect(pagina.locator("#rip-principale")).to_have_attribute("aria-label", "Riprendi")
+    d = pagina.evaluate(DISCO)
+    assert d["stato"] in (None, "paused") and d["su"] == "si", f"in pausa il disco deve stare fermo: {d}"
+    pagina.click("#rip-principale")
+    pagina.evaluate(in_cima)
+    pagina.wait_for_timeout(1700)
+    d = pagina.evaluate(DISCO)
+    assert d["stato"] == "running" and abs(d["velocita"] - 1) < 0.01, f"mentre suona il disco non gira a 33⅓: {d}"
+    assert d["su"] == "no" and d["led"], f"mentre suona il braccio va sul solco e il LED 33⅓ si accende: {d}"
+    passo("giradischi: con la musica il disco arriva a 33⅓, il braccio scende e il LED si accende")
+    pagina.click("#rip-principale")
+    pagina.evaluate(in_cima)
+    pagina.wait_for_timeout(1900)
+    d = pagina.evaluate(DISCO)
+    assert d["stato"] == "paused" and d["su"] == "si" and not d["led"], f"in pausa il disco deve frenare: {d}"
+    passo("giradischi: in pausa il disco frena fino a fermarsi e il braccio si alza")
+
+
+def giro_disposizione(pagina) -> None:
+    """Ogni scheda a 320, 360, 768 e 1.280 px: niente scorre di lato; sotto i 700 px Suona è una scheda,
+    da 700 px è la colonna di sinistra (e il suo tasto sparisce dalla barra)."""
+    for larghezza in (320, 360, 768, 1280):
+        pagina.set_viewport_size({"width": larghezza, "height": 844})
+        pagina.wait_for_timeout(300)
+        larga = larghezza >= 700
+        schede = ["cerca", "generi", "playlist", "impostazioni"] + ([] if larga else ["riproduzione"])
+        for scheda in schede:
+            pagina.click(f"[data-tab='{scheda}']")
+            pagina.wait_for_timeout(150)
+            fuori = pagina.evaluate(SCORRE_DI_LATO)
+            assert not fuori, f"a {larghezza} px la scheda {scheda} scorre di lato: {fuori}"
+            suona = pagina.locator("#suona").is_visible()
+            if larga:
+                assert suona and pagina.locator("#schermi").is_visible(), f"a {larghezza} px Suona e {scheda} insieme"
+            else:
+                assert suona == (scheda == "riproduzione"), f"a {larghezza} px Suona si vede solo nella sua scheda"
+        assert pagina.locator("[data-tab='riproduzione']").is_visible() != larga, f"tasto Suona a {larghezza} px"
+    pagina.set_viewport_size({"width": 390, "height": 844})
+    pagina.click("[data-tab='cerca']")
+    passo("disposizione: a 320, 360, 768 e 1.280 px niente scorre di lato; da 700 px Suona sta a sinistra")
+
 
 def nuova_pagina(browser, problemi: list[str], ignora: tuple[str, ...] = ()):
     """Una pagina in un contesto pulito (niente dati dei giri di prima). I messaggi che contengono
@@ -114,25 +189,25 @@ def giro_file_rovinato(browser, base: str, artista: str, cartella_audio: Path, p
     pagina = nuova_pagina(browser, problemi)
     pagina.goto(f"{base}/?dati=/dati/catalogo.json")
     pagina.fill("#cerca-testo", artista)
-    pagina.wait_for_function("() => document.querySelectorAll('#cerca-risultati .striscia').length >= 2")
+    pagina.wait_for_function("() => document.querySelectorAll('#cerca-risultati .hf-vano[data-id]').length >= 2")
     # Pochi istanti perché la ricerca si assesti sull'ordine definitivo.
     pagina.wait_for_timeout(400)
-    righe = pagina.locator("#cerca-risultati .striscia")
+    righe = pagina.locator("#cerca-risultati .hf-vano[data-id]")
     rotto, buono = righe.nth(0).get_attribute("data-id"), righe.nth(1).get_attribute("data-id")
     (cartella_audio / f"{rotto}.mp3").write_bytes(b"questo non e' un file audio, solo testo" * 20)
     scrivi_wav(cartella_audio / f"{buono}.wav")
-    pagina.click(".tab[data-tab='impostazioni']")
+    pagina.click("[data-tab='impostazioni']")
     pagina.set_input_files(
         "#imp-file-input", [str(cartella_audio / f"{rotto}.mp3"), str(cartella_audio / f"{buono}.wav")]
     )
     expect(pagina.locator("#imp-file-info")).to_contain_text("2 brani sul telefono")
-    pagina.click(".tab[data-tab='cerca']")
-    pagina.click(f"#cerca-risultati .striscia[data-id='{rotto}'] .striscia-play")
+    pagina.click("[data-tab='cerca']")
+    pagina.click(f"#cerca-risultati .hf-vano[data-id='{rotto}'] .hf-vano-azione")
     expect(pagina.locator("#toast")).to_contain_text("Non riesco a suonare")
     expect(pagina.locator("#toast")).to_contain_text("passo al prossimo")
     pagina.wait_for_selector("#mini-pausa[aria-label='Pausa']:not([hidden])")
     # Nella Diagnostica c'è il file difettoso.
-    pagina.click(".tab[data-tab='impostazioni']")
+    pagina.click("[data-tab='impostazioni']")
     expect(pagina.locator("#imp-diagnostica")).to_contain_text(rotto)
     passo(
         "file rovinato: avviso 'Non riesco a suonare… passo al prossimo', suona il successivo, il file è in Diagnostica"
@@ -153,7 +228,7 @@ def giro_avvio_senza_rete(browser, base: str, problemi: list[str]) -> None:
     expect(pagina.locator("#schermi")).to_be_hidden()
     pagina.unroute(e_il_catalogo)
     pagina.click("#avvio-riprova")
-    pagina.wait_for_selector("#cerca-risultati .striscia")
+    pagina.wait_for_selector("#cerca-risultati .hf-vano[data-id]")
     expect(pagina.locator("#avvio")).to_be_hidden()
     passo("avvio senza rete: errore con 'Riprova', e Riprova fa partire l'app quando la rete torna")
     pagina.context.close()
@@ -163,7 +238,7 @@ def giro_avvio_con_copia(browser, base: str, problemi: list[str]) -> None:
     """Una volta caricati i dati restano in cache: senza rete l'app parte con quelli e lo dice."""
     pagina = nuova_pagina(browser, problemi, ignora=("Failed to load resource", "ERR_INTERNET_DISCONNECTED"))
     pagina.goto(f"{base}/?dati=/dati/catalogo.json")
-    pagina.wait_for_selector("#cerca-risultati .striscia")
+    pagina.wait_for_selector("#cerca-risultati .hf-vano[data-id]")
     # Il catalogo si salva in cache in sottofondo: si aspetta che ci sia, e che l'app sia offline-ready.
     pagina.wait_for_function(
         "async () => (await caches.keys()).includes('jukebox-dati') && (await (await caches.open('jukebox-dati')).keys()).length > 0"
@@ -171,7 +246,7 @@ def giro_avvio_con_copia(browser, base: str, problemi: list[str]) -> None:
     pagina.evaluate("() => navigator.serviceWorker.ready")
     pagina.context.set_offline(True)
     pagina.reload()
-    pagina.wait_for_selector("#cerca-risultati .striscia")
+    pagina.wait_for_selector("#cerca-risultati .hf-vano[data-id]")
     expect(pagina.locator("#toast")).to_contain_text("non aggiornati: rete assente")
     passo("avvio senza rete con la copia: l'app parte e dice 'dati… non aggiornati: rete assente'")
     pagina.context.close()
@@ -198,7 +273,7 @@ def giro_token_rifiutato(browser, base: str, problemi: list[str]) -> None:
 
 
 def prova(catalogo: dict, cartella_audio: Path) -> list[str]:
-    """I nove giri. Lancia AssertionError (o un errore di Playwright) al primo che non torna."""
+    """Gli undici giri. Lancia AssertionError (o un errore di Playwright) al primo che non torna."""
     brani = catalogo["brani"]
     # Brani visibili con i filtri di default (le "scelte", non l'esplorazione) e con un artista.
     scelti = [b for b in brani if b.get("x") != 1 and b.get("k") != "set" and b.get("a")]
@@ -209,7 +284,7 @@ def prova(catalogo: dict, cartella_audio: Path) -> list[str]:
     file_audio = []
     for b in (brano_aperto, secondo):
         percorso = cartella_audio / f"{b['id']}.wav"  # il nome del file è l'id del brano
-        scrivi_wav(percorso)
+        scrivi_wav(percorso, secondi=8)  # abbastanza lunghi per vedere il disco partire e frenare
         file_audio.append(percorso)
 
     Gestore.catalogo_json = json.dumps(catalogo).encode("utf-8")
@@ -234,23 +309,25 @@ def prova(catalogo: dict, cartella_audio: Path) -> list[str]:
             # 1. Avvio: la lista si vede.
             giro = "1. avvio"
             pagina.goto(f"{base}/?dati=/dati/catalogo.json")
-            pagina.wait_for_selector("#cerca-risultati .striscia")
-            visibili = pagina.locator("#cerca-risultati .striscia").count()
+            pagina.wait_for_selector("#cerca-risultati .hf-vano[data-id]")
+            visibili = pagina.locator("#cerca-risultati .hf-vano[data-id]").count()
             assert visibili > 20, f"la lista dovrebbe avere decine di brani, ne ha {visibili}"
             passo(f"avvio: la lista mostra {visibili} brani")
 
             # "Mostra altri" aggiunge le righe in fondo senza ridisegnare quelle di prima; e tornando
             # alla scheda senza aver cambiato nulla la lista non si rifà.
             giro = "1b. mostra altri"
-            pagina.evaluate("() => { document.querySelector('#cerca-risultati .striscia').dataset.marca = 'si'; }")
+            pagina.evaluate(
+                "() => { document.querySelector('#cerca-risultati .hf-vano[data-id]').dataset.marca = 'si'; }"
+            )
             pagina.click("#cerca-altri")
             pagina.wait_for_function(
-                "n => document.querySelectorAll('#cerca-risultati .striscia').length > n", arg=visibili
+                "n => document.querySelectorAll('#cerca-risultati .hf-vano[data-id]').length > n", arg=visibili
             )
-            prima_riga = pagina.locator("#cerca-risultati .striscia").first
+            prima_riga = pagina.locator("#cerca-risultati .hf-vano[data-id]").first
             assert prima_riga.get_attribute("data-marca") == "si", "'Mostra altri' ha ridisegnato le righe di prima"
-            pagina.click(".tab[data-tab='generi']")
-            pagina.click(".tab[data-tab='cerca']")
+            pagina.click("[data-tab='generi']")
+            pagina.click("[data-tab='cerca']")
             assert prima_riga.get_attribute("data-marca") == "si", "tornando alla scheda Cerca la lista è stata rifatta"
             passo(
                 "mostra altri: le righe nuove si aggiungono in fondo, le vecchie restano; tornando alla scheda non si rifà"
@@ -262,38 +339,38 @@ def prova(catalogo: dict, cartella_audio: Path) -> list[str]:
             pagina.fill("#cerca-testo", artista)
             # La ricerca parte dopo una breve attesa: si aspetta che la lista si restringa davvero.
             pagina.wait_for_function(
-                "n => document.querySelectorAll('#cerca-risultati .striscia').length < n", arg=visibili
+                "n => document.querySelectorAll('#cerca-risultati .hf-vano[data-id]').length < n", arg=visibili
             )
-            ora = pagina.locator("#cerca-risultati .striscia").count()
+            ora = pagina.locator("#cerca-risultati .hf-vano[data-id]").count()
             mancanti = [
                 b["id"]
                 for b in del_artista
-                if pagina.locator(f"#cerca-risultati .striscia[data-id='{b['id']}']").count() == 0
+                if pagina.locator(f"#cerca-risultati .hf-vano[data-id='{b['id']}']").count() == 0
             ]
             assert not mancanti, f"cercando '{artista}' mancano dei suoi brani: {mancanti}"
             passo(f"ricerca: '{artista}' mostra i suoi {len(del_artista)} brani ({ora} risultati su {visibili})")
 
             # Nessun risultato: lo dice e offre di togliere i filtri; con un tocco la lista torna.
             pagina.fill("#cerca-testo", "zzzzqqqq")
-            expect(pagina.locator("#cerca-risultati .vuoto")).to_contain_text("Nessun disco per «zzzzqqqq»")
+            expect(pagina.locator("#cerca-risultati .hf-stato-vuoto")).to_contain_text("Nessun disco per «zzzzqqqq»")
             pagina.click("#cerca-risultati [data-azione-vuoto]")
             expect(pagina.locator("#cerca-testo")).to_have_value("")
-            pagina.wait_for_selector("#cerca-risultati .striscia")
+            pagina.wait_for_selector("#cerca-risultati .hf-vano[data-id]")
             passo("nessun risultato: 'Nessun disco per…' e 'Togli i filtri' riporta la lista")
             # Nessuna playlist ancora: lo dice e offre di crearne una.
-            pagina.click(".tab[data-tab='playlist']")
+            pagina.click("[data-tab='playlist']")
             expect(pagina.locator("#playlist-lista")).to_contain_text("Nessuna playlist ancora")
             expect(pagina.locator("#playlist-lista [data-azione-vuoto]")).to_contain_text("Crea la prima playlist")
-            pagina.click(".tab[data-tab='cerca']")
+            pagina.click("[data-tab='cerca']")
             passo("nessuna playlist: la scheda dice 'Nessuna playlist ancora' e offre di crearne una")
             pagina.fill("#cerca-testo", artista)
             pagina.wait_for_function(
-                "n => document.querySelectorAll('#cerca-risultati .striscia').length < n", arg=visibili
+                "n => document.querySelectorAll('#cerca-risultati .hf-vano[data-id]').length < n", arg=visibili
             )
 
             # 3. Si apre un brano: compare la scheda.
             giro = "3. scheda del brano"
-            pagina.click(f"#cerca-risultati .striscia[data-id='{brano_aperto['id']}'] .striscia-corpo")
+            pagina.click(f"#cerca-risultati .hf-vano[data-id='{brano_aperto['id']}'] .hf-vano-corpo")
             expect(pagina.locator("#foglio-brano")).to_be_visible()
             expect(pagina.locator("#foglio-brano")).to_contain_text(brano_aperto["t"])
             expect(pagina.locator("#foglio-suona")).to_be_visible()
@@ -305,17 +382,17 @@ def prova(catalogo: dict, cartella_audio: Path) -> list[str]:
             pagina.click("#agg-nuova")
             expect(pagina.locator("#dialogo")).to_be_visible()
             pagina.fill("#dialogo-campo", NOME_PLAYLIST)
-            pagina.click("#dialogo button.btn-primary")
+            pagina.click("#dialogo button.hf-principale")
             expect(pagina.locator("#toast")).to_contain_text(NOME_PLAYLIST)
             pagina.click("#foglio-chiudi")
-            pagina.click(".tab[data-tab='playlist']")
+            pagina.click("[data-tab='playlist']")
             expect(pagina.locator("#playlist-lista")).to_be_visible()
             expect(pagina.locator("#playlist-lista")).to_contain_text(NOME_PLAYLIST)
             passo(f"playlist: '{NOME_PLAYLIST}' creata e visibile nella scheda Playlist")
 
             # 5. Si importano 2 file audio e se ne fa partire uno.
             giro = "5. audio e controllo dei dati"
-            pagina.click(".tab[data-tab='impostazioni']")
+            pagina.click("[data-tab='impostazioni']")
             pagina.set_input_files("#imp-file-input", [str(f) for f in file_audio])
             expect(pagina.locator("#imp-file-info")).to_be_visible()
             expect(pagina.locator("#imp-file-info")).to_contain_text("2 brani sul telefono")
@@ -324,13 +401,19 @@ def prova(catalogo: dict, cartella_audio: Path) -> list[str]:
             expect(pagina.locator("#imp-dati-controllo")).to_contain_text("1 brano ignorato perché incompleto")
             passo("dati: Impostazioni segnala '1 brano ignorato perché incompleto'")
 
-            pagina.click(".tab[data-tab='cerca']")
-            pagina.click(f"#cerca-risultati .striscia[data-id='{brano_aperto['id']}'] .striscia-play")
+            pagina.click("[data-tab='cerca']")
+            pagina.click(f"#cerca-risultati .hf-vano[data-id='{brano_aperto['id']}'] .hf-vano-azione")
             pagina.wait_for_selector("#mini-pausa[aria-label='Pausa']:not([hidden])")
             passo("riproduzione: il brano suona e il tasto dice 'Pausa'")
             pagina.click("#mini-pausa")
             pagina.wait_for_selector("#mini-pausa[aria-label='Riprendi']")
             passo("riproduzione: in pausa il tasto dice 'Riprendi'")
+
+            # 5b-5c. Lo stile hi-fi: il giradischi e le tre disposizioni.
+            giro = "5b. giradischi"
+            giro_disco(pagina)
+            giro = "5c. disposizione"
+            giro_disposizione(pagina)
 
             # 6-8. Gli errori, ognuno in un browser pulito (senza dati di prima).
             giro = "6. file audio rovinato"
@@ -365,7 +448,7 @@ def main() -> int:
         for riga in problemi:
             print(f"  - {riga}", file=sys.stderr)
         return 1
-    print("\nProva nel browser: 9 giri riusciti, nessun errore nella console.")
+    print("\nProva nel browser: 11 giri riusciti, nessun errore nella console.")
     return 0
 
 

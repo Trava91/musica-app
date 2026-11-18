@@ -18,10 +18,10 @@ app/
 ├── index.html              pagina unica (onboarding + 5 schede + 4 fogli/overlay)
 ├── manifest.webmanifest    manifest PWA
 ├── sw.js                   service worker (app shell offline)
-├── css/styles.css          stile jukebox anni '50, blu notte con neon
+├── css/                    stile hi-fi anni '90/2000: base.css (gettoni), componenti.css (i pezzi), schermate.css (disposizione e responsive)
 ├── anteprima/              pagina di anteprima dello stile hi-fi (restauro, fase 3; non fa parte dell'app)
 ├── package.json, biome.json, pyproject.toml, tsconfig.json   attrezzi di sviluppo (npm run verifica)
-├── fonts/                  Yellowtail, Oswald, Courier Prime (offline, licenze in LICENZE.md)
+├── fonts/                  DSEG7, Doto, Barlow Condensed (offline, licenze in LICENZE.md)
 ├── js/
 │   ├── main.js              avvio: crea stato, lettore, sessione e viste, carica i dati (non disegna)
 │   ├── config.js            da dove arrivano i dati, preferenze, tempi e soglie, VERSIONE

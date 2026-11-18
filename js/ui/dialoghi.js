@@ -3,7 +3,7 @@
 // Danno sempre una risposta (Esc o un tocco fuori = annulla) e sono una alla volta.
 
 import { RIGHE_MAX_AVVISI } from "../config.js";
-import { $, $$, esc } from "./base.js";
+import { $, $$, esc, testaFinestra } from "./base.js";
 
 let dialogoAperto = false;
 
@@ -20,16 +20,19 @@ function dialogo({ titolo, corpo = "", pulsanti, annulla, campo = null }) {
     const overlay = $("#dialogo-overlay");
     const el = $("#dialogo");
     const precedente = document.activeElement;
-    el.innerHTML = `
-      <div class="foglio-intestazione"><h2 id="dialogo-titolo">${esc(titolo)}</h2></div>
-      ${corpo}
-      ${campo ? `<div class="campo-riga"><label for="dialogo-campo">${esc(campo.etichetta)}</label><input id="dialogo-campo" type="text" autocomplete="off" value="${esc(campo.valore ?? "")}"></div>` : ""}
-      <div class="azioni-riga">${pulsanti
+    el.innerHTML = `<div class="hf-frontale">
+      ${testaFinestra("dialogo-titolo", titolo)}
+      <div class="hf-finestra-corpo">
+        ${corpo}
+        ${campo ? `<div class="hf-campo-riga"><label class="hf-etichetta-campo" for="dialogo-campo">${esc(campo.etichetta)}</label><input id="dialogo-campo" class="hf-campo" type="text" autocomplete="off" value="${esc(campo.valore ?? "")}"></div>` : ""}
+      </div>
+      <div class="hf-finestra-azioni">${pulsanti
         .map(
           (p, i) =>
-            `<button type="button" class="${p.classe || (p.principale ? "btn-primary" : "btn-secondary")}" data-i="${i}">${esc(p.etichetta)}</button>`,
+            `<button type="button" class="${p.classe || (p.principale ? "hf-tasto hf-principale" : "hf-tasto")}" data-i="${i}">${esc(p.etichetta)}</button>`,
         )
-        .join("")}</div>`;
+        .join("")}</div>
+    </div>`;
     const principale = pulsanti.findIndex((p) => p.principale);
     const chiudi = (valore) => {
       overlay.hidden = true;
@@ -60,14 +63,19 @@ function dialogo({ titolo, corpo = "", pulsanti, annulla, campo = null }) {
   });
 }
 
-/** Una domanda con Annulla/Conferma. true se conferma. `pericolo` colora il tasto di rosso (cancellazioni). */
+/** Una domanda con Annulla/Conferma. true se conferma. `pericolo` fa il tasto pericoloso (cancellazioni). */
 export function chiediConferma({ titolo, testo = "", conferma = "Conferma", pericolo = false }) {
   return dialogo({
     titolo,
-    corpo: testo ? `<p class="muted">${esc(testo)}</p>` : "",
+    corpo: testo ? `<p>${esc(testo)}</p>` : "",
     pulsanti: [
       { etichetta: "Annulla", valore: false },
-      { etichetta: conferma, valore: true, principale: true, classe: pericolo ? "btn-danger" : "btn-primary" },
+      {
+        etichetta: conferma,
+        valore: true,
+        principale: true,
+        classe: pericolo ? "hf-tasto hf-pericolo" : "hf-tasto hf-principale",
+      },
     ],
     annulla: false,
   });
@@ -99,7 +107,7 @@ export function mostraRiepilogo({ titolo, righe = [], elencoTitolo = "", elenco 
     corpo:
       righe.map((r) => `<p>${esc(r)}</p>`).join("") +
       (elenco.length
-        ? `<details open><summary>${esc(elencoTitolo)} (${elenco.length})</summary><ul class="elenco-dialogo">${voci.join("")}</ul></details>`
+        ? `<details class="hf-dettagli" open><summary>${esc(elencoTitolo)} (${elenco.length})</summary><ul class="hf-elenco">${voci.join("")}</ul></details>`
         : ""),
     pulsanti: [{ etichetta: "Ok", valore: undefined, principale: true }],
     annulla: undefined,

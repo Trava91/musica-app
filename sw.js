@@ -5,15 +5,15 @@
 // per conto proprio (Cache Storage "jukebox-dati", localStorage per le playlist).
 // Qui si mette in cache solo lo "shell" statico dell'app.
 
-const CACHE = "jukebox-v16"; // bump a ogni deploy per invalidare lo shell
+const CACHE = "jukebox-v17"; // bump a ogni deploy per invalidare lo shell
 
 const SHELL = [
   "./",
   "index.html",
   "manifest.webmanifest",
-  "css/styles.css",
   "css/base.css",
   "css/componenti.css",
+  "css/schermate.css",
   "js/main.js",
   "js/config.js",
   "js/memoria.js",
@@ -48,6 +48,7 @@ const SHELL = [
   "js/ui/vista-generi.js",
   "js/ui/vista-playlist.js",
   "js/ui/vista-suona.js",
+  "js/ui/mini-lettore.js",
   "js/ui/vista-impostazioni.js",
   "js/ui/foglio-brano.js",
   "js/ui/foglio-filtri.js",
@@ -66,10 +67,6 @@ const SHELL = [
   "icons/icon.svg",
   "icons/icon-192.png",
   "icons/icon-512.png",
-  "fonts/yellowtail-400.woff2",
-  "fonts/oswald-400-600.woff2",
-  "fonts/courier-prime-400.woff2",
-  "fonts/courier-prime-700.woff2",
   "fonts/dseg7-classic-700.woff2",
   "fonts/doto-700.woff2",
   "fonts/barlow-condensed-500.woff2",
