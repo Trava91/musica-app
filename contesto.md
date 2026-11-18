@@ -89,16 +89,22 @@ piano (aggancio a `aggiorna.py`), e solo a revisione chiusa.
   dal 16/11/2026; il lavoro sullo stile riparte sul branch `restauro-stile` fino a R2. La cartella
   è su quel branch, quindi `prepara.py` e `valuta.mjs` girano da lì; il controllo che
   tutto torni è `python strumenti/prepara.py --prova` (stesse playlist di prima).
-  **Fase 8 (17/11/2026):** i pezzi dello stile hi-fi sono pronti in `css/base.css` (gettoni),
-  `css/componenti.css` e `js/ui/hifi/` (tutto col prefisso `hf-`, per convivere con `styles.css`),
-  e si vedono tutti in `anteprima/componenti.html`; l'app non li usa ancora (Fase 9). Il volume
-  della manopola passa da `sessione.impostaVolume()` e si ricorda in `jukebox.volume`.
+  **Fase 8 (17/11/2026):** i pezzi dello stile hi-fi in `css/base.css` (gettoni),
+  `css/componenti.css` e `js/ui/hifi/` (tutto col prefisso `hf-`), visibili in
+  `anteprima/componenti.html`. Il volume della manopola passa da `sessione.impostaVolume()` e si
+  ricorda in `jukebox.volume`.
+  **Fase 9 (17–18/11/2026):** tutte le schermate sono nello stile hi-fi (versione 17, solo sul
+  branch): disposizione in `css/schermate.css`; sotto i 700 px moduli impilati e barra delle
+  sezioni in basso (con il mini lettore), da 700 px due colonne con Suona sempre a sinistra, da
+  1.100 px il rack a tre zone. `styles.css` e i caratteri anni '50 sono stati tolti; nuova icona.
+  Provata via cavo sul telefono il 18/11 (NewPipe però non si apre: punto aperto nel piano).
 - **M1 (28/09/2026):** ricerca e filtri, playlist coi filtri e a mano, motori,
   link verso NewPipe/Spotify, coda, 5 schede.
 - **Estetica (01–02/10/2026):** jukebox anni '50 in blu notte con neon, dal
-  disegno su tela Claude Design; caratteri in `fonts/`. Generi raggruppati solo
-  nella vista (`js/nucleo/generi.js`): house/techno → "Tech house", disco house +
-  disco/funk/soul → "Disco". "Va bene per iniziare, la miglioriamo più avanti."
+  disegno su tela Claude Design. "Va bene per iniziare, la miglioriamo più avanti":
+  sostituita dallo stile hi-fi anni '90/2000 col restauro (Fase 9, online con R2). Generi
+  raggruppati solo nella vista (`js/nucleo/generi.js`): house/techno → "Tech house", disco house +
+  disco/funk/soul → "Disco".
 - **Online e installata (02/10/2026)** sul telefono di Nicolò (Oppo, Android
   11) col token; NewPipe 0.29.1 installato via adb.
 - **M2 (02–06/10/2026):** file sul telefono suonati dal Jukebox; tasto grande
@@ -111,9 +117,10 @@ piano (aggancio a `aggiorna.py`), e solo a revisione chiusa.
 - **Solo Jukebox (03/11/2026):** interruttore nelle Impostazioni (spento di
   default): acceso, il Jukebox non apre mai app esterne, i brani senza file
   appaiono spenti e un ▶ su uno di loro parte dal prossimo della lista che c'è.
-- **Test:** 436 Node (`test/*.test.mjs`, dati inventati) + 50 Python
+- **Test:** 437 Node (`test/*.test.mjs`, dati inventati) + 50 Python
   (`strumenti/test_*.py`); `npm run verifica` lancia lint, tipi e tutti i test;
-  `npm run prova` fa 9 giri nel browser sull'app vera, errori compresi (dal 16/11/2026, restauro);
+  `npm run prova` fa 11 giri nel browser sull'app vera, errori compresi, giradischi e disposizione a
+  320/360/768/1.280 px (dal 16/11/2026, restauro);
   `npm run prova:componenti` prova nel browser la pagina dei componenti hi-fi (dal 17/11/2026).
 - **Errori e velocità (restauro, fasi 6-7, 16/11/2026):** la Diagnostica (Impostazioni) elenca gli
   ultimi 20 errori e le misure di velocità (avvio, indice, ricerca…), con il tasto Copia; l'avvio ha
