@@ -1404,13 +1404,15 @@ textarea.hf-campo {
 /* La fila dei tasti delle sezioni, come il selettore degli ingressi di un amplificatore: la
    sezione aperta (aria-current) ha il tasto giù e il LED acceso. */
 
+/* Quando lo spazio è pochissimo (schermo molto ingrandito) i tasti vanno a capo invece di far scorrere la pagina. */
 .hf-selettore {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
 .hf-tasto.hf-selettore-tasto {
-  flex: 1 1 0;
+  flex: 1 1 52px;
   flex-direction: column;
   gap: 6px;
   min-width: 0;
@@ -1779,6 +1781,11 @@ textarea.hf-campo {
 
 .hf-finestra-corpo p {
   margin: 0 0 10px;
+}
+
+/* Il fuoco va sulla finestra appena aperta (lo mette finestre.js, a programma): senza anello. */
+.hf-finestra:focus {
+  outline: none;
 }
 
 .hf-finestra-azioni {

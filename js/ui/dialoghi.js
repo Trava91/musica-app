@@ -4,6 +4,7 @@
 
 import { RIGHE_MAX_AVVISI } from "../config.js";
 import { $, $$, esc, testaFinestra } from "./base.js";
+import { mostra, nascondi } from "./finestre.js";
 
 let dialogoAperto = false;
 
@@ -19,7 +20,6 @@ function dialogo({ titolo, corpo = "", pulsanti, annulla, campo = null, colonna 
   return new Promise((risolvi) => {
     const overlay = $("#dialogo-overlay");
     const el = $("#dialogo");
-    const precedente = document.activeElement;
     el.innerHTML = `<div class="hf-frontale">
       ${testaFinestra("dialogo-titolo", titolo)}
       <div class="hf-finestra-corpo">
@@ -35,11 +35,10 @@ function dialogo({ titolo, corpo = "", pulsanti, annulla, campo = null, colonna 
     </div>`;
     const principale = pulsanti.findIndex((p) => p.principale);
     const chiudi = (valore) => {
-      overlay.hidden = true;
+      nascondi(overlay); // il fuoco torna al tasto da cui si è aperto
       overlay.removeEventListener("click", fuori);
       el.removeEventListener("keydown", tasti);
       dialogoAperto = false;
-      precedente?.focus?.();
       risolvi(valore);
     };
     const scegli = (i) => {
@@ -50,13 +49,15 @@ function dialogo({ titolo, corpo = "", pulsanti, annulla, campo = null, colonna 
       if (e.target === overlay) chiudi(annulla);
     };
     const tasti = (e) => {
-      if (e.key === "Escape") chiudi(annulla);
-      else if (e.key === "Enter" && campo && e.target.id === "dialogo-campo" && principale >= 0) scegli(principale);
+      if (e.key === "Escape") {
+        e.preventDefault(); // l'Esc è già servito: non deve chiudere anche la finestra sotto
+        chiudi(annulla);
+      } else if (e.key === "Enter" && campo && e.target.id === "dialogo-campo" && principale >= 0) scegli(principale);
     };
     for (const b of $$("button[data-i]", el)) b.addEventListener("click", () => scegli(Number(b.dataset.i)));
     overlay.addEventListener("click", fuori);
     el.addEventListener("keydown", tasti);
-    overlay.hidden = false;
+    mostra(overlay);
     const primo = campo ? $("#dialogo-campo", el) : $("button[data-i]", el);
     primo?.focus();
     if (campo) primo.select();

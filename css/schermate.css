@@ -97,6 +97,11 @@ p {
   grid-area: mini;
 }
 
+.hf-barra,
+.hf-mini {
+  min-width: 0; /* un elemento della griglia non deve allargare la pagina oltre lo schermo */
+}
+
 .hf-barra {
   grid-area: barra;
 }

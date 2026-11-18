@@ -39,11 +39,11 @@ export function disegnaSuggerimenti(app, testo) {
     : artisti
         .map((a) => {
           const sotto = `${a.n.toLocaleString("it-IT")} ${a.n === 1 ? "brano" : "brani"}`;
-          return vano("ART", a.id, "artista", a.nome, sotto, `Artista ${a.nome}, ${sotto}: apri la pagina`);
+          return vano("ART", a.id, "artista", a.nome, sotto, `${a.nome} ${sotto}. Artista: apri la pagina`);
         })
         .concat(
           generi.map((v) =>
-            vano("GEN", String(voci.indexOf(v)), "genere", v.nome, "Genere", `Genere ${v.nome}: mostra i suoi brani`),
+            vano("GEN", String(voci.indexOf(v)), "genere", v.nome, "Genere", `${v.nome} Genere: mostra i suoi brani`),
           ),
         )
         .join("");

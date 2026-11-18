@@ -13,7 +13,7 @@ import { movimentoRidotto } from "./comune.js";
 
 /**
  * @typedef {{ id: string, nome: string, dettaglio?: string, descrizione?: string }} Stazione
- *   descrizione: cosa sentono i lettori di schermo (di default "nome, dettaglio").
+ *   descrizione: cosa sentono i lettori di schermo (di default "nome dettaglio"; deve contenere la scritta visibile).
  */
 
 /**
@@ -58,12 +58,14 @@ export function creaScala(
       b.className = "hf-stazione";
       b.setAttribute("role", "radio");
       b.dataset.id = s.id;
-      b.setAttribute("aria-label", s.descrizione || (s.dettaglio ? `${s.nome}, ${s.dettaglio}` : s.nome));
+      // Il nome contiene la scritta visibile («nome dettaglio», in quest'ordine): chi comanda a voce dice quella.
+      b.setAttribute("aria-label", s.descrizione || (s.dettaglio ? `${s.nome} ${s.dettaglio}` : s.nome));
       const nome = document.createElement("span");
       nome.className = "hf-st-nome";
       nome.textContent = s.nome;
       b.append(nome);
       if (s.dettaglio) {
+        b.append(" "); // uno spazio fra le due scritte: il testo visibile è «nome dettaglio»
         const dettaglio = document.createElement("span");
         dettaglio.className = "hf-st-dettaglio";
         dettaglio.textContent = s.dettaglio;

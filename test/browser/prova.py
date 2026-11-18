@@ -6,8 +6,10 @@ dell'app, non quella del sistema); 5. si importano 2 file audio di prova e si fa
 tasto dice "Pausa". In più: il catalogo ha un brano rotto apposta (senza fonti) e Impostazioni
 deve dire che l'ha ignorato.
 Giri dello stile hi-fi (Fase 9 del restauro): 5b. il disco gira solo mentre si sente la musica e in
-pausa frena, col braccio alzato; 5c. a 320, 360, 768 e 1.280 px nessuna schermata scorre di lato, e
+pausa frena, col braccio alzato; 5c. a 320, 360, 640, 768 e 1.280 px nessuna schermata scorre di lato, e
 da 700 px la schermata Suona sta a sinistra, sempre in vista.
+Giro della Fase 11 (11): le finestre usate solo da tastiera (fuoco dentro, Esc, fuoco di ritorno) e gli
+avvisi per gli screen reader.
 Giro della Fase 10 (10): dalla ricerca all'artista, «indietro» del telefono, l'elenco A–Z, le etichette
 dei filtri, la coda composta a mano e le scorciatoie da tastiera.
 Giri sugli errori (ognuno in un browser pulito): 6. un file "audio" rovinato -> avviso e si passa
@@ -66,6 +68,14 @@ def scrivi_wav(percorso: Path, secondi: int = 3, frequenza: int = 440, campioni:
         w.setframerate(campioni)
         onde = (int(8000 * math.sin(2 * math.pi * frequenza * i / campioni)) for i in range(campioni * secondi))
         w.writeframes(b"".join(struct.pack("<h", x) for x in onde))
+
+
+class Server(ThreadingHTTPServer):
+    """Il server di prova. La coda di attesa predefinita (5 connessioni) su Windows non regge il browser,
+    che carica decine di moduli insieme: le richieste in più venivano rifiutate (ERR_CONNECTION_REFUSED),
+    e la prova falliva a caso. Con una coda lunga non succede."""
+
+    request_queue_size = 256
 
 
 class Gestore(SimpleHTTPRequestHandler):
@@ -143,9 +153,9 @@ def giro_disco(pagina) -> None:
 
 
 def giro_disposizione(pagina) -> None:
-    """Ogni scheda a 320, 360, 768 e 1.280 px: niente scorre di lato; sotto i 700 px Suona è una scheda,
+    """Ogni scheda a 320, 360, 640, 768 e 1.280 px: niente scorre di lato; sotto i 700 px Suona è una scheda,
     da 700 px è la colonna di sinistra (e il suo tasto sparisce dalla barra)."""
-    for larghezza in (320, 360, 768, 1280):
+    for larghezza in (320, 360, 640, 768, 1280):
         pagina.set_viewport_size({"width": larghezza, "height": 844})
         pagina.wait_for_timeout(300)
         larga = larghezza >= 700
@@ -163,7 +173,7 @@ def giro_disposizione(pagina) -> None:
         assert pagina.locator("[data-tab='riproduzione']").is_visible() != larga, f"tasto Suona a {larghezza} px"
     pagina.set_viewport_size({"width": 390, "height": 844})
     pagina.click("[data-tab='cerca']")
-    passo("disposizione: a 320, 360, 768 e 1.280 px niente scorre di lato; da 700 px Suona sta a sinistra")
+    passo("disposizione: a 320, 360, 640, 768 e 1.280 px niente scorre di lato; da 700 px Suona sta a sinistra")
 
 
 def nuova_pagina(browser, problemi: list[str], ignora: tuple[str, ...] = ()):
@@ -277,6 +287,20 @@ def giro_token_rifiutato(browser, base: str, problemi: list[str]) -> None:
 def prossimi_in_coda(pagina) -> list[str]:
     """Gli id dei brani di «A seguire», nell'ordine in cui suoneranno."""
     return pagina.eval_on_selector_all("#riproduzione-prossimi .hf-vano[data-id]", "els => els.map(e => e.dataset.id)")
+
+
+def attendi_coda(pagina, atteso: list[str], quando: str) -> None:
+    """Aspetta (fino a 5 s) che «A seguire» sia proprio questa: dopo ⏭ la coda cambia e il cassetto si
+    ridisegna un attimo dopo, quando il brano nuovo è partito."""
+    try:
+        pagina.wait_for_function(
+            "atteso => JSON.stringify([...document.querySelectorAll('#riproduzione-prossimi .hf-vano[data-id]')]"
+            ".map((e) => e.dataset.id)) === JSON.stringify(atteso)",
+            arg=atteso,
+            timeout=5000,
+        )
+    except ErrorePlaywright:
+        raise AssertionError(f"{quando}: «A seguire» doveva essere {atteso}, è {prossimi_in_coda(pagina)}") from None
 
 
 def scheda_visibile(pagina) -> str:
@@ -400,9 +424,7 @@ def giro_artisti_coda_e_tastiera(browser, base: str, catalogo: dict, cartella_au
     pagina.click("[data-tab='cerca']")
     pagina.click(f"#cerca-risultati .hf-vano[data-id='{i1}'] .hf-vano-azione")
     expect(pagina.locator("#rip-principale")).to_have_attribute("aria-label", "Pausa")
-    assert prossimi_in_coda(pagina) == [i2, i3, i4], (
-        f"la playlist di file dovrebbe avere i 4 brani: {prossimi_in_coda(pagina)}"
-    )
+    attendi_coda(pagina, [i2, i3, i4], "la playlist di file dovrebbe avere i 4 brani")
 
     def dal_menu(brano: str, scelta: str) -> None:
         pagina.click(f"#cerca-risultati .hf-vano[data-id='{brano}'] .hf-vano-seconda")
@@ -413,18 +435,18 @@ def giro_artisti_coda_e_tastiera(browser, base: str, catalogo: dict, cartella_au
     dal_menu(i2, "In fondo alla coda")
     expect(pagina.locator("#toast")).to_contain_text("in fondo alla coda")
     dal_menu(i3, "Suona dopo")
-    assert prossimi_in_coda(pagina) == [i3, i4, i2], f"ordine della coda sbagliato: {prossimi_in_coda(pagina)}"
+    attendi_coda(pagina, [i3, i4, i2], "ordine della coda sbagliato")
     # Dalla scheda del brano: gli stessi due gesti.
     pagina.click(f"#cerca-risultati .hf-vano[data-id='{i2}'] .hf-vano-corpo")
     pagina.click("#foglio-dopo")
     pagina.click("#foglio-chiudi")
-    assert prossimi_in_coda(pagina) == [i2, i3, i4], f"dalla scheda: {prossimi_in_coda(pagina)}"
+    attendi_coda(pagina, [i2, i3, i4], "dalla scheda")
     # Si può togliere un brano dalla coda.
     pagina.click(f"#riproduzione-prossimi .hf-vano[data-id='{i3}'] .hf-vano-seconda")
-    assert prossimi_in_coda(pagina) == [i2, i4], f"dopo togli: {prossimi_in_coda(pagina)}"
+    attendi_coda(pagina, [i2, i4], "dopo togli")
     pagina.click("#rip-avanti")
     expect(pagina.locator("#rip-display")).to_contain_text(titolo[i2])
-    assert prossimi_in_coda(pagina) == [i4], f"dopo ⏭: {prossimi_in_coda(pagina)}"
+    attendi_coda(pagina, [i4], "dopo ⏭")
     passo(
         "coda: «Suona dopo», «In fondo alla coda» (dal + e dalla scheda) e ✕ comandano l'ordine; ⏭ passa al primo accodato"
     )
@@ -457,8 +479,87 @@ def giro_artisti_coda_e_tastiera(browser, base: str, catalogo: dict, cartella_au
     pagina.context.close()
 
 
+def giro_finestre_accessibili(browser, base: str, problemi: list[str]) -> None:
+    """Fase 11, solo da tastiera: la scheda di un brano si apre con Invio, il fuoco entra e non esce
+    (Tab e Maiusc+Tab girano dentro), dietro tutto è inerte, Esc chiude e il fuoco torna al tasto di
+    prima; lo stesso per il menu del +. Gli avvisi arrivano anche all'area per gli screen reader."""
+    pagina = nuova_pagina(browser, problemi)
+    pagina.goto(f"{base}/?dati=/dati/catalogo.json")
+    pagina.wait_for_selector("#cerca-risultati .hf-vano[data-id]")
+    prima = pagina.locator("#cerca-risultati .hf-vano[data-id]").first.get_attribute("data-id")
+    corpo = f"#cerca-risultati .hf-vano[data-id='{prima}'] .hf-vano-corpo"
+    dentro = "(id) => document.getElementById(id).contains(document.activeElement)"
+    sul_tasto = "(sel) => document.activeElement === document.querySelector(sel)"
+
+    pagina.focus(corpo)
+    pagina.keyboard.press("Enter")
+    expect(pagina.locator("#foglio-overlay")).to_be_visible()
+    assert pagina.evaluate(dentro, "foglio-brano"), "aprendo la scheda il fuoco deve entrare nella finestra"
+    assert pagina.evaluate("() => document.getElementById('app').inert"), "dietro la finestra tutto deve essere inerte"
+    assert (
+        pagina.evaluate("() => document.getElementById('foglio-brano').getAttribute('aria-labelledby')")
+        == "foglio-titolo"
+    )
+    expect(pagina.locator("#foglio-chiudi")).to_have_attribute("aria-label", "Chiudi")
+    for tasto in ["Tab"] * 40 + ["Shift+Tab"] * 40:
+        pagina.keyboard.press(tasto)
+        assert pagina.evaluate(dentro, "foglio-brano"), f"con {tasto} il fuoco è uscito dalla finestra"
+    pagina.keyboard.press("Escape")
+    expect(pagina.locator("#foglio-overlay")).to_be_hidden()
+    assert pagina.evaluate(sul_tasto, corpo), "chiusa la finestra il fuoco deve tornare al tasto di partenza"
+    assert not pagina.evaluate("() => document.getElementById('app').inert"), (
+        "chiusa la finestra l'app non è più inerte"
+    )
+    passo(
+        "finestre da tastiera: Invio apre, il fuoco resta dentro (Tab e Maiusc+Tab), Esc chiude e il fuoco torna al tasto"
+    )
+
+    # Il menu del «+»: un dialogo sopra la pagina, anche lui chiuso con Esc, con il fuoco di ritorno.
+    piu = f"#cerca-risultati .hf-vano[data-id='{prima}'] .hf-vano-seconda"
+    pagina.focus(piu)
+    pagina.keyboard.press("Enter")
+    expect(pagina.locator("#dialogo")).to_be_visible()
+    assert pagina.evaluate(dentro, "dialogo"), "aprendo il menu il fuoco deve entrare nel dialogo"
+    pagina.keyboard.press("Escape")
+    expect(pagina.locator("#dialogo-overlay")).to_be_hidden()
+    assert pagina.evaluate(sul_tasto, piu), "chiuso il menu il fuoco deve tornare al «+»"
+    passo("finestre da tastiera: il menu del + si chiude con Esc e il fuoco torna al + ")
+
+    # Un dialogo sopra una finestra (il «+» di un brano di «Altri di…» dentro la scheda): è l'unico attivo,
+    # Esc chiude solo lui e il fuoco torna dentro la finestra; un secondo Esc chiude la finestra.
+    pagina.click(corpo)
+    pagina.click("#foglio-altri-artista .hf-vano-seconda >> nth=0")
+    expect(pagina.locator("#dialogo")).to_be_visible()
+    assert pagina.evaluate("() => document.getElementById('foglio-overlay').inert"), (
+        "la finestra sotto il dialogo deve essere inerte"
+    )
+    pagina.keyboard.press("Escape")
+    expect(pagina.locator("#dialogo-overlay")).to_be_hidden()
+    expect(pagina.locator("#foglio-overlay")).to_be_visible()  # la finestra sotto resta
+    assert not pagina.evaluate("() => document.getElementById('foglio-overlay').inert"), (
+        "tornata in cima la finestra deve essere attiva"
+    )
+    assert pagina.evaluate(dentro, "foglio-brano"), "chiuso il dialogo il fuoco deve tornare dentro la scheda"
+    pagina.keyboard.press("Escape")
+    expect(pagina.locator("#foglio-overlay")).to_be_hidden()
+    passo("finestre da tastiera: con un dialogo sopra una finestra, Esc chiude una alla volta")
+
+    # Gli avvisi: oltre al riquadro in basso arrivano all'area per gli screen reader (cortese o urgente).
+    pagina.click(corpo)
+    pagina.click("#foglio-aggiungi")
+    pagina.click("#agg-nuova")
+    pagina.fill("#dialogo-campo", "Playlist accessibile")
+    pagina.click("#dialogo button.hf-principale")
+    expect(pagina.locator("#toast")).to_contain_text("Playlist accessibile")
+    expect(pagina.locator("#annuncio")).to_contain_text("Playlist accessibile")
+    expect(pagina.locator("#annuncio")).to_have_attribute("role", "status")
+    expect(pagina.locator("#annuncio-errore")).to_have_attribute("role", "alert")
+    passo("avvisi: il testo arriva anche all'area per gli screen reader (status; alert per gli errori)")
+    pagina.context.close()
+
+
 def prova(catalogo: dict, cartella_audio: Path) -> list[str]:
-    """I dodici giri. Lancia AssertionError (o un errore di Playwright) al primo che non torna."""
+    """I tredici giri. Lancia AssertionError (o un errore di Playwright) al primo che non torna."""
     brani = catalogo["brani"]
     # Brani visibili con i filtri di default (le "scelte", non l'esplorazione) e con un artista.
     scelti = [b for b in brani if b.get("x") != 1 and b.get("k") != "set" and b.get("a")]
@@ -473,7 +574,7 @@ def prova(catalogo: dict, cartella_audio: Path) -> list[str]:
         file_audio.append(percorso)
 
     Gestore.catalogo_json = json.dumps(catalogo).encode("utf-8")
-    server = ThreadingHTTPServer(("127.0.0.1", 0), partial(Gestore, directory=str(APP)))
+    server = Server(("127.0.0.1", 0), partial(Gestore, directory=str(APP)))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     base = f"http://127.0.0.1:{server.server_address[1]}"
 
@@ -611,12 +712,14 @@ def prova(catalogo: dict, cartella_audio: Path) -> list[str]:
             giro_token_rifiutato(browser, base, problemi)
             giro = "10. artisti, coda e tastiera"
             giro_artisti_coda_e_tastiera(browser, base, catalogo, cartella_audio, problemi)
+            giro = "11. finestre accessibili"
+            giro_finestre_accessibili(browser, base, problemi)
         except (AssertionError, ErrorePlaywright) as errore:
             immagine = Path(tempfile.gettempdir()) / "jukebox-prova-errore.png"
             try:
-                (PAGINE_DEI_GIRI_ERRORE[-1] if giro[:1] in "6789" or giro.startswith("10") else pagina).screenshot(
-                    path=str(immagine)
-                )
+                (
+                    PAGINE_DEI_GIRI_ERRORE[-1] if giro[:1] in "6789" or giro.startswith(("10", "11")) else pagina
+                ).screenshot(path=str(immagine))
                 problemi.append(f"(schermata salvata in {immagine})")
             except ErrorePlaywright:
                 pass
@@ -637,7 +740,7 @@ def main() -> int:
         for riga in problemi:
             print(f"  - {riga}", file=sys.stderr)
         return 1
-    print("\nProva nel browser: 12 giri riusciti, nessun errore nella console.")
+    print("\nProva nel browser: 13 giri riusciti, nessun errore nella console.")
     return 0
 
 

@@ -7,6 +7,7 @@
 
 import { ATTESA_APERTURA_APP_MS, DURATA_AVVISO_LUNGO_MS, DURATA_AVVISO_MS } from "../config.js";
 import { vociSelezionate } from "../nucleo/generi.js";
+import { collegaTastieraFinestre, mostra, nascondi } from "./finestre.js";
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -69,6 +70,16 @@ export const SVG_CHIUDI = `<svg viewBox="0 0 24 24" aria-hidden="true" focusable
 // --------------------------------------------------------------------- avvisi ----
 let timerAvviso = null;
 
+// Lo sente anche chi legge lo schermo: le aree #annuncio (cortese) e #annuncio-errore (subito) stanno sempre
+// nella pagina; svuotarle e riscriverle fa rileggere anche lo stesso messaggio due volte di fila.
+function annuncia(msg, errore) {
+  const area = $(errore ? "#annuncio-errore" : "#annuncio");
+  area.textContent = "";
+  setTimeout(() => {
+    area.textContent = msg;
+  }, 60);
+}
+
 /**
  * Un avviso in basso, una striscia di display. tipo: "" | "ok" | "err"; opts: {duration,
  * actionLabel, onAction} (un tasto a destra se c'è qualcosa da fare).
@@ -100,8 +111,8 @@ export function mostraAvviso(msg, type = "", opts = {}) {
   }
   t.replaceChildren(...pezzi);
   t.className = `hf-avviso${type === "ok" ? " hf-ok" : type === "err" ? " hf-errore" : ""}`;
-  t.setAttribute("role", type === "err" ? "alert" : "status");
   t.hidden = false;
+  annuncia(msg, type === "err");
   timerAvviso = setTimeout(() => {
     t.hidden = true;
   }, opts.duration || DURATA_AVVISO_MS);
@@ -147,12 +158,13 @@ export function apriLink(url, { web = null } = {}) {
 }
 
 // -------------------------------------------------------------------- finestre ----
+// Aprire e chiudere passa da finestre.js: fuoco dentro, sfondo inerte, Esc, fuoco di ritorno.
 export function apriFinestra(id) {
-  $(`#${id}`).hidden = false;
+  mostra($(`#${id}`));
 }
 
 export function chiudiFinestra(id) {
-  $(`#${id}`).hidden = true;
+  nascondi($(`#${id}`));
 }
 
 /** La testa di una finestra: il titolo (con il suo id, per aria-labelledby) e, se serve, il ✕. */
@@ -163,14 +175,15 @@ export function testaFinestra(idTitolo, titolo, idChiudi = "") {
   return `<div class="hf-finestra-testa"><h2 class="hf-finestra-titolo" id="${idTitolo}">${esc(titolo)}</h2>${chiudi}</div>`;
 }
 
-/** Un tocco fuori dalla finestra la chiude. Da chiamare una volta all'avvio. */
+/** Un tocco fuori dalla finestra la chiude; Esc e Tab con una finestra aperta. Da chiamare una volta all'avvio. */
 export function collegaFinestre() {
   // (le finestre di dialogo hanno la loro chiusura: devono sempre dare una risposta)
   for (const velo of $$(".hf-velo:not([data-dialogo])")) {
     velo.addEventListener("click", (e) => {
-      if (e.target === velo) velo.hidden = true;
+      if (e.target === velo) nascondi(velo);
     });
   }
+  collegaTastieraFinestre();
 }
 
 // ---------------------------------------------------------------------- schede ----

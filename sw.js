@@ -61,6 +61,7 @@ const SHELL = [
   "js/ui/azioni-playlist.js",
   "js/ui/aggiornamento.js",
   "js/ui/vista-diagnostica.js",
+  "js/ui/finestre.js",
   "js/ui/vista-artisti.js",
   "js/ui/suggerimenti.js",
   "js/ui/menu-coda.js",

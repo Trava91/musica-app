@@ -1,126 +1,159 @@
-# Jukebox — app musica per il telefono
+# Jukebox — app musica per il telefono e per il PC
 
-PWA (web app installabile) per cercare e filtrare il tuo catalogo musicale, creare
-playlist a più filtri e riprodurle senza passare dalle altre app. Stato attuale:
-**M1 e M2** — ricerca, playlist intelligenti/manuali, file sul telefono suonati dal
-Jukebox (anche a schermo spento), NewPipe e l'app Spotify gratuita per gli altri
-brani. Le tappe successive (assistente DJ, Spotify Premium, ricerca ovunque) sono nel piano
-[`plans/2026-09-28-app-musica-telefono.md`](../../../plans/2026-09-28-app-musica-telefono.md).
+PWA (web app installabile) per cercare e filtrare il tuo catalogo musicale, creare playlist a più
+filtri e suonarle senza passare dalle altre app. Ha l'aspetto di un impianto hi-fi anni '90/2000:
+un giradischi che gira davvero mentre suona, un display a fluorescenza, la manopola del volume.
+Su telefono i moduli si impilano; da 700 px di larghezza (tablet, PC) diventano due colonne, da
+1.100 px un "rack" a tre zone.
 
-Stesso schema di [`03-burocrazia/app`](../../../03-burocrazia/app/): file statici
-su GitHub Pages, nessun server, nessun build. Legge i dati da un repo **privato**
-con un token che inserisci a runtime — resta solo su questo telefono.
+**Cosa sa fare:** ricerca per titolo, artista e genere (con i suggerimenti mentre si scrive), pagina
+di ogni artista ed elenco A–Z, filtri e playlist intelligenti o fatte a mano, coda composta a mano
+(«Suona dopo», «In fondo alla coda»), file sul telefono suonati dal Jukebox anche a schermo spento,
+NewPipe e l'app Spotify gratuita per gli altri brani. Le tappe future (assistente DJ, Spotify
+Premium, ricerca ovunque, social radio) sono nel piano
+[`plans/2026-09-28-app-musica-telefono.md`](../../../plans/2026-09-28-app-musica-telefono.md); il restauro
+del codice e dello stile è in [`plans/2026-11-14-restauro-jukebox.md`](../../../plans/2026-11-14-restauro-jukebox.md).
 
-## Struttura
+Stesso schema di [`03-burocrazia/app`](../../../03-burocrazia/app/): file statici su GitHub Pages,
+nessun server, **nessun build** (il browser legge i file così come sono). Legge i dati da un repo
+**privato** con un token che inserisci a runtime: resta solo su questo telefono.
 
-```
-app/
-├── index.html              pagina unica (onboarding + 5 schede + 4 fogli/overlay)
-├── manifest.webmanifest    manifest PWA
-├── sw.js                   service worker (app shell offline)
-├── css/                    stile hi-fi anni '90/2000: base.css (gettoni), componenti.css (i pezzi), schermate.css (disposizione e responsive)
-├── anteprima/              pagina di anteprima dello stile hi-fi (restauro, fase 3; non fa parte dell'app)
-├── package.json, biome.json, pyproject.toml, tsconfig.json   attrezzi di sviluppo (npm run verifica)
-├── fonts/                  DSEG7, Doto, Barlow Condensed (offline, licenze in LICENZE.md)
-├── js/
-│   ├── main.js              avvio: crea stato, lettore, sessione e viste, carica i dati (non disegna)
-│   ├── config.js            da dove arrivano i dati, preferenze, tempi e soglie, VERSIONE
-│   ├── memoria.js           scrive in localStorage senza errori muti (spazio finito → avviso + Diagnostica)
-│   ├── nucleo/              LOGICA PURA: niente schermo, niente rete (lo controlla test/dipendenze.test.mjs)
-│   │   ├── testo.js           normalizza, titolo con versione, artista con feat., durata
-│   │   ├── casuale.js         generatore casuale ripetibile
-│   │   ├── filtri.js          l'unico motore di filtri (ricerca e playlist)
-│   │   ├── cerca.js           ricerca e ordinamenti
-│   │   ├── regole.js          valutazione delle playlist intelligenti
-│   │   ├── valida.js          controlla catalogo e playlist in lettura: scarta o corregge in memoria
-│   │   ├── dj.js              Camelot/BPM/percorso armonico
-│   │   ├── motori.js          chi suona ogni brano
-│   │   ├── link.js            link intent:// verso NewPipe/Spotify, ricerche esterne
-│   │   ├── coda.js            la coda di riproduzione (voci con chi e quando, avanti/indietro/casuale, accoda/togli)
-│   │   ├── comandi.js         tasto grande, ⏮ ⏭, cosa parte a fine brano
-│   │   ├── sessione.js        la sessione di ascolto: coda + lettore + regole, l'unico punto che decide cosa suona
-│   │   ├── stato.js           lo stato dell'app (catalogo, playlist, filtri, ctx, scheda), l'indice id → brano e le cose calcolate una volta per catalogo
-│   │   ├── playlist-calcolate.js  i brani e il piano di ogni playlist, ricalcolati solo se cambia qualcosa
-│   │   ├── diagnostica.js     registro degli ultimi errori e misure di velocità; rete di sicurezza generale
-│   │   ├── errori.js          gli errori detti a parole, con cosa fare
-│   │   └── generi.js          generi raggruppati per la vista (Tech house, Disco)
-│   ├── dati/                DATI: da dove arrivano e dove vanno
-│   │   ├── github.js          client GitHub Contents API (getFile/getSha/getRaw/putFile)
-│   │   ├── catalogo.js        carica catalogo.json (sha, cache, offline)
-│   │   ├── playlist.js        legge/scrive playlist.json (lock ottimistico)
-│   │   └── file-audio.js      l'audio sul telefono (Cache Storage, id brano → file)
-│   ├── audio/lettore.js     lettore interno: <audio> + Media Session (schermo spento)
-│   └── ui/                  INTERFACCIA: disegna dallo stato e passa i tocchi alla sessione
-│       ├── base.js            aiuti comuni: avvisi, apertura delle app esterne, finestre, schede, campi min–max, chip
-│       ├── dialoghi.js        domande e riepiloghi dell'app (al posto di prompt/confirm del sistema)
-│       ├── aggiornamento.js   service worker e avviso "Versione nuova pronta"
-│       ├── riga-brano.js      la riga di un brano, le liste (un solo ascoltatore per lista) e gli stati vuoti
-│       ├── vista-*.js         una per schermata: avvio (anche caricamento/errore), cerca, generi, playlist, suona, impostazioni, diagnostica
-│       ├── foglio-*.js        scheda del brano, filtri, foglio di una playlist
-│       ├── costruttore-playlist.js   il modulo delle playlist coi filtri
-│       └── azioni-playlist.js        salva, elimina, nuova playlist a mano
-├── strumenti/
-│   ├── esporta.py            genera app-dati/catalogo.json da liste/dati/catalogo.sqlite
-│   ├── prepara.py            procura l'audio delle playlist per il telefono e dell'archivio (M2)
-│   ├── archivio.py           registro, metadati, indice, collegamenti, riallineamento, orfani
-│   ├── valuta.mjs            brani di ogni playlist con le regole dell'app (per prepara.py)
-│   ├── test_prepara.py       test dell'abbinamento su YouTube Music
-│   ├── test_archivio.py      test di metadati, nomi leggibili, fonti
-│   └── test_esporta.py       test della tabella degli id rinominati
-├── test/
-│   ├── *.test.mjs            test Node della logica pura, un file per modulo
-│   ├── fixture.mjs           carica e indicizza il catalogo finto
-│   ├── fixture.json          catalogo finto (nessun dato reale: repo pubblico)
-│   ├── genera-catalogo.mjs   catalogo finto di qualsiasi misura (seme fisso), per velocità e browser
-│   ├── browser/prova.py      prova automatica nel browser: 9 giri sull'app vera, errori compresi (npm run prova)
-│   └── riferimento/          fotografia di partenza del restauro
-└── icons/icon.svg
-```
-
-`app-dati/` (repo separato e **privato**, cartella sorella di questa) contiene
-`catalogo.json` e `playlist.json`: non fa parte di questo repo, non finisce mai
-nel repo pubblico (vedi `.gitignore`).
-
-## Anteprima sul PC (senza GitHub né token)
-
-Serve la cartella `05-hobby/musica/` (così l'app vede anche `app-dati/`):
+## Avviarlo sul PC (tre righe)
 
 ```bash
 cd 05-hobby/musica
 python -m http.server 8000 --bind 127.0.0.1
+# poi apri http://127.0.0.1:8000/app/?dati=../app-dati/catalogo.json
 ```
 
-Apri <http://127.0.0.1:8000/app/?dati=../app-dati/catalogo.json>. Il parametro
-`dati` mette l'app in modalità "url": legge quel file, non chiede il token, e le
-playlist restano **solo in quel browser** (non vanno su GitHub). Sul PC i pulsanti
-di riproduzione aprono YouTube/Spotify/SoundCloud sul web: NewPipe e l'app Spotify
-esistono solo sul telefono. Per una vista da telefono: F12 → Ctrl+Shift+M.
-Per uscire dall'anteprima: Impostazioni → "Esci dall'anteprima".
+Si serve la cartella `05-hobby/musica/` (così l'app vede anche `app-dati/`). Il parametro `dati` mette
+l'app in modalità "anteprima": legge quel file, non chiede il token, e le playlist restano **solo in quel
+browser** (non vanno su GitHub). Sul PC i pulsanti di riproduzione aprono YouTube/Spotify/SoundCloud
+sul web (NewPipe e l'app Spotify esistono solo sul telefono); i file audio si possono importare anche
+da qui, da Altro → Musica sul telefono. Per una vista da telefono: F12 → Ctrl+Shift+M. Per uscire
+dall'anteprima: Impostazioni → «Esci dall'anteprima».
 
-## Dev locale con i dati veri
+Scorciatoie da tastiera (sul PC, mai mentre si scrive in un campo né con una finestra aperta):
+`/` porta alla ricerca, `Spazio` pausa e riprendi, `←` `→` brano precedente e successivo.
 
-Il service worker richiede `localhost` o HTTPS (non `file://`):
+## Provarlo sul telefono via cavo
 
-```bash
-cd 05-hobby/musica/app
-python -m http.server 8000
+Per provare una versione non ancora pubblicata, **senza toccare l'app installata** (file audio, playlist
+e token veri restano intatti): la pagina di prova è su `http://localhost:8000`, un'origine diversa da
+quella vera, quindi con una memoria separata. Su questo telefono `adb reverse` perde le connessioni
+e l'app resta a schermo nero: la versione di prova si serve dal canale DevTools con
+[`../prova-telefono/servi_via_cdp.py`](../prova-telefono/servi_via_cdp.py) (la procedura, con `adb forward`,
+è in testa allo script). Limite: il service worker non si registra, quindi la ricarica senza rete si prova
+sul PC (`npm run prova`). I file audio di prova li carica `../prova-telefono/carica_file.py`.
+
+## Com'è organizzato il codice
+
+Tre strati, con una regola che un test fa rispettare (`test/dipendenze.test.mjs`): **`nucleo/` non importa
+mai da `dati/`, `audio/` o `ui/`, e non usa né la pagina né la rete; `ui/` è l'unico strato che tocca la
+pagina.**
+
+- **`js/nucleo/` — la logica.** Ricerca, filtri, regole delle playlist, coda, motori di riproduzione,
+  artisti, percorso di navigazione: roba pura, che si prova in Node senza browser. Il cuore è la
+  **sessione di ascolto** (`sessione.js`: coda + lettore + regole), l'unico punto da cui passa ogni modifica
+  alla coda; espone comandi e una fotografia di soli dati (`stato()`), ed emette eventi.
+- **`js/dati/` e `js/audio/` — i dati e il suono.** Da dove arrivano catalogo e playlist (GitHub Contents
+  API, cache, offline), dove sta l'audio sul telefono (Cache Storage), e il lettore `<audio>` con la
+  Media Session (comandi dalla schermata di blocco).
+- **`js/ui/` — l'interfaccia.** Una vista per schermata, che disegna dallo stato e passa i tocchi alla sessione
+  (qui non si decide cosa suonare); i pezzi hi-fi (giradischi, display, manopola, scala) sono in `ui/hifi/`.
+  `main.js` crea e collega tutto e non disegna nulla.
+
+```
+app/
+├── index.html, manifest.webmanifest, sw.js   pagina unica, manifest PWA, service worker (shell offline)
+├── css/          base.css (i "gettoni": colori, misure), componenti.css (i pezzi), schermate.css (disposizione)
+├── fonts/        DSEG7, Doto, Barlow Condensed (offline, licenze in LICENZE.md)
+├── js/
+│   ├── main.js, config.js, memoria.js        avvio · impostazioni, tempi, VERSIONE · scrittura sicura in localStorage
+│   ├── nucleo/   testo, casuale, filtri, cerca, regole, valida, dj, motori, link, generi, comandi, coda,
+│   │             sessione, stato, playlist-calcolate, artisti, etichette-filtri, percorso, scorciatoie,
+│   │             volume, diagnostica, errori
+│   ├── dati/     github, catalogo, playlist, file-audio
+│   ├── audio/    lettore
+│   └── ui/       base, finestre, dialoghi, navigazione, tastiera, aggiornamento, riga-brano, menu-coda,
+│                 suggerimenti, vista-* (avvio, cerca, generi, artisti, playlist, suona, impostazioni, diagnostica),
+│                 foglio-* (brano, filtri, playlist), costruttore-playlist, azioni-playlist, mini-lettore, hifi/
+├── strumenti/    esporta.py, prepara.py, archivio.py, valuta.mjs (+ i test Python): i pezzi che girano sul PC
+├── test/         un file di test per modulo (*.test.mjs), fixture.json (catalogo INVENTATO), browser/ (prove nel browser)
+├── anteprima/    pagine di anteprima dello stile (non fanno parte dell'app)
+└── package.json, biome.json, pyproject.toml, tsconfig.json   gli attrezzi di sviluppo
 ```
 
-Apri `http://localhost:8000` e usa il token nell'onboarding.
+`app-dati/` (repo separato e **privato**, cartella sorella di questa) contiene `catalogo.json` e
+`playlist.json`: non fa parte di questo repo e non finisce mai nel repo pubblico (vedi `.gitignore`).
 
-### Test della logica
+## Comandi
 
 ```bash
-npm install                   # una volta sola: Biome (solo attrezzi di sviluppo)
+npm install                   # una volta sola: Biome, TypeScript (solo attrezzi di sviluppo)
 python -m pip install ruff    # una volta sola: il controllo dei file Python
-npm run verifica              # lint (Biome, Ruff) + tutti i test JavaScript e Python
-npm test                      # solo i test JavaScript (node:test)
-npm run test:py               # solo i test Python
-npm run prova                 # prova nel browser (serve Chrome e `pip install playwright`)
+npm run verifica              # TUTTO: lint (Biome, Ruff) + tipi + test JavaScript (492) + test Python (50)
+npm run formatta              # formatta il codice (Biome, Ruff)
+npm test                      # solo i test JavaScript (node:test, dati inventati)
+npm run prova                 # 13 giri nel browser sull'app vera (serve Chrome e `pip install playwright`)
+npm run prova:componenti      # prova la pagina dei componenti hi-fi
 ```
 
-`test/fixture.json` è un mini-catalogo **completamente inventato**: nessun dato
-personale, perché questo repo è pubblico.
+Prima di ogni pubblicazione: `npm run verifica` e `npm run prova` verdi. Dopo aver toccato `valuta.mjs` o
+`prepara.py`: `python strumenti/prepara.py --prova` (stesse playlist di prima). `test/fixture.json` è un
+mini-catalogo **completamente inventato**: nessun dato personale, perché questo repo è pubblico.
+Su GitHub gira da solo lo stesso controllo (`.github/workflows/verifica.yml`) a ogni push.
+
+## Come si pubblica
+
+Il sorgente **non contiene segreti né dati**, quindi sta in un repo **pubblico**
+(`Trava91/musica-app`, GitHub Pages: <https://trava91.github.io/musica-app/>). Creare il repo, fare un
+push e attivare Pages sono azioni esterne: **chiedi sempre conferma a Nicolò prima**.
+
+1. Alza il numero di versione **in due posti**: `CACHE = "jukebox-vN"` in [`sw.js`](sw.js) e `VERSIONE` in
+   [`js/config.js`](js/config.js) (un test controlla che coincidano). Se hai aggiunto o tolto file in `js/`,
+   `css/`, `fonts/` o `icons/`, aggiorna anche l'elenco `SHELL` di `sw.js` (un test pretende che sia completo).
+2. `npm run verifica` e `npm run prova`. Unisci il branch in `main` (`git merge --no-ff`, così si annulla con
+   `git revert -m 1`) e `git push origin main`: Pages ripubblica da solo.
+3. Sul telefono apri l'app: **Impostazioni → Musica sul telefono deve dire lo stesso numero di brani di prima**,
+   i dati devono caricarsi da GitHub col token, e una playlist deve suonare 5 minuti a schermo spento.
+   Se qualcosa non va: `git revert` dell'unione e nuovo push.
+4. La prima volta: sul telefono apri l'URL → «Installa app» (o «Aggiungi a Home») → incolla il token.
+
+## Cosa non toccare (invarianti)
+
+Sul telefono ci sono già migliaia di file audio importati e il token. Queste «chiavi» devono restare
+**identiche**, altrimenti l'app installata perde tutto e va reimportata (li fa rispettare
+`test/contratti.test.mjs`):
+
+| Cosa | Valore |
+|---|---|
+| Chiavi in `localStorage` | `jukebox.token`, `jukebox.dati.tipo`, `.url`, `.owner`, `.repo`, `.file`, `jukebox.dati.sha`, `jukebox.motori`, `jukebox.usaNewPipe`, `jukebox.soloJukebox`, `jukebox.volume`, `jukebox.file.indice`, `jukebox.playlist.cache`, `jukebox.playlist.sha` |
+| Archivio audio | Cache Storage `jukebox-audio`, chiave `audio/<id>` |
+| Copia del catalogo | Cache Storage `jukebox-dati`, chiave `cache-dati/catalogo.json` |
+| Cache dell'app | nomi `jukebox-vN`; la pulizia cancella **solo** i nomi che iniziano per `jukebox-v` |
+| Formato dei dati | contratto v1 di `catalogo.json` e `playlist.json` (vedi «Contratto dati») |
+| Nome dei file audio | `<12 cifre esadecimali>.<estensione>` |
+| Uscita di `strumenti/valuta.mjs` | la usa `prepara.py` (skill `/archivio-musica`) |
+| Manifest | `start_url` e `scope` = `./` |
+| Origine condivisa | l'app burocrazia vive sullo stesso indirizzo `trava91.github.io`: **mai `localStorage.clear()`**, mai chiavi senza il prefisso `jukebox.` |
+
+## Dove agganciare la social radio
+
+Non c'è ancora, ma il codice è fatto per accoglierla senza rifacimenti:
+
+- **`nucleo/` non conosce schermo né rete**: la coda e le sue regole possono girare identiche su un server.
+- **`sessione.js` è l'unico punto da cui passa ogni modifica alla coda**, con eventi in uscita: una «stanza» è una
+  sessione condivisa i cui comandi arrivano dalla rete invece che dal dito. Ogni voce della coda ricorda **chi**
+  l'ha messa e **quando** (`accoda(brano, { da })`: oggi sempre `"io"`): lì stanno i limiti per utente.
+- **Comandi e stato fatti di soli dati** (id, numeri, testi): si spediscono in rete e si salvano in un database così
+  come sono (`sessione.stato()`).
+- **`dati/` come «porte»**: sostituire GitHub con un database condiviso tocca solo quella cartella.
+- **La scala del sintonizzatore** (`ui/hifi/scala.js`) riceve una lista generica di «stazioni»: oggi generi e
+  playlist, domani le stanze. «Metti in coda» è già il gesto base della radio.
+
+Prerequisiti fuori dal codice: id dei brani stabili (previsto in `liste/motore/catalogo.py` a revisione del catalogo
+chiusa) e le licenze per trasmettere al pubblico (SIAE/SCF, già annotato nel contesto musica).
 
 ## Come rigenerare i dati (`catalogo.json`)
 
@@ -155,23 +188,6 @@ il token → *Revoke*.
 
 > Sicurezza: dati a bassa sensibilità (gusti musicali, non documenti). Il rischio
 > reale è l'accesso fisico al telefono sbloccato. La mitigazione è la **revoca**.
-
-## Deploy su GitHub Pages
-
-Il sorgente di questo repo **non contiene segreti né dati**, quindi sta in un
-repo **pubblico** (Pages gratis). Prima di fare qualsiasi push, chiedi conferma
-a Nicolò (creazione repo, push e attivazione di Pages sono azioni esterne).
-
-1. Crea il repo pubblico `Trava91/musica-app` e collega questa cartella
-   (`05-hobby/musica/app/`) come suo repo Git.
-2. `git push` su `main`.
-3. **Settings → Pages** → *Deploy from a branch* → `main` / `root` → Save.
-4. URL: `https://trava91.github.io/musica-app/`.
-5. Sul telefono apri l'URL → **Installa app** (o "Aggiungi a Home") → incolla il PAT.
-
-Aggiornamenti: `git push` → Pages rideploya. Per invalidare la cache dell'app
-shell, **bump** `CACHE = "jukebox-vN"` in [`sw.js`](sw.js) e lo stesso numero in
-`VERSIONE` di [`js/config.js`](js/config.js) (un test controlla che coincidano).
 
 ## Musica sul telefono (M2): le playlist vanno avanti da sole
 

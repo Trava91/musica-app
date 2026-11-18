@@ -65,6 +65,14 @@ DISCO = """() => {
 IN_MOVIMENTO = "() => document.getAnimations().filter((a) => a.playState === 'running').map((a) => a.animationName || a.constructor.name)"
 
 
+class Server(ThreadingHTTPServer):
+    """Il server di prova. La coda di attesa predefinita (5 connessioni) su Windows non regge il browser,
+    che carica decine di moduli insieme: le richieste in più venivano rifiutate (ERR_CONNECTION_REFUSED),
+    e la prova falliva a caso. Con una coda lunga non succede."""
+
+    request_queue_size = 256
+
+
 class Gestore(SimpleHTTPRequestHandler):
     def log_message(self, *argomenti):  # niente rumore in console
         pass
@@ -312,7 +320,7 @@ def main() -> int:
     argomenti.add_argument("--foto", type=Path, help="cartella dove salvare le schermate (telefono e PC)")
     opzioni = argomenti.parse_args()
 
-    server = ThreadingHTTPServer(("127.0.0.1", 0), partial(Gestore, directory=str(APP)))
+    server = Server(("127.0.0.1", 0), partial(Gestore, directory=str(APP)))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     base = f"http://127.0.0.1:{server.server_address[1]}"
     problemi: list[str] = []

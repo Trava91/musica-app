@@ -9,6 +9,7 @@
 
 import { Percorso } from "../nucleo/percorso.js";
 import { $, $$ } from "./base.js";
+import { nascondi } from "./finestre.js";
 
 export function collegaNavigazione(app) {
   const percorso = new Percorso();
@@ -111,6 +112,8 @@ function chiudiFinestraDaIndietro(id) {
   const velo = document.getElementById(id);
   if (!velo || velo.hidden) return;
   if (velo.hasAttribute("data-dialogo")) {
-    $("#dialogo", velo)?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-  } else velo.hidden = true;
+    $("#dialogo", velo)?.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }),
+    );
+  } else nascondi(velo);
 }

@@ -82,10 +82,10 @@ function stazioniGeneri(app) {
       id: String(i),
       nome: v.nome,
       dettaglio: numero(conta),
-      descrizione: `${v.nome}, ${numero(conta)} dischi`,
+      descrizione: `${v.nome} ${numero(conta)} dischi`,
     }));
   return [
-    { id: "tutti", nome: "Tutti", dettaglio: numero(totale), descrizione: `Tutti i generi, ${numero(totale)} dischi` },
+    { id: "tutti", nome: "Tutti", dettaglio: numero(totale), descrizione: `Tutti ${numero(totale)} dischi` },
     ...generi,
   ];
 }

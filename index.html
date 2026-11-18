@@ -29,7 +29,7 @@
 <body>
 
   <!-- ================= PRIMO AVVIO (nessun token) ================= -->
-  <section id="onboarding" class="hf-primo" hidden>
+  <main id="onboarding" class="hf-primo" hidden>
     <div class="hf-modulo">
       <div class="hf-frontale">
         <div class="hf-targhetta"><h1 class="hf-marchio">Jukebox</h1><span class="hf-dettaglio">Primo avvio</span></div>
@@ -64,15 +64,16 @@
         </form>
       </div>
     </div>
-  </section>
+  </main>
 
   <!-- ================= APP ================= -->
-  <div id="app" class="hf-app" data-vista="sezioni" hidden>
+  <main id="app" class="hf-app" data-vista="sezioni" hidden>
+    <h1 class="hf-sr">Jukebox</h1>
     <!-- ---- Avvio: caricamento, errore (Riprova) ---- -->
     <section id="avvio" class="hf-avvio" hidden>
       <div class="hf-modulo">
         <div class="hf-frontale">
-          <div class="hf-targhetta"><h1 class="hf-marchio">Jukebox</h1><span class="hf-dettaglio">Avvio</span></div>
+          <div class="hf-targhetta"><h2 class="hf-marchio">Jukebox</h2><span class="hf-dettaglio">Avvio</span></div>
           <div class="hf-vfd hf-avvio-vetro">
             <div id="avvio-ruota" class="hf-ruota" aria-hidden="true"></div>
             <p id="avvio-testo" class="hf-avvio-testo" role="status"></p>
@@ -190,13 +191,23 @@
       </div>
     </section>
 
-    <main id="schermi" class="hf-schermi">
+    <!-- ---- Le sezioni: il selettore, come gli ingressi di un amplificatore. Sta prima delle sezioni nella
+         pagina (e sotto o accanto sullo schermo, lo decide la griglia): così Tab segue l'ordine che si vede. ---- -->
+    <nav class="hf-barra hf-selettore" aria-label="Sezioni">
+      <button class="hf-tasto hf-selettore-tasto" data-tab="cerca" type="button"><span class="hf-led"></span>Cerca</button>
+      <button class="hf-tasto hf-selettore-tasto" data-tab="generi" type="button"><span class="hf-led"></span>Generi</button>
+      <button class="hf-tasto hf-selettore-tasto" data-tab="playlist" type="button"><span class="hf-led"></span>Playlist</button>
+      <button class="hf-tasto hf-selettore-tasto" data-tab="riproduzione" type="button"><span class="hf-led"></span>Suona</button>
+      <button class="hf-tasto hf-selettore-tasto" data-tab="impostazioni" type="button"><span class="hf-led"></span>Altro</button>
+    </nav>
+
+    <div id="schermi" class="hf-schermi">
 
       <!-- ---- Cerca: il campo nel frontalino, la sintonia dei generi, i risultati nel cassetto ---- -->
       <section class="hf-schermo" data-schermo="cerca" aria-labelledby="t-cerca">
         <section class="hf-modulo" aria-label="Ricerca">
           <div class="hf-frontale hf-ricerca">
-            <div class="hf-targhetta"><h1 class="hf-marchio" id="t-cerca">Jukebox</h1><span class="hf-dettaglio" id="arco-sotto"></span></div>
+            <div class="hf-targhetta"><h2 class="hf-marchio" id="t-cerca">Jukebox</h2><span class="hf-dettaglio" id="arco-sotto"></span></div>
             <div>
               <label for="cerca-testo" class="hf-etichetta-campo">Cerca nel jukebox</label>
               <input id="cerca-testo" class="hf-campo" type="search" placeholder="Artista, titolo, genere…" autocomplete="off">
@@ -343,7 +354,7 @@
         <p class="hf-sul-rack" id="imp-versione"></p>
       </section>
 
-    </main>
+    </div>
 
     <!-- ---- Mini lettore (telefono, fuori da Suona): il display piccolo apre Suona ---- -->
     <div id="mini-lettore" class="hf-mini" hidden>
@@ -357,15 +368,7 @@
       </button>
     </div>
 
-    <!-- ---- Le sezioni: il selettore, come gli ingressi di un amplificatore ---- -->
-    <nav class="hf-barra hf-selettore" aria-label="Sezioni">
-      <button class="hf-tasto hf-selettore-tasto" data-tab="cerca" type="button"><span class="hf-led"></span>Cerca</button>
-      <button class="hf-tasto hf-selettore-tasto" data-tab="generi" type="button"><span class="hf-led"></span>Generi</button>
-      <button class="hf-tasto hf-selettore-tasto" data-tab="playlist" type="button"><span class="hf-led"></span>Playlist</button>
-      <button class="hf-tasto hf-selettore-tasto" data-tab="riproduzione" type="button"><span class="hf-led"></span>Suona</button>
-      <button class="hf-tasto hf-selettore-tasto" data-tab="impostazioni" type="button"><span class="hf-led"></span>Altro</button>
-    </nav>
-  </div>
+  </main>
 
   <!-- ================= FINESTRE (il contenuto lo scrivono le viste) ================= -->
   <div id="foglio-overlay" class="hf-velo" hidden>
@@ -385,7 +388,11 @@
     <div id="dialogo" class="hf-finestra" role="dialog" aria-modal="true" aria-labelledby="dialogo-titolo"></div>
   </div>
 
-  <div id="toast" class="hf-avviso" role="status" hidden></div>
+  <!-- Gli avvisi li sente anche chi legge lo schermo: due aree sempre nella pagina (una cortese, una per gli
+       errori), fuori vista. Il riquadro in basso è solo da guardare (e ha il tasto, se c'è qualcosa da fare). -->
+  <div id="annuncio" class="hf-sr" role="status"></div>
+  <div id="annuncio-errore" class="hf-sr" role="alert"></div>
+  <div id="toast" class="hf-avviso" hidden></div>
   <div id="spinner" class="hf-attesa" hidden></div>
 
   <script type="module" src="js/main.js"></script>

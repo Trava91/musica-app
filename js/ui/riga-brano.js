@@ -77,10 +77,11 @@ function rigaBrano(b, n, d, { play = true, nellaCoda = false } = {}) {
       : `<button class="hf-tasto hf-piccolo hf-vano-seconda" type="button" data-azione="coda" aria-label="${esc(`Metti ${titoloCompleto(b)} in coda`)}">${SVG_PIU}</button>`;
   return `<li class="${classi}" data-id="${esc(b.id)}">
       <span class="hf-vano-num" aria-hidden="true">${n}</span>
-      <button class="hf-vano-corpo" type="button" aria-label="${esc(`${titoloCompleto(b)} di ${b.a || "artista sconosciuto"}${file ? ", sul telefono" : ""}`)}: apri la scheda">
+      <button class="hf-vano-corpo" type="button">
         <span class="hf-vano-titolo">${esc(titoloCompleto(b))}</span>
         <span class="hf-vano-artista">${esc(sottotitolo(b))}</span>
         ${meta ? `<span class="hf-vano-nota">${esc(meta)}</span>` : ""}
+        <span class="hf-sr">${file ? ". Sul telefono" : ""}. Apri la scheda</span>
       </button>
       <span class="hf-vano-dati">${file ? `<span class="hf-vano-file" aria-hidden="true">FILE</span>` : ""}${b.d ? `<span class="hf-vano-durata">${durataFmt(b.d)}</span>` : ""}</span>
       ${tasto}${seconda}
