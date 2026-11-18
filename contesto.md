@@ -83,7 +83,7 @@ piano (aggancio a `aggiorna.py`), e solo a revisione chiusa.
 
 ## Stato
 
-- **Restauro in corso (dal 16/11/2026)** (piano
+- **Restauro (16–18/11/2026; Fasi 0–11 fatte, resta la pubblicazione R2)** (piano
   [`plans/2026-11-14-restauro-jukebox.md`](../../../plans/2026-11-14-restauro-jukebox.md)):
   la prima pubblicazione (R1, versione 16: codice nuovo, aspetto invariato) è in `main` e online
   dal 16/11/2026; il lavoro sullo stile riparte sul branch `restauro-stile` fino a R2. La cartella
@@ -108,6 +108,13 @@ piano (aggancio a `aggiorna.py`), e solo a revisione chiusa.
   di prima (`nucleo/percorso.js` + `ui/navigazione.js`, che ricorda anche dove era scesa ogni
   lista); scorciatoie da tastiera sul PC (`nucleo/scorciatoie.js` + `ui/tastiera.js`): `/`
   ricerca, Spazio pausa, ← → brano.
+  **Fase 11 (18/11/2026):** accessibilità, documentazione. Ogni finestra si apre e si chiude da
+  `ui/finestre.js`: il fuoco entra, dietro tutto è inerte, Tab gira dentro, Esc chiude, il fuoco
+  torna al tasto di partenza. Gli avvisi arrivano anche a due aree per gli screen reader
+  (`#annuncio`, `#annuncio-errore`). Un solo `main` (l'app) e un solo `h1`; i nomi accessibili
+  contengono la scritta visibile; la barra delle sezioni sta prima delle sezioni nella pagina, così
+  Tab segue il layout sul PC. **Lighthouse accessibilità 100 e best practice 100** (telefono e PC);
+  axe-core 0 violazioni su 28 schermate e finestre. README riscritto.
 - **M1 (28/09/2026):** ricerca e filtri, playlist coi filtri e a mano, motori,
   link verso NewPipe/Spotify, coda, 5 schede.
 - **Estetica (01–02/10/2026):** jukebox anni '50 in blu notte con neon, dal
@@ -129,7 +136,7 @@ piano (aggancio a `aggiorna.py`), e solo a revisione chiusa.
   appaiono spenti e un ▶ su uno di loro parte dal prossimo della lista che c'è.
 - **Test:** 492 Node (`test/*.test.mjs`, dati inventati) + 50 Python
   (`strumenti/test_*.py`); `npm run verifica` lancia lint, tipi e tutti i test;
-  `npm run prova` fa 12 giri nel browser sull'app vera, errori compresi, giradischi, disposizione a
+  `npm run prova` fa 13 giri nel browser sull'app vera, errori compresi, giradischi, disposizione a
   320/360/768/1.280 px, artisti, coda, «indietro» e tastiera (dal 16/11/2026, restauro);
   `npm run prova:componenti` prova nel browser la pagina dei componenti hi-fi (dal 17/11/2026).
 - **Errori e velocità (restauro, fasi 6-7, 16/11/2026):** la Diagnostica (Impostazioni) elenca gli
