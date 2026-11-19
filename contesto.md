@@ -83,12 +83,13 @@ piano (aggancio a `aggiorna.py`), e solo a revisione chiusa.
 
 ## Stato
 
-- **Restauro (16–18/11/2026; Fasi 0–11 fatte, resta la pubblicazione R2)** (piano
+- **Restauro (16–19/11/2026; finito e pubblicato)** (piano
   [`plans/2026-11-14-restauro-jukebox.md`](../../../plans/2026-11-14-restauro-jukebox.md)):
-  la prima pubblicazione (R1, versione 16: codice nuovo, aspetto invariato) è in `main` e online
-  dal 16/11/2026; il lavoro sullo stile riparte sul branch `restauro-stile` fino a R2. La cartella
-  è su quel branch, quindi `prepara.py` e `valuta.mjs` girano da lì; il controllo che
-  tutto torni è `python strumenti/prepara.py --prova` (stesse playlist di prima).
+  due pubblicazioni, entrambe in `main` e online: R1 (versione 16: codice nuovo, aspetto invariato)
+  il 16/11/2026 e **R2 (versione 18: stile hi-fi, artisti, coda, «indietro», accessibilità) il
+  19/11/2026**, dopo la prova via cavo sul telefono. La cartella è su `main` (i branch `restauro` e
+  `restauro-stile` restano solo in locale); `prepara.py` e `valuta.mjs` girano da lì, e il controllo
+  che tutto torni è `python strumenti/prepara.py --prova` (stesse playlist di prima).
   **Fase 8 (17/11/2026):** i pezzi dello stile hi-fi in `css/base.css` (gettoni),
   `css/componenti.css` e `js/ui/hifi/` (tutto col prefisso `hf-`), visibili in
   `anteprima/componenti.html`. Il volume della manopola passa da `sessione.impostaVolume()` e si
@@ -119,7 +120,7 @@ piano (aggancio a `aggiorna.py`), e solo a revisione chiusa.
   link verso NewPipe/Spotify, coda, 5 schede.
 - **Estetica (01–02/10/2026):** jukebox anni '50 in blu notte con neon, dal
   disegno su tela Claude Design. "Va bene per iniziare, la miglioriamo più avanti":
-  sostituita dallo stile hi-fi anni '90/2000 col restauro (Fase 9, online con R2). Generi
+  sostituita dallo stile hi-fi anni '90/2000 col restauro (Fase 9, online dal 19/11/2026 con R2). Generi
   raggruppati solo nella vista (`js/nucleo/generi.js`): house/techno → "Tech house", disco house +
   disco/funk/soul → "Disco".
 - **Online e installata (02/10/2026)** sul telefono di Nicolò (Oppo, Android
