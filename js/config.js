@@ -55,7 +55,7 @@ export { MAX_ERRORI } from "./nucleo/diagnostica.js"; // quanti errori tiene la 
 
 // Il numero della versione dell'app: dev'essere lo stesso di "jukebox-vN" in sw.js (lo controlla
 // test/contratti.test.mjs). Si alza a ogni pubblicazione, in tutti e due i posti.
-export const VERSIONE = 17;
+export const VERSIONE = 18;
 
 // I tipi di versione di un brano (campo k del catalogo), nell'ordine in cui si mostrano.
 export const TIPI_VERSIONE = ["originale", "remix", "edit", "extended", "live", "set"];
