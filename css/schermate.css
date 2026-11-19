@@ -71,7 +71,12 @@ p {
 
 /* ================================================================ l'app e il rack ==== */
 
+/* L'app occupa esattamente lo schermo visibile: fissata ai quattro bordi, così la pagina non scorre
+   mai e scorrono solo le sezioni. Non 100dvh: su Chrome 157 Android (Oppo, 19/11/2026) vale 760 px
+   con 704 visibili (conta anche i tasti di Android) e la barra finiva sotto lo schermo. */
 .hf-app {
+  position: fixed;
+  inset: 0;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto auto;
   grid-template-areas:
@@ -79,7 +84,6 @@ p {
     "mini"
     "barra";
   max-width: 1680px;
-  height: 100dvh;
   margin: 0 auto;
 }
 
@@ -732,6 +736,11 @@ p {
   justify-content: center;
   min-height: 100dvh;
   padding: 16px 8px;
+}
+
+/* L'avvio sta dentro l'app (già alta quanto lo schermo): niente 100dvh, vedi .hf-app. */
+.hf-avvio {
+  min-height: 100%;
 }
 
 .hf-primo > .hf-modulo,

@@ -1734,7 +1734,7 @@ textarea.hf-campo {
   flex-direction: column;
   box-sizing: border-box;
   width: min(100%, 520px);
-  max-height: calc(100dvh - 24px);
+  max-height: 100%; /* il velo è fissato allo schermo visibile (100dvh può essere più alto) */
   border-radius: var(--hf-raggio-modulo);
   padding: 3px 7px 7px;
   background: var(--hf-cornice);
