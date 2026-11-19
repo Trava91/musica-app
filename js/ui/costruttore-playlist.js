@@ -10,6 +10,7 @@ import {
   $$,
   apriFinestra,
   campoMinMax,
+  casellaScelta,
   chiudiFinestra,
   chipGeneri,
   chipPiattaforme,
@@ -19,6 +20,7 @@ import {
   leggiElenco,
   leggiMinMax,
   mostraAvviso,
+  testaFinestra,
 } from "./base.js";
 import { salvaPlaylist } from "./azioni-playlist.js";
 
@@ -47,50 +49,51 @@ export function apriCostruttore(app, pEsistente) {
   const { voci } = app.stato.leggi();
   const p = pEsistente ? JSON.parse(JSON.stringify(pEsistente)) : nuovaVuota();
   const r = p.regole;
-  const tipoChip = (k) =>
-    `<label class="chip"><input type="checkbox" data-campo="tipi" value="${k}" ${r.tipi?.includes(k) ? "checked" : ""}><span>${esc(k)}</span></label>`;
+  const interruttore = (id, acceso, testo) =>
+    `<div class="hf-campo-riga"><label class="hf-interruttore"><input id="${id}" type="checkbox" ${acceso ? "checked" : ""}><span class="hf-levetta" aria-hidden="true"></span><span>${testo}</span></label></div>`;
 
-  el.innerHTML = `
-      <div class="foglio-intestazione"><h2>${pEsistente ? "Modifica playlist" : "Nuova playlist intelligente"}</h2><button class="foglio-chiudi" id="cost-chiudi">✕</button></div>
+  el.innerHTML = `<div class="hf-frontale">
+      ${testaFinestra("cost-titolo", pEsistente ? "Modifica playlist" : "Nuova playlist coi filtri", "cost-chiudi")}
+      <div class="hf-finestra-corpo">
+        <div class="hf-campo-riga"><label class="hf-etichetta-campo" for="cost-nome">Nome</label><input id="cost-nome" class="hf-campo" type="text" value="${esc(p.nome)}" placeholder="Es. Tech house per correre"></div>
 
-      <div class="campo-riga"><label for="cost-nome">Nome</label><input id="cost-nome" type="text" value="${esc(p.nome)}" placeholder="Es. Tech house per correre"></div>
+        <div class="hf-campo-riga"><span class="hf-etichetta-campo">Generi</span><div class="hf-scelte" id="cost-macro">${chipGeneri(voci, r.macro)}</div></div>
 
-      <div class="campo-riga"><span class="etichetta">Generi</span><div class="chips" id="cost-macro">${chipGeneri(voci, r.macro)}</div></div>
+        <div class="hf-campo-riga"><span class="hf-etichetta-campo">Piattaforme</span><div class="hf-scelte">${chipPiattaforme(r.piattaforme)}</div></div>
 
-      <div class="campo-riga"><span class="etichetta">Piattaforme</span><div class="chips">${chipPiattaforme(r.piattaforme)}</div></div>
+        <div class="hf-campo-riga"><span class="hf-etichetta-campo">Tipo di versione (nessuno = tutte tranne i set)</span><div class="hf-scelte">${TIPI_VERSIONE.map((k) => casellaScelta("tipi", k, k, r.tipi?.includes(k))).join("")}</div></div>
 
-      <div class="campo-riga"><span class="etichetta">Tipo di versione (vuoto = tutte tranne i set)</span><div class="chips">${TIPI_VERSIONE.map(tipoChip).join("")}</div></div>
+        <div class="hf-campo-riga"><label class="hf-etichetta-campo" for="cost-testo">Testo libero</label><input id="cost-testo" class="hf-campo" type="text" value="${esc(r.testo || "")}" placeholder="Cerca dentro artista, titolo, generi…"></div>
 
-      <div class="campo-riga"><label for="cost-testo">Testo libero</label><input id="cost-testo" type="text" value="${esc(r.testo || "")}" placeholder="Cerca dentro artista, titolo, generi…"></div>
+        ${campoMinMax("cost-bpm", "BPM", r.bpm)}
 
-      ${campoMinMax("cost-bpm", "BPM", r.bpm)}
+        ${campoMinMax("cost-anno", "Anno", r.anno)}
 
-      ${campoMinMax("cost-anno", "Anno", r.anno)}
+        ${campoMinMax("cost-en", "Energia (0–1)", r.energia, 'step="0.05" min="0" max="1"')}
 
-      ${campoMinMax("cost-en", "Energia (0–1)", r.energia, 'step="0.05" min="0" max="1"')}
+        <div class="hf-campo-riga"><label class="hf-etichetta-campo" for="cost-camelot">Tonalità Camelot (es. 8A, 8B)</label><input id="cost-camelot" class="hf-campo" type="text" value="${esc((r.camelot || []).join(", "))}" placeholder="separate da virgola"></div>
 
-      <div class="campo-riga"><label for="cost-camelot">Tonalità Camelot (es. 8A, 8B)</label><input id="cost-camelot" type="text" value="${esc((r.camelot || []).join(", "))}" placeholder="separate da virgola"></div>
+        <div class="hf-campo-riga"><label class="hf-etichetta-campo" for="cost-artisti">Solo questi artisti (uno per riga)</label><textarea id="cost-artisti" class="hf-campo" rows="2" placeholder="Un artista per riga">${esc((r.artisti || []).join("\n"))}</textarea></div>
+        <div class="hf-campo-riga"><label class="hf-etichetta-campo" for="cost-escludi">Escludi questi artisti (uno per riga)</label><textarea id="cost-escludi" class="hf-campo" rows="2" placeholder="Un artista per riga">${esc((r.escludiArtisti || []).join("\n"))}</textarea></div>
 
-      <div class="campo-riga"><label for="cost-artisti">Solo questi artisti (uno per riga)</label><textarea id="cost-artisti" rows="2" placeholder="Un artista per riga">${esc((r.artisti || []).join("\n"))}</textarea></div>
-      <div class="campo-riga"><label for="cost-escludi">Escludi questi artisti (uno per riga)</label><textarea id="cost-escludi" rows="2" placeholder="Un artista per riga">${esc((r.escludiArtisti || []).join("\n"))}</textarea></div>
+        ${interruttore("cost-solo-scelti", r.soloScelti !== false, "Solo brani scelti da te (escludi l'esplorazione)")}
+        ${interruttore("cost-solo-schermo", r.soloSchermoSpento, "Solo brani ascoltabili a schermo spento")}
 
-      <div class="campo-riga"><label class="switch"><input id="cost-solo-scelti" type="checkbox" ${r.soloScelti !== false ? "checked" : ""}> Solo brani scelti da te (escludi l'esplorazione)</label></div>
-      <div class="campo-riga"><label class="switch"><input id="cost-solo-schermo" type="checkbox" ${r.soloSchermoSpento ? "checked" : ""}> Solo brani ascoltabili a schermo spento</label></div>
+        <div class="hf-campo-riga">
+          <label class="hf-etichetta-campo" for="cost-ordine">Ordine</label>
+          <select id="cost-ordine" class="hf-menu">
+            ${ORDINI.map(([v, nome]) => `<option value="${v}" ${p.ordine === v ? "selected" : ""}>${nome}</option>`).join("\n            ")}
+          </select>
+        </div>
+        <div class="hf-campo-riga"><label class="hf-etichetta-campo" for="cost-limite">Limite di brani (vuoto = nessuno)</label><input id="cost-limite" class="hf-campo hf-corto" type="number" min="1" value="${p.limite ?? ""}"></div>
 
-      <div class="campo-riga">
-        <label for="cost-ordine">Ordine</label>
-        <select id="cost-ordine">
-          ${ORDINI.map(([v, nome]) => `<option value="${v}" ${p.ordine === v ? "selected" : ""}>${nome}</option>`).join("\n          ")}
-        </select>
+        <div class="hf-vfd hf-conteggio"><div class="hf-vfd-riga" id="cost-conteggio">…</div></div>
       </div>
-      <div class="campo-riga"><label for="cost-limite">Limite di brani (vuoto = nessuno)</label><input id="cost-limite" type="number" min="1" value="${p.limite ?? ""}"></div>
-
-      <div class="conteggio-live" id="cost-conteggio">…</div>
-      <div class="azioni-riga">
-        <button class="btn-primary" id="cost-salva">Salva</button>
-        <button class="btn-secondary" id="cost-annulla">Annulla</button>
+      <div class="hf-finestra-azioni">
+        <button class="hf-tasto" type="button" id="cost-annulla">Annulla</button>
+        <button class="hf-tasto hf-principale" type="button" id="cost-salva">Salva</button>
       </div>
-    `;
+    </div>`;
 
   const righe = (id) =>
     $(id, el)

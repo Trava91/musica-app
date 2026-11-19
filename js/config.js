@@ -17,6 +17,7 @@ const LS = {
   motori: "jukebox.motori", // ordine di preferenza dei motori di riproduzione
   usaNewPipe: "jukebox.usaNewPipe",
   soloJukebox: "jukebox.soloJukebox",
+  volume: "jukebox.volume", // la posizione della manopola del volume, da 0 a 1 (dal restauro, Fase 8)
 };
 
 const DEFAULT = {
@@ -28,6 +29,7 @@ const DEFAULT = {
 
 import { scrivi } from "./memoria.js";
 import { MOTORI_DEFAULT } from "./nucleo/motori.js";
+import { limitaVolume } from "./nucleo/volume.js";
 
 // --- Tempi e soglie (prima sparsi nei file) -----------------------------------------------------
 export const ATTESA_RICERCA_MS = 120; // dopo l'ultimo tasto, prima di rifare la ricerca
@@ -53,7 +55,7 @@ export { MAX_ERRORI } from "./nucleo/diagnostica.js"; // quanti errori tiene la 
 
 // Il numero della versione dell'app: dev'essere lo stesso di "jukebox-vN" in sw.js (lo controlla
 // test/contratti.test.mjs). Si alza a ogni pubblicazione, in tutti e due i posti.
-export const VERSIONE = 16;
+export const VERSIONE = 18;
 
 // I tipi di versione di un brano (campo k del catalogo), nell'ordine in cui si mostrano.
 export const TIPI_VERSIONE = ["originale", "remix", "edit", "extended", "live", "set"];
@@ -123,4 +125,15 @@ export function leggiPreferenzaSoloJukebox() {
 
 export function salvaPreferenzaSoloJukebox(on) {
   scrivi(LS.soloJukebox, on ? "1" : "0");
+}
+
+// Il volume della manopola (da 0 a 1), ricordato tra un avvio e l'altro. Mai toccato: pieno.
+/** @param {{ getItem: (chiave: string) => string | null }} [memoria] */
+export function leggiPreferenzaVolume(memoria = localStorage) {
+  return limitaVolume(Number.parseFloat(memoria.getItem(LS.volume) ?? ""));
+}
+
+/** @param {number} v @param {{ setItem: (chiave: string, valore: string) => void }} [memoria] */
+export function salvaPreferenzaVolume(v, memoria) {
+  scrivi(LS.volume, String(limitaVolume(v)), memoria);
 }

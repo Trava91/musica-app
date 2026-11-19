@@ -17,6 +17,7 @@ class LettoreFinto {
     this.stato = "fermo";
     this.posizione = 0;
     this.durata = 0;
+    this.volume = 0; // lo imposta la sessione appena nasce (i test lo controllano)
     this.rotti = new Set(rotti); // id dei brani il cui file non si riesce a suonare
     this.negato = negato; // il browser vuole un tocco prima di far partire l'audio
     /** @type {string[]} */
@@ -609,11 +610,78 @@ describe("coda: casuale, accoda, togli, cerca, ferma", () => {
     assert.equal(eventi.filter((e) => e.tipo === "coda").length, 2);
   });
 
-  test("accoda e togli senza una coda: false (cosa fare in quel caso lo decide la fase 10)", () => {
+  test("togli senza una coda: false", () => {
     const { s } = prepara();
-    assert.equal(s.accoda(trova("b")), false);
     assert.equal(s.togli("b"), false);
     assert.equal(s.stato().attiva, false);
+  });
+
+  test("accoda senza una coda: il brano diventa la coda e parte (come Spotify a lettore fermo)", async () => {
+    const { s, lettore } = prepara();
+    assert.equal(s.accoda(trova("b")), true);
+    await s.partenza;
+    assert.equal(lettore.brano.id, "b");
+    assert.deepEqual(s.stato().sorgente, { id: "lista", nome: "In coda", ordine: null });
+    assert.deepEqual(s.stato().prossimi, []);
+  });
+
+  test("accoda senza una coda e senza un motore: avvisa e non parte nulla", () => {
+    const { s, avvisi } = prepara({ file: [], soloJukebox: true });
+    assert.equal(s.accoda(trova("b")), false);
+    assert.equal(s.stato().attiva, false);
+    assert.equal(avvisi().at(-1).gravita, "err");
+  });
+
+  test("accoda dice dove è finito il brano: «suona dopo» o «in fondo alla coda»", async () => {
+    const { s, avvisi } = prepara({ file: ["a", "b", "c", "d", "e"] });
+    s.suonaLista(LISTA.slice(0, 3), trova("a"), "Ricerca");
+    await s.partenza;
+    s.accoda(trova("e"), { dopoCorrente: true });
+    assert.equal(avvisi().at(-1).testo, "«Titolo e» suona dopo.");
+    s.accoda(trova("d"));
+    assert.equal(avvisi().at(-1).testo, "«Titolo d» in fondo alla coda.");
+    assert.deepEqual(s.stato().prossimi, ["e", "b", "c", "d"]);
+  });
+
+  test("accoda: tre brani accodati mentre suona una playlist partono nell'ordine giusto", async () => {
+    const { s, lettore } = prepara();
+    s.suonaLista(LISTA.slice(0, 2), trova("a"), "Playlist");
+    await s.partenza;
+    s.accoda(trova("c"), { dopoCorrente: true }); // dopo a
+    s.accoda(trova("d"), { dopoCorrente: true }); // ora d passa davanti: dopo a, prima di c
+    s.accoda(trova("e")); // in fondo
+    assert.deepEqual(s.stato().prossimi, ["d", "c", "b", "e"]);
+    const sentiti = ["a"];
+    for (let i = 0; i < 4; i++) {
+      lettore.finisci();
+      await s.partenza;
+      sentiti.push(lettore.brano.id);
+    }
+    assert.deepEqual(sentiti, ["a", "d", "c", "b", "e"]);
+  });
+
+  test("accoda: un brano senza file non entra in una coda di file; uno già in corso non si accoda", async () => {
+    const { s, avvisi } = prepara({ file: ["a", "b"] });
+    s.suonaLista(LISTA.slice(0, 2), trova("a"), "Playlist");
+    await s.partenza;
+    assert.equal(s.accoda(trova("c")), false);
+    assert.match(avvisi().at(-1).testo, /non è sul telefono/);
+    assert.equal(s.accoda(trova("a")), false);
+    assert.match(avvisi().at(-1).testo, /brano che hai davanti/);
+    assert.deepEqual(s.stato().prossimi, ["b"]);
+  });
+
+  test("accoda a coda finita (con i file): il brano accodato riparte da solo", async () => {
+    const { s, lettore } = prepara();
+    s.suonaLista(LISTA.slice(0, 1), trova("a"), "Playlist");
+    await s.partenza;
+    lettore.finisci(); // l'unico brano è finito
+    await s.partenza;
+    s.coda.avanti(); // ...e la coda è andata oltre l'ultimo (come con ⏭ in fondo): non c'è più un selezionato
+    assert.equal(s.stato().selezionato, null);
+    assert.equal(s.accoda(trova("b")), true);
+    await s.partenza;
+    assert.equal(lettore.brano.id, "b");
   });
 
   test("cerca sposta la posizione, ferma spegne il lettore", async () => {
@@ -656,6 +724,8 @@ describe("stato() e ascolta()", () => {
       "sorgente",
       "tasto",
       "totale",
+      "volume",
+      "volumeAttivo",
     ]);
   });
 
@@ -692,5 +762,73 @@ describe("stato() e ascolta()", () => {
     s.casuale();
     assert.ok(visti > 0);
     assert.equal(n, visti);
+  });
+});
+
+// ====================================================================== volume ====
+
+describe("volume della manopola", () => {
+  test("senza indicazione parte pieno, come prima che ci fosse la manopola", () => {
+    const { s, lettore } = prepara();
+    assert.equal(s.stato().volume, 1);
+    assert.equal(lettore.volume, 1);
+  });
+
+  test("parte da quello ricordato e lo passa al lettore", () => {
+    const lettore = new LettoreFinto();
+    const s = new Sessione({ lettore, volume: 0.4 });
+    assert.equal(s.stato().volume, 0.4);
+    assert.equal(lettore.volume, 0.4);
+  });
+
+  test("impostaVolume: arriva al lettore e lo dice a chi ascolta (per ricordarlo)", () => {
+    const { s, lettore, eventi } = prepara();
+    s.impostaVolume(0.62);
+    assert.equal(lettore.volume, 0.62);
+    assert.equal(s.stato().volume, 0.62);
+    assert.deepEqual(
+      eventi.filter((e) => e.tipo === "volume"),
+      [{ tipo: "volume", volume: 0.62 }],
+    );
+  });
+
+  test("impostaVolume: oltre i limiti si ferma a 0 o a 1; uguale a prima non avvisa", () => {
+    const { s, eventi } = prepara();
+    s.impostaVolume(7);
+    assert.equal(s.stato().volume, 1);
+    s.impostaVolume(-3);
+    assert.equal(s.stato().volume, 0);
+    s.impostaVolume(0);
+    assert.deepEqual(
+      eventi.filter((e) => e.tipo === "volume").map((e) => e.volume),
+      [0],
+    );
+  });
+
+  test("impostaVolume: un valore che non è un numero si ignora (mai a tutto volume per sbaglio)", () => {
+    const { s, lettore } = prepara();
+    s.impostaVolume(0.3);
+    for (const sbagliato of [Number.NaN, Number.POSITIVE_INFINITY, undefined, null, "0.9"]) {
+      s.impostaVolume(/** @type {any} */ (sbagliato));
+    }
+    assert.equal(s.stato().volume, 0.3);
+    assert.equal(lettore.volume, 0.3);
+  });
+
+  test("volumeAttivo: acceso senza coda e con i file del telefono", async () => {
+    const { s } = prepara();
+    assert.equal(s.stato().volumeAttivo, true);
+    s.suonaLista(LISTA, trova("a"), "Ricerca");
+    await s.partenza;
+    assert.equal(s.stato().motore, "file");
+    assert.equal(s.stato().volumeAttivo, true);
+  });
+
+  test("volumeAttivo: spento quando la musica la suona un'app esterna (il volume lo decide lei)", () => {
+    const { s, aperti } = prepara({ file: [] });
+    s.suonaLista(LISTA, trova("a"), "Ricerca");
+    assert.equal(aperti.length, 1);
+    assert.equal(s.stato().motore, "newpipe");
+    assert.equal(s.stato().volumeAttivo, false);
   });
 });

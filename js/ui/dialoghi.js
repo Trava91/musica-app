@@ -3,7 +3,8 @@
 // Danno sempre una risposta (Esc o un tocco fuori = annulla) e sono una alla volta.
 
 import { RIGHE_MAX_AVVISI } from "../config.js";
-import { $, $$, esc } from "./base.js";
+import { $, $$, esc, testaFinestra } from "./base.js";
+import { mostra, nascondi } from "./finestre.js";
 
 let dialogoAperto = false;
 
@@ -13,30 +14,31 @@ let dialogoAperto = false;
  *   corpo = HTML già ripulito con esc(); annulla = il valore se si chiude senza scegliere;
  *   campo = un campo di testo (la risposta del pulsante principale è il testo scritto).
  */
-function dialogo({ titolo, corpo = "", pulsanti, annulla, campo = null }) {
+function dialogo({ titolo, corpo = "", pulsanti, annulla, campo = null, colonna = false }) {
   if (dialogoAperto) return Promise.resolve(annulla);
   dialogoAperto = true;
   return new Promise((risolvi) => {
     const overlay = $("#dialogo-overlay");
     const el = $("#dialogo");
-    const precedente = document.activeElement;
-    el.innerHTML = `
-      <div class="foglio-intestazione"><h2 id="dialogo-titolo">${esc(titolo)}</h2></div>
-      ${corpo}
-      ${campo ? `<div class="campo-riga"><label for="dialogo-campo">${esc(campo.etichetta)}</label><input id="dialogo-campo" type="text" autocomplete="off" value="${esc(campo.valore ?? "")}"></div>` : ""}
-      <div class="azioni-riga">${pulsanti
+    el.innerHTML = `<div class="hf-frontale">
+      ${testaFinestra("dialogo-titolo", titolo)}
+      <div class="hf-finestra-corpo">
+        ${corpo}
+        ${campo ? `<div class="hf-campo-riga"><label class="hf-etichetta-campo" for="dialogo-campo">${esc(campo.etichetta)}</label><input id="dialogo-campo" class="hf-campo" type="text" autocomplete="off" value="${esc(campo.valore ?? "")}"></div>` : ""}
+      </div>
+      <div class="hf-finestra-azioni${colonna ? " hf-colonna" : ""}">${pulsanti
         .map(
           (p, i) =>
-            `<button type="button" class="${p.classe || (p.principale ? "btn-primary" : "btn-secondary")}" data-i="${i}">${esc(p.etichetta)}</button>`,
+            `<button type="button" class="${p.classe || (p.principale ? "hf-tasto hf-principale" : "hf-tasto")}" data-i="${i}">${esc(p.etichetta)}</button>`,
         )
-        .join("")}</div>`;
+        .join("")}</div>
+    </div>`;
     const principale = pulsanti.findIndex((p) => p.principale);
     const chiudi = (valore) => {
-      overlay.hidden = true;
+      nascondi(overlay); // il fuoco torna al tasto da cui si è aperto
       overlay.removeEventListener("click", fuori);
       el.removeEventListener("keydown", tasti);
       dialogoAperto = false;
-      precedente?.focus?.();
       risolvi(valore);
     };
     const scegli = (i) => {
@@ -47,29 +49,51 @@ function dialogo({ titolo, corpo = "", pulsanti, annulla, campo = null }) {
       if (e.target === overlay) chiudi(annulla);
     };
     const tasti = (e) => {
-      if (e.key === "Escape") chiudi(annulla);
-      else if (e.key === "Enter" && campo && e.target.id === "dialogo-campo" && principale >= 0) scegli(principale);
+      if (e.key === "Escape") {
+        e.preventDefault(); // l'Esc è già servito: non deve chiudere anche la finestra sotto
+        chiudi(annulla);
+      } else if (e.key === "Enter" && campo && e.target.id === "dialogo-campo" && principale >= 0) scegli(principale);
     };
     for (const b of $$("button[data-i]", el)) b.addEventListener("click", () => scegli(Number(b.dataset.i)));
     overlay.addEventListener("click", fuori);
     el.addEventListener("keydown", tasti);
-    overlay.hidden = false;
+    mostra(overlay);
     const primo = campo ? $("#dialogo-campo", el) : $("button[data-i]", el);
     primo?.focus();
     if (campo) primo.select();
   });
 }
 
-/** Una domanda con Annulla/Conferma. true se conferma. `pericolo` colora il tasto di rosso (cancellazioni). */
+/** Una domanda con Annulla/Conferma. true se conferma. `pericolo` fa il tasto pericoloso (cancellazioni). */
 export function chiediConferma({ titolo, testo = "", conferma = "Conferma", pericolo = false }) {
   return dialogo({
     titolo,
-    corpo: testo ? `<p class="muted">${esc(testo)}</p>` : "",
+    corpo: testo ? `<p>${esc(testo)}</p>` : "",
     pulsanti: [
       { etichetta: "Annulla", valore: false },
-      { etichetta: conferma, valore: true, principale: true, classe: pericolo ? "btn-danger" : "btn-primary" },
+      {
+        etichetta: conferma,
+        valore: true,
+        principale: true,
+        classe: pericolo ? "hf-tasto hf-pericolo" : "hf-tasto hf-principale",
+      },
     ],
     annulla: false,
+  });
+}
+
+/**
+ * Un elenco di scelte, una sotto l'altra, con Annulla in fondo. Il valore della scelta toccata, o
+ * null se si annulla. Corpo: una frase facoltativa sopra le scelte.
+ * @param {{ titolo: string, testo?: string, scelte: { etichetta: string, valore: any }[] }} o
+ */
+export function chiediScelta({ titolo, testo = "", scelte }) {
+  return dialogo({
+    titolo,
+    corpo: testo ? `<p>${esc(testo)}</p>` : "",
+    pulsanti: [...scelte, { etichetta: "Annulla", valore: null }],
+    annulla: null,
+    colonna: true,
   });
 }
 
@@ -99,7 +123,7 @@ export function mostraRiepilogo({ titolo, righe = [], elencoTitolo = "", elenco 
     corpo:
       righe.map((r) => `<p>${esc(r)}</p>`).join("") +
       (elenco.length
-        ? `<details open><summary>${esc(elencoTitolo)} (${elenco.length})</summary><ul class="elenco-dialogo">${voci.join("")}</ul></details>`
+        ? `<details class="hf-dettagli" open><summary>${esc(elencoTitolo)} (${elenco.length})</summary><ul class="hf-elenco">${voci.join("")}</ul></details>`
         : ""),
     pulsanti: [{ etichetta: "Ok", valore: undefined, principale: true }],
     annulla: undefined,

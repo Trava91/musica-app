@@ -1,0 +1,198 @@
+/* base.css — i "gettoni" dello stile hi-fi del Jukebox: colori, metallo, ombre, raggi, caratteri,
+   misure minime e tempi delle animazioni. Valori presi dall'anteprima approvata il 16/11/2026
+   (anteprima/in-riproduzione.html, plinto argento).
+
+   Regole di questo file:
+   - tutto ha il prefisso --hf- (e i caratteri il loro nome): finché c'è ancora css/styles.css (lo
+     stile anni '50, fino alla Fase 9 del restauro) i due stili convivono senza pestarsi i piedi;
+   - solo variabili e caratteri, nessuna regola su elementi della pagina (body, button…): quelle
+     stanno in componenti.css (i pezzi, classi hf-) e in schermate.css (la disposizione);
+   - i contrasti delle coppie testo/fondo li controlla test/gettoni.test.mjs (testo almeno 4,5:1,
+     elementi grafici almeno 3:1): se cambi un colore, il test dice se regge ancora. */
+
+/* ---------------------------------------------------------------------- caratteri ---- */
+/* Licenze in fonts/LICENZE.md (tutti OFL 1.1). */
+@font-face {
+  font-family: "DSEG7";
+  src: url("../fonts/dseg7-classic-700.woff2") format("woff2");
+  font-weight: 700;
+  font-display: block; /* le cifre a segmenti con il carattere di riserva sarebbero illeggibili */
+}
+@font-face {
+  font-family: "Doto";
+  src: url("../fonts/doto-700.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Barlow Condensed";
+  src: url("../fonts/barlow-condensed-500.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}
+
+:root {
+  /* ------------------------------------------------------------------- metallo ---- */
+  /* Alluminio spazzolato color champagne del frontalino. */
+  --hf-alluminio-luce: #f2f0eb;
+  --hf-champagne: #e8e5de;
+  --hf-alluminio: #d5d1c8;
+  --hf-alluminio-scuro: #c9c5bb; /* il punto più scuro: le scritte sul metallo si misurano qui */
+  --hf-metallo:
+    linear-gradient(
+      90deg,
+      rgb(255 255 255 / 0.16),
+      rgb(255 255 255 / 0) 28%,
+      rgb(0 0 0 / 0.035) 62%,
+      rgb(255 255 255 / 0.12)
+    ),
+    repeating-linear-gradient(180deg, rgb(255 255 255 / 0.11) 0 1px, rgb(255 255 255 / 0) 1px 3px),
+    repeating-linear-gradient(180deg, rgb(0 0 0 / 0.05) 0 1px, rgb(0 0 0 / 0) 1px 5px),
+    repeating-linear-gradient(180deg, rgb(0 0 0 / 0.035) 0 2px, rgb(0 0 0 / 0) 2px 13px),
+    linear-gradient(
+      180deg,
+      var(--hf-champagne) 0%,
+      var(--hf-alluminio) 32%,
+      var(--hf-alluminio-scuro) 64%,
+      #d2cec5 100%
+    );
+
+  /* ------------------------------------------------------------------- grafite ---- */
+  /* Fianchi e cornici dei moduli, il rack su cui stanno. */
+  --hf-grafite-bordo: #1f2024;
+  --hf-grafite-luce: #3b3c41;
+  --hf-grafite: #2d2e32;
+  --hf-grafite-scura: #1d1e22;
+  --hf-rack: #0d0e10;
+  --hf-cornice: linear-gradient(
+    90deg,
+    var(--hf-grafite-bordo),
+    var(--hf-grafite-luce) 2.5%,
+    var(--hf-grafite) 50%,
+    var(--hf-grafite-luce) 97.5%,
+    var(--hf-grafite-bordo)
+  );
+
+  /* ---------------------------------------------------------------- serigrafia ---- */
+  /* Le scritte stampate: scure sul metallo, chiare sulla grafite. */
+  --hf-serigrafia: #26272b;
+  --hf-serigrafia-tenue: #46474d;
+  --hf-serigrafia-chiara: #e2dfd6;
+
+  /* --------------------------------------------------------------------- tasti ---- */
+  --hf-tasto-luce: #f6f4ef;
+  --hf-tasto: #dedad1;
+  --hf-tasto-scuro: #ccc8be;
+  --hf-tasto-bordo: #8a867d;
+  --hf-tasto-bordo-basso: #67645d;
+  --hf-tasto-zoccolo: #76736b; /* il bordo sotto il tasto che sparisce quando lo premi */
+  --hf-tasto-testo: #222327;
+  --hf-tasto-spento: #6e6c66;
+  /* Il tasto principale (conferme) e quello pericoloso (cancellazioni) sono di grafite. */
+  --hf-tasto-grafite-luce: #45464c;
+  --hf-tasto-grafite: #34353a;
+  --hf-tasto-grafite-scura: #26272b;
+  --hf-pericolo: #ffa384;
+
+  /* --------------------------------------------------------------- display VFD ---- */
+  /* Vetro fumé nero, caratteri ciano/verde acqua che brillano, segmenti spenti appena visibili. */
+  --hf-vetro-luce: #0c1c1a; /* il punto più chiaro del vetro: i testi si misurano qui */
+  --hf-vetro: #050a0a;
+  --hf-vetro-buio: #020404;
+  --hf-vetro-fondo: radial-gradient(
+    120% 150% at 50% 0%,
+    var(--hf-vetro-luce) 0%,
+    var(--hf-vetro) 55%,
+    var(--hf-vetro-buio) 100%
+  );
+  --hf-vfd: #7df9e6;
+  --hf-vfd-tenue: #4fd2bf;
+  --hf-vfd-spento: rgb(125 249 230 / 0.08);
+  --hf-vfd-spia-spenta: rgb(125 249 230 / 0.17);
+  --hf-vfd-bagliore: 0 0 4px rgb(125 249 230 / 0.55), 0 0 12px rgb(125 249 230 / 0.22);
+
+  /* --------------------------------------------------------------------- ambra ---- */
+  /* Indicatori di livello, avvisi d'errore, fuoco della tastiera. */
+  --hf-ambra: #ffb02e;
+  --hf-ambra-tenue: #cf9030;
+  --hf-ambra-rossa: #ff5a2a;
+
+  /* ----------------------------------------------------------------------- LED ---- */
+  --hf-led-ghiera: #1d1e22; /* l'anello scuro attorno a ogni LED: lo stacca dal metallo */
+  --hf-led-verde: #63ff74;
+  --hf-led-verde-scuro: #17a032;
+  --hf-led-verde-spento: #1a2a1c;
+  --hf-led-arancio: #ff8a1e;
+  --hf-led-arancio-scuro: #c45600;
+  --hf-led-arancio-spento: #382213;
+
+  /* ------------------------------------------------------ scala del sintonizzatore ---- */
+  --hf-scala-vetro: #0a1816;
+  --hf-scala-vetro-bordo: #050d0c;
+  --hf-scala-bagliore: rgb(70 190 160 / 0.13); /* la retroilluminazione al centro della scala */
+  --hf-scala-testo: #66cdb3;
+  --hf-scala-acceso: #dafff4;
+  --hf-scala-numeri: #52b39c;
+  --hf-scala-numeri-acceso: #9fe9d4;
+  --hf-scala-tacche: rgb(120 230 200 / 0.5);
+  --hf-scala-indice: #ff4a1a;
+  --hf-scala-indice-luce: #ff8048;
+
+  /* --------------------------------------------------------------------- fuoco ---- */
+  /* Sul metallo l'ambra da sola non si vede (1,2:1): anello scuro dentro, ambra fuori. */
+  --hf-fuoco: #ffb02e;
+  --hf-fuoco-interno: #111;
+  --hf-anello-fuoco: 0 0 0 6px var(--hf-fuoco);
+
+  /* --------------------------------------------------------------------- ombre ---- */
+  --hf-ombra-modulo: 0 2px 0 #000, 0 8px 14px rgb(0 0 0 / 0.55);
+  --hf-ombra-frontale:
+    inset 0 1px 0 rgb(255 255 255 / 0.9), inset 0 -1px 0 rgb(0 0 0 / 0.3), inset 1px 0 0 rgb(255 255 255 / 0.4),
+    inset -1px 0 0 rgb(0 0 0 / 0.15);
+  --hf-ombra-incasso: inset 0 0 0 1px #000, inset 0 2px 9px rgb(0 0 0 / 0.95), 0 1px 0 rgb(255 255 255 / 0.75);
+  --hf-ombra-tasto: 0 2px 0 var(--hf-tasto-zoccolo), 0 3px 6px rgb(0 0 0 / 0.35), inset 0 1px 0 #fff;
+  --hf-ombra-tasto-premuto:
+    0 0 0 var(--hf-tasto-zoccolo), 0 1px 2px rgb(0 0 0 / 0.3), inset 0 1px 3px rgb(0 0 0 / 0.22);
+  --hf-ombra-tasto-grafite: 0 2px 0 #0b0b0d, 0 3px 6px rgb(0 0 0 / 0.4), inset 0 1px 0 rgb(255 255 255 / 0.18);
+  --hf-velo: rgb(5 6 8 / 0.72); /* sotto le finestre a comparsa */
+
+  /* --------------------------------------------------------------------- raggi ---- */
+  --hf-raggio-modulo: 6px;
+  --hf-raggio-frontale: 3px;
+  --hf-raggio-tasto: 3px;
+  --hf-raggio-vetro: 4px;
+
+  /* ----------------------------------------------------------------- caratteri ---- */
+  --hf-font-serigrafia: "Barlow Condensed", "Arial Narrow", sans-serif; /* scritte sul metallo */
+  --hf-font-segmenti: "DSEG7", monospace; /* cifre del display */
+  --hf-font-matrice: "Doto", monospace; /* testi del display, a punti */
+
+  /* ------------------------------------------------------------- misure minime ---- */
+  --hf-tocco-min: 44px; /* nessun tasto è più basso o più stretto */
+  --hf-tasto-alto: 46px;
+  --hf-testo-min: 12px; /* nessun testo è più piccolo */
+
+  /* --------------------------------------------------------------------- tempi ---- */
+  /* Le animazioni muovono solo transform e opacity. Con "riduci movimento" diventano 0. */
+  --hf-tempo-premi: 60ms;
+  --hf-tempo-indice: 650ms;
+  --hf-tempo-finestra: 220ms;
+  --hf-tempo-avviso: 180ms;
+}
+
+/* "Riduci movimento": quello del sistema, oppure forzato dalla pagina dei componenti con la classe
+   hf-fermo su <html> (la stessa che guardano i componenti in js/ui/hifi/comune.js). */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --hf-tempo-premi: 0ms;
+    --hf-tempo-indice: 0ms;
+    --hf-tempo-finestra: 0ms;
+    --hf-tempo-avviso: 0ms;
+  }
+}
+:root.hf-fermo {
+  --hf-tempo-premi: 0ms;
+  --hf-tempo-indice: 0ms;
+  --hf-tempo-finestra: 0ms;
+  --hf-tempo-avviso: 0ms;
+}

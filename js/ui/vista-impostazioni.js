@@ -167,10 +167,10 @@ function disegnaControlloDati(app) {
   const elenco = (righe) => {
     const voci = righe.slice(0, RIGHE_MAX_AVVISI).map((r) => `<li>${esc(r)}</li>`);
     if (righe.length > RIGHE_MAX_AVVISI) voci.push(`<li>…e altri ${righe.length - RIGHE_MAX_AVVISI}</li>`);
-    return `<ul>${voci.join("")}</ul>`;
+    return `<ul class="hf-elenco">${voci.join("")}</ul>`;
   };
   const blocco = (titolo, righe) =>
-    righe.length ? `<details><summary>${esc(titolo)}</summary>${elenco(righe)}</details>` : "";
+    righe.length ? `<details class="hf-dettagli"><summary>${esc(titolo)}</summary>${elenco(righe)}</details>` : "";
   const voce = (s) => `${s.id ?? "(senza id)"} — ${s.motivo}`;
 
   el.innerHTML =
@@ -197,9 +197,9 @@ function disegnaOrdineMotori(app) {
       (m, i) => `
       <li data-m="${esc(m)}">
         <span>${esc(NOMI_MOTORE[m] || m)}</span>
-        <span class="frecce">
-          <button data-dir="su" ${i === 0 ? "disabled" : ""} aria-label="Sposta su">↑</button>
-          <button data-dir="giu" ${i === priorita.length - 1 ? "disabled" : ""} aria-label="Sposta giù">↓</button>
+        <span class="hf-frecce">
+          <button class="hf-tasto hf-piccolo" type="button" data-dir="su" ${i === 0 ? "disabled" : ""} aria-label="${esc(NOMI_MOTORE[m] || m)}: sposta su">↑</button>
+          <button class="hf-tasto hf-piccolo" type="button" data-dir="giu" ${i === priorita.length - 1 ? "disabled" : ""} aria-label="${esc(NOMI_MOTORE[m] || m)}: sposta giù">↓</button>
         </span>
       </li>`,
     )

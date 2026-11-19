@@ -29,7 +29,8 @@ export function ctxIniziale() {
  * @property {object} filtri       i filtri della ricerca (forma in filtri.js)
  * @property {string | undefined} ordine  l'ordine dei risultati scelto a mano (undefined = automatico)
  * @property {any} ctx
- * @property {string | null} scheda       la scheda aperta (cerca, generi, playlist, riproduzione, impostazioni)
+ * @property {string | null} scheda       la scheda aperta (cerca, generi, playlist, riproduzione, impostazioni, artista, artisti)
+ * @property {string | null} artista      l'artista della pagina «artista» (il suo nome normalizzato)
  */
 
 export class Stato {
@@ -44,6 +45,7 @@ export class Stato {
       ordine: undefined,
       ctx: ctxIniziale(),
       scheda: null,
+      artista: null,
       ...iniziale,
     };
     /** @type {Map<string, Brano>} */

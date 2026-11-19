@@ -13,10 +13,11 @@ export function mostra(schermo) {
   $("#app").hidden = schermo !== "app";
 }
 
+/** La riga sotto il token: cls "" (neutra), "ok" (LED verde) o "err" (LED arancio). */
 function messaggio(msg, cls = "") {
   const el = $("#onb-feedback");
   el.textContent = msg;
-  el.className = `feedback${cls ? ` ${cls}` : ""}`;
+  el.className = `hf-esito${cls === "ok" ? " hf-ok" : cls === "err" ? " hf-errore" : ""}`;
 }
 
 /** La schermata del token, coi campi già riempiti dalla configurazione salvata. */
@@ -42,10 +43,11 @@ export function mostraAvvio(stato, { testo = "", accesso = false } = {}) {
   const pronto = stato === "pronto";
   $("#avvio").hidden = pronto;
   $("#schermi").hidden = !pronto;
-  $(".tabbar").hidden = !pronto;
+  $("#suona").hidden = !pronto;
+  $(".hf-barra").hidden = !pronto;
   $("#avvio-ruota").hidden = stato !== "caricamento";
   $("#avvio-testo").textContent = testo;
-  $("#avvio-testo").classList.toggle("err", stato === "errore");
+  $("#avvio-testo").classList.toggle("hf-errore", stato === "errore");
   $("#avvio-azioni").hidden = stato !== "errore";
   $("#avvio-token").hidden = !accesso;
   if (stato === "errore") $("#avvio-riprova").focus();
@@ -81,7 +83,7 @@ async function inviaToken(app, e) {
     rimuoviToken();
     return;
   }
-  messaggio("Token valido ✓", "ok");
+  messaggio("Token valido", "ok");
   $("#onb-submit").disabled = false;
   await app.avvia();
 }

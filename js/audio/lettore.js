@@ -7,6 +7,7 @@ import { ATTESA_BLOCCO_MS } from "../config.js";
 import * as file from "../dati/file-audio.js";
 import { registra } from "../nucleo/diagnostica.js";
 import { titoloCompleto } from "../nucleo/testo.js";
+import { curvaVolume, limitaVolume, VOLUME_DEFAULT } from "../nucleo/volume.js";
 
 // Cosa dice il browser quando un file non si riesce a suonare (MediaError.code).
 const MOTIVI_ERRORE = {
@@ -40,6 +41,7 @@ export class Lettore {
     this.generazione = 0; // sale a ogni brano nuovo o stop: chi arriva in ritardo si accorge di essere superato
     this.inAvvio = false; // suona() sta aspettando che l'audio parta
     this.timerBlocco = null;
+    this.volumeManopola = VOLUME_DEFAULT;
 
     const a = this.audio;
     a.addEventListener("playing", () => {
@@ -95,6 +97,15 @@ export class Lettore {
   }
   get durata() {
     return Number.isFinite(this.audio.duration) ? this.audio.duration : 0;
+  }
+
+  /** Il volume come lo mostra la manopola, da 0 a 1. All'audio arriva con la curva dei potenziometri. */
+  get volume() {
+    return this.volumeManopola;
+  }
+  set volume(v) {
+    this.volumeManopola = limitaVolume(v);
+    this.audio.volume = curvaVolume(this.volumeManopola);
   }
 
   /**

@@ -16,6 +16,7 @@
 // Eventi per chi ascolta:
 //   {tipo: "coda", nuova?: true}       la coda o la selezione sono cambiate (nuova = coda appena avviata)
 //   {tipo: "lettore"}                  è cambiato lo stato del lettore (suona/pausa/fermo, posizione)
+//   {tipo: "volume", volume}           è cambiato il volume della manopola (da 0 a 1)
 //   {tipo: "avviso", testo, gravita}   un messaggio per chi ascolta; gravita "" | "ok" | "err"
 
 import { Coda } from "./coda.js";
@@ -24,6 +25,7 @@ import { registra } from "./diagnostica.js";
 import { linkApertura } from "./link.js";
 import { motivoSenzaMotore, motoreBrano, motoreFonte, pianoRiproduzione } from "./motori.js";
 import { titoloCompleto } from "./testo.js";
+import { limitaVolume, VOLUME_DEFAULT } from "./volume.js";
 
 /**
  * @typedef {import("./valida.js").Brano} Brano
@@ -38,6 +40,7 @@ import { titoloCompleto } from "./testo.js";
  * @property {string} stato              "suona" | "pausa" | "fermo"
  * @property {number} posizione          secondi
  * @property {number} durata             secondi (0 se non si sa)
+ * @property {number} [volume]           la posizione della manopola, da 0 a 1 (la imposta la sessione)
  * @property {(brano: Brano, info?: { album?: string, icona?: string }) => Promise<void>} suona
  * @property {() => void} pausa
  * @property {() => void} riprendi
@@ -70,6 +73,8 @@ import { titoloCompleto } from "./testo.js";
  * @property {string | null} attuale     quello che si sente o, se non si sente nulla, il selezionato (il mini lettore)
  * @property {string | null} motoreAttuale  chi suona `attuale`
  * @property {{ azione: string, icona: string, etichetta: string }} tasto  il tasto grande (comandi.tastoPrincipale)
+ * @property {number} volume             la posizione della manopola, da 0 a 1
+ * @property {boolean} volumeAttivo      la manopola comanda la musica (false: la suona un'app esterna)
  */
 
 // ⏮ oltre questi secondi riparte dall'inizio del brano invece di passare al precedente.
@@ -81,10 +86,11 @@ const GIRO_RIPETI = ["no", "tutti", "uno"];
 
 export class Sessione {
   /**
-   * @param {{ lettore: Lettore, apri?: (indirizzo: string | null, opzioni?: { web?: string | null }) => void, ctx?: object | (() => any), android?: boolean, icona?: string }} opts
-   *   android: si aprono le app (intent://) invece del web; icona: l'immagine per la schermata di blocco.
+   * @param {{ lettore: Lettore, apri?: (indirizzo: string | null, opzioni?: { web?: string | null }) => void, ctx?: object | (() => any), android?: boolean, icona?: string, volume?: number }} opts
+   *   android: si aprono le app (intent://) invece del web; icona: l'immagine per la schermata di blocco;
+   *   volume: la posizione della manopola all'avvio (da 0 a 1, quella ricordata).
    */
-  constructor({ lettore, apri = () => {}, ctx = {}, android = false, icona }) {
+  constructor({ lettore, apri = () => {}, ctx = {}, android = false, icona, volume = VOLUME_DEFAULT }) {
     this.lettore = lettore;
     this.apri = apri;
     /** @type {() => any} */
@@ -105,6 +111,8 @@ export class Sessione {
     /** @type {Set<(evento: any) => void>} */
     this.ascoltatori = new Set();
     this.erroriDiFila = 0; // file che non si sono riusciti a suonare uno dopo l'altro
+    this.volume = limitaVolume(volume);
+    lettore.volume = this.volume;
 
     lettore.onFine = (b) => this.fineBrano(b);
     lettore.onErrore = (b, motivo) => this.erroreAudio(b, motivo);
@@ -178,7 +186,17 @@ export class Sessione {
       attuale: attuale?.id ?? null,
       motoreAttuale: !attuale ? null : l.brano ? "file" : motoreBrano(attuale, this.leggiCtx()).motore,
       tasto: this.statoTasto(),
+      volume: this.volume,
+      volumeAttivo: this.volumeAttivo,
     };
+  }
+
+  /**
+   * La manopola comanda il volume solo quando la musica la suona il Jukebox (o la suonerà: senza
+   * coda, o con una coda di file). Con le app esterne il volume lo decide l'app.
+   */
+  get volumeAttivo() {
+    return Boolean(this.lettore.brano) || !this.coda || this.motore === "file";
   }
 
   /** Il tasto grande: cosa fa sul brano selezionato (vedi comandi.tastoPrincipale). */
@@ -319,13 +337,32 @@ export class Sessione {
   }
 
   /**
-   * Mette un brano nella coda attuale, dopo il corrente o in fondo. false se non c'è una coda o
-   * se il brano è il corrente. `da` = chi lo mette (oggi sempre "io").
+   * "Suona dopo" (`dopoCorrente`) e "In fondo alla coda": mette un brano nella coda attuale e lo dice
+   * a chi ascolta. Senza una coda il brano diventa la coda e parte, come l'«aggiungi alla coda» di
+   * Spotify a lettore fermo; a coda finita col motore "file" riparte da lui. false se non si può:
+   * nessun motore lo suona, non è sul telefono e la coda è di file, o è già il brano che si ha davanti.
+   * `da` = chi lo mette (oggi sempre "io": è il punto dei limiti per utente della social radio).
    * @param {Brano} brano @param {{ da?: string, dopoCorrente?: boolean }} [opts]
    */
   accoda(brano, { da = "io", dopoCorrente = false } = {}) {
-    if (!this.coda?.accoda(brano, { da, dopoCorrente })) return false;
+    if (!this.coda) return this.suonaLista([brano], brano, "In coda");
+    const ctx = this.leggiCtx();
+    if (!motoreBrano(brano, ctx).motore) {
+      this.avvisa(motivoSenzaMotore(brano, ctx), "err");
+      return false;
+    }
+    if (this.motore === "file" && !this.puoSuonare(brano)) {
+      this.avvisa(`«${titoloCompleto(brano)}» non è sul telefono: non lo posso mettere in questa coda.`, "err");
+      return false;
+    }
+    const finita = !this.coda.corrente;
+    if (!this.coda.accoda(brano, { da, dopoCorrente })) {
+      this.avvisa(`«${titoloCompleto(brano)}» è il brano che hai davanti.`);
+      return false;
+    }
     this.emetti({ tipo: "coda" });
+    this.avvisa(`«${titoloCompleto(brano)}» ${dopoCorrente ? "suona dopo" : "in fondo alla coda"}.`);
+    if (finita && this.motore === "file") this.suona(this.coda.corrente); // la coda era finita: riparte da lui
     return true;
   }
 
@@ -353,6 +390,21 @@ export class Sessione {
   /** Sposta la posizione nel brano in corso. */
   cerca(secondi) {
     this.lettore.cerca(secondi);
+  }
+
+  /**
+   * Il volume della manopola, da 0 a 1 (oltre i limiti si ferma lì). Regola il lettore interno e
+   * lo dice a chi ascolta (main.js lo ricorda tra un avvio e l'altro). Un valore che non è un
+   * numero si ignora: meglio niente che la musica a tutto volume per sbaglio.
+   * @param {number} v
+   */
+  impostaVolume(v) {
+    if (typeof v !== "number" || !Number.isFinite(v)) return;
+    const nuovo = limitaVolume(v);
+    if (nuovo === this.volume) return;
+    this.volume = nuovo;
+    this.lettore.volume = nuovo;
+    this.emetti({ tipo: "volume", volume: nuovo });
   }
 
   /** Spegne il lettore interno (la coda resta). */

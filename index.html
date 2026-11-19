@@ -12,254 +12,388 @@
 
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icons/icon.svg">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Jukebox">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#070B18">
+  <meta name="theme-color" content="#0d0e10">
 
-  <link rel="preload" href="fonts/yellowtail-400.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="fonts/oswald-400-600.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="preload" href="fonts/barlow-condensed-500.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/dseg7-classic-700.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/doto-700.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/componenti.css">
+  <link rel="stylesheet" href="css/schermate.css">
 </head>
 <body>
 
-  <!-- ================= ONBOARDING (primo avvio / nessun token) ================= -->
-  <section id="onboarding" class="screen" hidden>
-    <div class="onboarding-inner">
-      <div class="arco arco-basso"><div class="arco-rosso"><div class="arco-neon"><div class="arco-vetrina">
-        <h1 class="titolo-neon">Jukebox</h1>
-        <p class="arco-sotto">Primo avvio</p>
-      </div></div></div></div>
-      <p class="muted">Il tuo catalogo musicale: ricerca, playlist a più filtri e riproduzione, sul telefono.
-        Serve un token per leggere i dati dal tuo repo privato.</p>
+  <!-- ================= PRIMO AVVIO (nessun token) ================= -->
+  <main id="onboarding" class="hf-primo" hidden>
+    <div class="hf-modulo">
+      <div class="hf-frontale">
+        <div class="hf-targhetta"><h1 class="hf-marchio">Jukebox</h1><span class="hf-dettaglio">Primo avvio</span></div>
+        <p class="hf-nota">Il tuo catalogo musicale: ricerca, playlist a più filtri e riproduzione, sul telefono.
+          Serve un token per leggere i dati dal tuo repo privato.</p>
+        <ol class="hf-passi">
+          <li>Crea un <b>fine-grained PAT</b> su GitHub limitato al solo repo <code id="onb-repo-label">musica-dati</code>.</li>
+          <li>Dagli il permesso <b>Contents: Read and write</b> e una scadenza (es. 1 anno).</li>
+          <li>Incollalo qui sotto. Resta solo su questo telefono (<code>localStorage</code>).</li>
+        </ol>
+        <p class="hf-spazio"><a id="onb-pat-link" class="hf-collegamento" target="_blank" rel="noopener"
+           href="https://github.com/settings/personal-access-tokens/new">Apri la pagina dei token →</a></p>
 
-      <ol class="steps">
-        <li>Crea un <b>fine-grained PAT</b> su GitHub limitato al solo repo <code id="onb-repo-label">musica-dati</code>.</li>
-        <li>Dagli il permesso <b>Contents: Read and write</b> e una scadenza (es. 1 anno).</li>
-        <li>Incollalo qui sotto. Resta solo su questo telefono (<code>localStorage</code>).</li>
-      </ol>
-      <a id="onb-pat-link" class="btn-link" target="_blank" rel="noopener"
-         href="https://github.com/settings/personal-access-tokens/new">Apri la pagina dei token →</a>
-
-      <form id="onboarding-form" autocomplete="off">
-        <label>Token (PAT)
-          <input id="onb-token" type="password" inputmode="text" placeholder="github_pat_…" required>
-        </label>
-        <details class="advanced">
-          <summary>Impostazioni avanzate</summary>
-          <label>Owner
-            <input id="onb-owner" type="text" placeholder="Trava91">
-          </label>
-          <label>Repo
-            <input id="onb-repo" type="text" placeholder="musica-dati">
-          </label>
-        </details>
-        <div id="onb-feedback" class="feedback" role="status"></div>
-        <button type="submit" id="onb-submit" class="btn-primary">Verifica e salva</button>
-      </form>
+        <form id="onboarding-form" class="hf-modulo-token" autocomplete="off">
+          <div class="hf-campo-riga">
+            <label class="hf-etichetta-campo" for="onb-token">Token (PAT)</label>
+            <input id="onb-token" class="hf-campo" type="password" inputmode="text" placeholder="github_pat_…" required>
+          </div>
+          <details class="hf-dettagli">
+            <summary>Impostazioni avanzate</summary>
+            <div class="hf-campo-riga">
+              <label class="hf-etichetta-campo" for="onb-owner">Owner</label>
+              <input id="onb-owner" class="hf-campo" type="text" placeholder="Trava91">
+            </div>
+            <div class="hf-campo-riga">
+              <label class="hf-etichetta-campo" for="onb-repo">Repo</label>
+              <input id="onb-repo" class="hf-campo" type="text" placeholder="musica-dati">
+            </div>
+          </details>
+          <div id="onb-feedback" class="hf-esito" role="status"></div>
+          <div class="hf-azioni"><button type="submit" id="onb-submit" class="hf-tasto hf-principale">Verifica e salva</button></div>
+        </form>
+      </div>
     </div>
-  </section>
+  </main>
 
   <!-- ================= APP ================= -->
-  <div id="app" hidden>
+  <main id="app" class="hf-app" data-vista="sezioni" hidden>
+    <h1 class="hf-sr">Jukebox</h1>
     <!-- ---- Avvio: caricamento, errore (Riprova) ---- -->
-    <section id="avvio" class="avvio" hidden>
-      <h1 class="titolo-neon">Jukebox</h1>
-      <div id="avvio-ruota" class="avvio-ruota" aria-hidden="true"></div>
-      <p id="avvio-testo" class="avvio-testo" role="status"></p>
-      <div id="avvio-azioni" class="azioni-riga" hidden>
-        <button id="avvio-riprova" type="button" class="btn-primary">Riprova</button>
-        <button id="avvio-token" type="button" class="btn-secondary" hidden>Cambia token</button>
+    <section id="avvio" class="hf-avvio" hidden>
+      <div class="hf-modulo">
+        <div class="hf-frontale">
+          <div class="hf-targhetta"><h2 class="hf-marchio">Jukebox</h2><span class="hf-dettaglio">Avvio</span></div>
+          <div class="hf-vfd hf-avvio-vetro">
+            <div id="avvio-ruota" class="hf-ruota" aria-hidden="true"></div>
+            <p id="avvio-testo" class="hf-avvio-testo" role="status"></p>
+          </div>
+          <div id="avvio-azioni" class="hf-azioni" hidden>
+            <button id="avvio-riprova" type="button" class="hf-tasto hf-principale">Riprova</button>
+            <button id="avvio-token" type="button" class="hf-tasto" hidden>Cambia token</button>
+          </div>
+        </div>
       </div>
     </section>
 
-    <main id="schermi">
-
-      <!-- ---- Cerca ---- -->
-      <section class="schermo" data-schermo="cerca">
-        <header class="arco"><div class="arco-rosso"><div class="arco-neon"><div class="arco-vetrina">
-          <h1 class="titolo-neon">Jukebox</h1>
-          <p class="arco-sotto" id="arco-sotto"></p>
-        </div></div></div></header>
-        <div class="riga-pill"><span id="stato-motore" class="pill"></span></div>
-
-        <label for="cerca-testo" class="etichetta-sezione">Cerca nel jukebox</label>
-        <div class="campo-cromo">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
-          <input id="cerca-testo" type="search" placeholder="Artista, titolo, genere…" autocomplete="off">
+    <!-- ---- Suona: giradischi, display, comandi, "A seguire". Sul telefono è una scheda; da 700 px
+         è la colonna di sinistra, sempre in vista. ---- -->
+    <section id="suona" class="hf-suona" data-schermo="riproduzione" aria-label="Suona" hidden>
+      <div class="hf-suona-rack">
+        <div class="hf-suona-colonna">
+          <section class="hf-modulo" aria-label="Giradischi">
+            <div class="hf-frontale hf-frontale-giradischi">
+              <div class="hf-targhetta">
+                <span class="hf-marchio">Jukebox</span>
+                <span class="hf-spia hf-velocita" aria-hidden="true"><span class="hf-led" id="rip-led-giri"></span>33⅓ <span class="hf-led"></span>45</span>
+              </div>
+              <div id="rip-giradischi"></div>
+            </div>
+          </section>
+          <section class="hf-modulo" aria-label="Display">
+            <div class="hf-frontale hf-frontale-display">
+              <div id="rip-display"></div>
+              <div id="rip-avanzamento" class="hf-posizione" hidden>
+                <span id="rip-tempo" aria-hidden="true">0:00</span>
+                <label for="rip-posizione" class="hf-sr">Posizione nel brano</label>
+                <input id="rip-posizione" type="range" min="0" max="100" step="1" value="0">
+                <span id="rip-durata" aria-hidden="true">0:00</span>
+              </div>
+              <button id="rip-in-corso" class="hf-altro-in-corso" type="button" hidden></button>
+              <div id="riproduzione-corrente" class="hf-coda-finita" hidden></div>
+            </div>
+          </section>
         </div>
-        <div class="tasti-rapidi">
-          <button id="rapido-generi" class="pillola" type="button"><span id="rapido-generi-testo">Generi</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
-          <button id="rapido-ordine" class="pillola" type="button">Ordine: auto</button>
-          <button id="cerca-filtri-btn" class="pillola" type="button">Filtri<span id="cerca-filtri-badge" class="badge-neon" hidden>0</span></button>
+
+        <div class="hf-suona-colonna">
+          <section class="hf-modulo" aria-labelledby="riproduzione-nome">
+            <div class="hf-frontale hf-frontale-comandi">
+              <h2 id="riproduzione-nome" class="hf-sorgente">Nessuna coda</h2>
+              <p id="riproduzione-piano" class="hf-nota hf-piano"></p>
+              <div class="hf-comandi">
+                <div class="hf-tasti hf-trasporto">
+                  <div class="hf-tasto-blocco">
+                    <span class="hf-serigrafia" aria-hidden="true">Prec.</span>
+                    <button id="rip-indietro" class="hf-tasto" type="button" aria-label="Brano precedente">
+                      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="6" width="2.6" height="12" fill="currentColor"/><path d="M20 6 9 12l11 6z" fill="currentColor"/></svg>
+                    </button>
+                  </div>
+                  <div class="hf-tasto-blocco hf-largo">
+                    <span class="hf-serigrafia" id="rip-principale-testo" aria-hidden="true">Play/Pausa</span>
+                    <button id="rip-principale" class="hf-tasto" type="button" data-stato="suona" aria-label="Suona">
+                      <svg class="hf-icona-suona" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg>
+                      <svg class="hf-icona-pausa" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="6.5" y="5" width="3.8" height="14" fill="currentColor"/><rect x="13.7" y="5" width="3.8" height="14" fill="currentColor"/></svg>
+                    </button>
+                  </div>
+                  <div class="hf-tasto-blocco">
+                    <span class="hf-serigrafia" aria-hidden="true">Succ.</span>
+                    <button id="rip-avanti" class="hf-tasto" type="button" aria-label="Brano successivo">
+                      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6l11 6-11 6z" fill="currentColor"/><rect x="17.4" y="6" width="2.6" height="12" fill="currentColor"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="hf-tasti hf-funzioni">
+                  <div class="hf-tasto-blocco">
+                    <span class="hf-serigrafia" aria-hidden="true">Casuale</span>
+                    <button id="rip-casuale" class="hf-tasto" type="button" aria-pressed="false" aria-label="Ordine casuale">
+                      <span class="hf-led hf-arancio"></span>
+                      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h3.5l9 10H21M3 17h3.5l3-3.3M13.6 10.3 15.5 7H21M18 4l3 3-3 3M18 14l3 3-3 3"/></svg>
+                    </button>
+                  </div>
+                  <div class="hf-tasto-blocco">
+                    <span class="hf-serigrafia" aria-hidden="true">Ripeti</span>
+                    <button id="rip-ripeti" class="hf-tasto" type="button" aria-label="Ripeti: no">
+                      <span class="hf-led hf-arancio"></span>
+                      <span class="hf-tasto-modo" id="rip-ripeti-modo" aria-hidden="true">NO</span>
+                    </button>
+                  </div>
+                  <div class="hf-tasto-blocco">
+                    <span class="hf-serigrafia" aria-hidden="true">Scheda</span>
+                    <button id="rip-scheda" class="hf-tasto" type="button" aria-label="Scheda del brano">
+                      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.4v.2"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="hf-spie" id="rip-spie">
+                  <span class="hf-spia" data-spia="suona"><span class="hf-led"></span>Riproduzione<span class="hf-sr">: spenta</span></span>
+                  <span class="hf-spia" data-spia="coda"><span class="hf-led"></span>Coda<span class="hf-sr">: spenta</span></span>
+                  <span class="hf-spia" data-spia="solo"><span class="hf-led"></span>Solo Jukebox<span class="hf-sr">: spenta</span></span>
+                  <span class="hf-spia" data-spia="rete"><span class="hf-led hf-arancio"></span>Rete assente<span class="hf-sr">: spenta</span></span>
+                </div>
+                <div class="hf-manopola-blocco">
+                  <span class="hf-serigrafia" aria-hidden="true">Volume</span>
+                  <div id="rip-manopola"></div>
+                  <span class="hf-manopola-minmax hf-serigrafia" aria-hidden="true"><span>Min</span><span>Max</span></span>
+                </div>
+              </div>
+              <p id="riproduzione-azioni" class="hf-nota hf-spazio" hidden></p>
+            </div>
+          </section>
+
+          <section class="hf-modulo" aria-labelledby="t-a-seguire">
+            <div class="hf-frontale">
+              <div class="hf-targhetta"><h2 class="hf-targhetta-titolo" id="t-a-seguire">A seguire</h2><span class="hf-dettaglio" id="prossimi-info"></span></div>
+              <ol id="riproduzione-prossimi" class="hf-cassetto"></ol>
+              <button id="prossimi-altri" class="hf-tasto hf-tutto" type="button" hidden>Mostra altri</button>
+            </div>
+          </section>
         </div>
-        <div class="riepilogo"><span id="cerca-riepilogo"></span><span id="cerca-ordine-testo" class="riepilogo-ordine"></span></div>
-        <div id="cerca-risultati" class="lista"></div>
-        <button id="cerca-altri" type="button" class="btn-secondary btn-blocco" hidden>Mostra altri</button>
+      </div>
+    </section>
+
+    <!-- ---- Le sezioni: il selettore, come gli ingressi di un amplificatore. Sta prima delle sezioni nella
+         pagina (e sotto o accanto sullo schermo, lo decide la griglia): così Tab segue l'ordine che si vede. ---- -->
+    <nav class="hf-barra hf-selettore" aria-label="Sezioni">
+      <button class="hf-tasto hf-selettore-tasto" data-tab="cerca" type="button"><span class="hf-led"></span>Cerca</button>
+      <button class="hf-tasto hf-selettore-tasto" data-tab="generi" type="button"><span class="hf-led"></span>Generi</button>
+      <button class="hf-tasto hf-selettore-tasto" data-tab="playlist" type="button"><span class="hf-led"></span>Playlist</button>
+      <button class="hf-tasto hf-selettore-tasto" data-tab="riproduzione" type="button"><span class="hf-led"></span>Suona</button>
+      <button class="hf-tasto hf-selettore-tasto" data-tab="impostazioni" type="button"><span class="hf-led"></span>Altro</button>
+    </nav>
+
+    <div id="schermi" class="hf-schermi">
+
+      <!-- ---- Cerca: il campo nel frontalino, la sintonia dei generi, i risultati nel cassetto ---- -->
+      <section class="hf-schermo" data-schermo="cerca" aria-labelledby="t-cerca">
+        <section class="hf-modulo" aria-label="Ricerca">
+          <div class="hf-frontale hf-ricerca">
+            <div class="hf-targhetta"><h2 class="hf-marchio" id="t-cerca">Jukebox</h2><span class="hf-dettaglio" id="arco-sotto"></span></div>
+            <div>
+              <label for="cerca-testo" class="hf-etichetta-campo">Cerca nel jukebox</label>
+              <input id="cerca-testo" class="hf-campo" type="search" placeholder="Artista, titolo, genere…" autocomplete="off">
+            </div>
+            <div class="hf-tasti-rapidi">
+              <button id="rapido-ordine" class="hf-tasto" type="button"><span class="hf-led hf-arancio"></span><span id="rapido-ordine-testo">Ordine: auto</span></button>
+              <button id="cerca-filtri-btn" class="hf-tasto" type="button"><span class="hf-led hf-arancio"></span>Filtri<span id="cerca-filtri-badge" class="hf-numerino" hidden>0</span></button>
+              <button id="rapido-artisti" class="hf-tasto" type="button">Artisti A–Z</button>
+            </div>
+            <p id="stato-motore" class="hf-nota hf-motore"></p>
+          </div>
+        </section>
+
+        <section class="hf-modulo" aria-label="Sintonia dei generi">
+          <div class="hf-frontale">
+            <div class="hf-targhetta"><span>Sintonia</span><span class="hf-dettaglio" id="cerca-sintonia">Generi</span></div>
+            <div id="cerca-scala"></div>
+          </div>
+        </section>
+
+        <section class="hf-modulo" aria-labelledby="t-risultati">
+          <div class="hf-frontale">
+            <div class="hf-targhetta"><h2 class="hf-targhetta-titolo" id="t-risultati">Risultati</h2><span class="hf-dettaglio"><span id="cerca-riepilogo"></span> · <span id="cerca-ordine-testo"></span></span></div>
+            <fieldset id="cerca-etichette" class="hf-etichette" hidden><legend class="hf-sr">Filtri attivi</legend><div id="cerca-etichette-lista" class="hf-etichette-lista"></div></fieldset>
+            <div id="cerca-suggerimenti" class="hf-suggerimenti" hidden>
+              <h3 class="hf-titoletto">Artisti e generi</h3>
+              <ul id="cerca-sugg-lista" class="hf-cassetto"></ul>
+            </div>
+            <ol id="cerca-risultati" class="hf-cassetto"></ol>
+            <button id="cerca-altri" type="button" class="hf-tasto hf-tutto" hidden>Mostra altri</button>
+          </div>
+        </section>
       </section>
 
-      <!-- ---- Generi ---- -->
-      <section class="schermo" data-schermo="generi" hidden>
-        <header class="arco arco-basso"><div class="arco-rosso"><div class="arco-neon"><div class="arco-vetrina">
-          <h2 class="titolo-neon">Scegli il genere</h2>
-          <p class="arco-sotto">Premi un tasto · come al bancone</p>
-        </div></div></div></header>
-        <div id="generi-lista" class="tasti-generi"></div>
+      <!-- ---- Generi: la pulsantiera ---- -->
+      <section class="hf-schermo" data-schermo="generi" aria-labelledby="t-generi" hidden>
+        <section class="hf-modulo">
+          <div class="hf-frontale">
+            <div class="hf-targhetta"><h2 class="hf-targhetta-titolo" id="t-generi">Generi</h2><span class="hf-dettaglio">Premi un tasto per cercare</span></div>
+            <div id="generi-lista" class="hf-pulsantiera"></div>
+          </div>
+        </section>
+      </section>
+
+      <!-- ---- Artista: i suoi brani per tipo (i gruppi li disegna la vista) ---- -->
+      <section class="hf-schermo" data-schermo="artista" aria-labelledby="t-artista" hidden>
+        <section class="hf-modulo">
+          <div class="hf-frontale">
+            <div class="hf-targhetta"><h2 class="hf-targhetta-titolo" id="t-artista">Artista</h2><span class="hf-dettaglio" id="artista-sotto"></span></div>
+            <div class="hf-azioni">
+              <button id="artista-suona" class="hf-tasto hf-principale" type="button">▶ Suona tutto</button>
+              <button id="artista-elenco" class="hf-tasto" type="button">Tutti gli artisti</button>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- ---- Artisti A–Z ---- -->
+      <section class="hf-schermo" data-schermo="artisti" aria-labelledby="t-artisti" hidden>
+        <section class="hf-modulo">
+          <div class="hf-frontale">
+            <div class="hf-targhetta"><h2 class="hf-targhetta-titolo" id="t-artisti">Artisti</h2><span class="hf-dettaglio" id="artisti-sotto"></span></div>
+            <fieldset class="hf-gruppo"><legend class="hf-sr">Lettera iniziale</legend><div id="artisti-lettere" class="hf-lettere"></div></fieldset>
+            <ol id="artisti-lista" class="hf-cassetto hf-spazio"></ol>
+            <button id="artisti-altri" type="button" class="hf-tasto hf-tutto" hidden>Mostra altri</button>
+          </div>
+        </section>
       </section>
 
       <!-- ---- Playlist ---- -->
-      <section class="schermo" data-schermo="playlist" hidden>
-        <h2 class="titolo-neon titolo-schermo">Le tue playlist</h2>
-        <p class="sottotitolo" id="playlist-sotto"></p>
-        <div class="playlist-toolbar">
-          <button id="pl-nuova-intelligente" class="btn-cromo" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Coi filtri</button>
-          <button id="pl-nuova-manuale" class="btn-secondary" type="button">A mano</button>
-        </div>
-        <div id="playlist-lista" class="lista"></div>
+      <section class="hf-schermo" data-schermo="playlist" aria-labelledby="t-playlist" hidden>
+        <section class="hf-modulo">
+          <div class="hf-frontale">
+            <div class="hf-targhetta"><h2 class="hf-targhetta-titolo" id="t-playlist">Le tue playlist</h2><span class="hf-dettaglio" id="playlist-sotto"></span></div>
+            <div class="hf-azioni">
+              <button id="pl-nuova-intelligente" class="hf-tasto hf-principale" type="button">+ Coi filtri</button>
+              <button id="pl-nuova-manuale" class="hf-tasto" type="button">+ A mano</button>
+            </div>
+            <ol id="playlist-lista" class="hf-cassetto hf-spazio"></ol>
+          </div>
+        </section>
       </section>
 
-      <!-- ---- In riproduzione ---- -->
-      <section class="schermo" data-schermo="riproduzione" hidden>
-        <div id="riproduzione-vuoto" class="vuoto muted">
-          <div class="disco-vuoto"><div></div></div>
-          <p>Nessuna playlist avviata. Aprine una dalla scheda Playlist e tocca "Avvia".</p>
-        </div>
-        <div id="riproduzione-contenuto" hidden>
-          <div class="rip-testa">
-            <div class="rip-etichetta">In riproduzione</div>
-            <!-- biome-ignore lint/a11y/useHeadingContent: il titolo lo scrive il Jukebox quando parte una playlist; il blocco resta nascosto finché è vuoto -->
-            <h2 id="riproduzione-nome" class="rip-nome"></h2>
-            <span id="riproduzione-piano" class="pill"></span>
+      <!-- ---- Impostazioni (Altro) ---- -->
+      <section class="hf-schermo" data-schermo="impostazioni" aria-labelledby="t-impostazioni" hidden>
+        <h2 id="t-impostazioni" class="hf-sr">Impostazioni</h2>
+
+        <section class="hf-modulo" aria-labelledby="t-imp-dati">
+          <div class="hf-frontale">
+            <div class="hf-targhetta"><h3 class="hf-targhetta-titolo" id="t-imp-dati">Dati</h3></div>
+            <p id="imp-dati-info" class="hf-nota"></p>
+            <div id="imp-dati-controllo" class="hf-controllo-dati" hidden></div>
+            <div class="hf-azioni hf-spazio">
+              <button id="imp-aggiorna" type="button" class="hf-tasto">Aggiorna dati ora</button>
+              <button id="imp-svuota-cache" type="button" class="hf-tasto">Svuota cache dati</button>
+            </div>
           </div>
+        </section>
 
-          <div class="disco-zona" aria-hidden="true">
-            <div class="piatto"><div id="disco" class="disco"><div class="etichetta-disco" id="etichetta-disco"></div></div></div>
-            <div class="braccio-base"></div>
-            <div class="braccio"><div class="testina"></div></div>
+        <section class="hf-modulo" aria-labelledby="t-imp-file">
+          <div class="hf-frontale">
+            <div class="hf-targhetta"><h3 class="hf-targhetta-titolo" id="t-imp-file">Musica sul telefono</h3></div>
+            <p id="imp-file-info" class="hf-nota"></p>
+            <p class="hf-nota hf-spazio">I file li prepara il PC nella cartella <b>Download/Jukebox</b> del telefono.
+              Tocca "Aggiungi", apri quella cartella, tieni premuto il primo file e scegli <b>Seleziona tutto</b>.</p>
+            <input id="imp-file-input" type="file" multiple accept="audio/*,.m4a,.mp3,.webm,.opus,.ogg" hidden>
+            <div class="hf-azioni hf-spazio">
+              <button id="imp-file-aggiungi" type="button" class="hf-tasto hf-principale">Aggiungi file dal telefono</button>
+              <button id="imp-file-svuota" type="button" class="hf-tasto hf-pericolo">Togli tutta la musica</button>
+            </div>
+            <p id="imp-file-avanzamento" class="hf-nota hf-spazio" role="status"></p>
           </div>
+        </section>
 
-          <div id="riproduzione-corrente"></div>
-
-          <div id="rip-avanzamento" class="avanzamento" hidden>
-            <label for="rip-posizione" class="solo-lettori">Posizione nel brano</label>
-            <input id="rip-posizione" type="range" min="0" max="100" step="1" value="0">
-            <div class="avanzamento-tempi"><span id="rip-tempo">0:00</span><span id="rip-durata">0:00</span></div>
+        <section class="hf-modulo" aria-labelledby="t-imp-riproduzione">
+          <div class="hf-frontale">
+            <div class="hf-targhetta"><h3 class="hf-targhetta-titolo" id="t-imp-riproduzione">Riproduzione</h3></div>
+            <label class="hf-interruttore"><input id="imp-solo-jukebox" type="checkbox"><span class="hf-levetta" aria-hidden="true"></span><span>Solo Jukebox: suona solo i brani sul telefono</span></label>
+            <p class="hf-nota">Acceso, i brani senza file appaiono spenti e non si aprono mai Spotify, NewPipe o il web: si parte dal prossimo brano che c'è.</p>
+            <label class="hf-interruttore hf-spazio"><input id="imp-newpipe" type="checkbox" checked><span class="hf-levetta" aria-hidden="true"></span><span>Usa NewPipe per YouTube e SoundCloud</span></label>
+            <p class="hf-nota hf-spazio">Ordine con cui il Jukebox sceglie chi suona un brano (tocca ↑/↓ per cambiarlo).</p>
+            <ul id="imp-ordine-motori" class="hf-ordine-motori"></ul>
+            <p class="hf-nota" id="imp-spotify-stato"></p>
           </div>
-          <button id="rip-in-corso" class="sta-suonando" type="button" hidden></button>
+        </section>
 
-          <div class="comandi">
-            <button id="rip-casuale" class="tasto-tondo" type="button" aria-label="Ordine casuale" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg></button>
-            <button id="rip-indietro" class="tasto-cromo" type="button" aria-label="Brano precedente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 20L9 12l10-8z" fill="currentColor"/><path d="M5 19V5"/></svg></button>
-            <button id="rip-principale" class="tasto-grande" type="button" aria-label="Suona"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg></button>
-            <button id="rip-avanti" class="tasto-cromo" type="button" aria-label="Brano successivo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4l10 8-10 8z" fill="currentColor"/><path d="M19 5v14"/></svg></button>
-            <button id="rip-ripeti" class="tasto-tondo" type="button" aria-label="Ripeti: no" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg><span class="ripeti-uno" id="rip-ripeti-uno" hidden>1</span></button>
+        <section class="hf-modulo" aria-labelledby="t-imp-account">
+          <div class="hf-frontale">
+            <div class="hf-targhetta"><h3 class="hf-targhetta-titolo" id="t-imp-account">Account</h3></div>
+            <p class="hf-nota">Repo dati: <code id="imp-repo"></code></p>
+            <div class="hf-azioni hf-spazio"><button id="imp-cambia-token" type="button" class="hf-tasto">Cambia token</button></div>
           </div>
-          <div id="rip-principale-testo" class="comandi-testo"></div>
-          <div id="riproduzione-azioni" class="riproduzione-azioni"></div>
+        </section>
 
-          <div class="riepilogo"><span>A seguire</span><span id="prossimi-info" class="riepilogo-ordine"></span></div>
-          <div id="riproduzione-prossimi" class="lista"></div>
-          <button id="prossimi-altri" class="btn-secondary btn-blocco" type="button" hidden>Mostra altri</button>
-        </div>
+        <section class="hf-modulo" aria-labelledby="t-imp-diagnostica">
+          <div class="hf-frontale">
+            <div class="hf-targhetta"><h3 class="hf-targhetta-titolo" id="t-imp-diagnostica">Diagnostica</h3></div>
+            <p class="hf-nota">Gli ultimi errori di questa app, tenuti solo su questo telefono: se qualcosa non va, copiali e mandameli.</p>
+            <div id="imp-diagnostica" class="hf-diagnostica"></div>
+            <div class="hf-azioni"><button id="imp-diagnostica-copia" type="button" class="hf-tasto">Copia</button></div>
+          </div>
+        </section>
+
+        <p class="hf-sul-rack" id="imp-versione"></p>
       </section>
 
-      <!-- ---- Impostazioni ---- -->
-      <section class="schermo" data-schermo="impostazioni" hidden>
-        <h2 class="titolo-neon titolo-schermo">Impostazioni</h2>
-
-        <div class="riquadro">
-          <h3>Dati</h3>
-          <div id="imp-dati-info" class="muted small"></div>
-          <div id="imp-dati-controllo" class="muted small" hidden></div>
-          <button id="imp-aggiorna" type="button" class="btn-secondary">Aggiorna dati ora</button>
-          <button id="imp-svuota-cache" type="button" class="btn-secondary">Svuota cache dati</button>
-        </div>
-
-        <div class="riquadro">
-          <h3>Musica sul telefono</h3>
-          <div id="imp-file-info" class="muted small"></div>
-          <p class="muted small">I file li prepara il PC nella cartella <b>Download/Jukebox</b> del telefono.
-            Tocca "Aggiungi", apri quella cartella, tieni premuto il primo file e scegli <b>Seleziona tutto</b>.</p>
-          <input id="imp-file-input" type="file" multiple accept="audio/*,.m4a,.mp3,.webm,.opus,.ogg" hidden>
-          <button id="imp-file-aggiungi" type="button" class="btn-secondary">Aggiungi file dal telefono</button>
-          <button id="imp-file-svuota" type="button" class="btn-secondary">Togli tutta la musica</button>
-          <div id="imp-file-avanzamento" class="muted small" role="status"></div>
-        </div>
-
-        <div class="riquadro">
-          <h3>Riproduzione</h3>
-          <label class="switch"><input id="imp-solo-jukebox" type="checkbox"> Solo Jukebox: suona solo i brani sul telefono</label>
-          <p class="muted small">Acceso, i brani senza file appaiono spenti e non si aprono mai Spotify, NewPipe o il web: si parte dal prossimo brano che c'è.</p>
-          <label class="switch"><input id="imp-newpipe" type="checkbox" checked> Usa NewPipe per YouTube e SoundCloud</label>
-          <p class="muted small">Ordine con cui il Jukebox sceglie chi suona un brano (tocca ↑/↓ per cambiarlo).</p>
-          <ul id="imp-ordine-motori" class="ordine-motori"></ul>
-          <div class="muted small" id="imp-spotify-stato"></div>
-        </div>
-
-        <div class="riquadro">
-          <h3>Account</h3>
-          <div class="muted small">Repo dati: <code id="imp-repo"></code></div>
-          <button id="imp-cambia-token" type="button" class="btn-secondary">Cambia token</button>
-        </div>
-
-        <div class="riquadro">
-          <h3>Diagnostica</h3>
-          <p class="muted small">Gli ultimi errori di questa app, tenuti solo su questo telefono: se qualcosa non va, copiali e mandameli.</p>
-          <div id="imp-diagnostica" class="diagnostica small"></div>
-          <button id="imp-diagnostica-copia" type="button" class="btn-secondary">Copia</button>
-        </div>
-
-        <div class="muted small" id="imp-versione"></div>
-      </section>
-
-    </main>
-
-    <div id="mini-lettore" class="mini-lettore" hidden>
-      <button id="mini-apri" class="mini-apri" type="button">
-        <span id="mini-disco" class="mini-disco" aria-hidden="true"></span>
-        <span class="mini-testo"><span class="mini-titolo" id="mini-titolo"></span><span class="mini-sotto" id="mini-sotto"></span></span>
-      </button>
-      <button id="mini-pausa" class="mini-pausa" type="button" aria-label="Pausa" hidden></button>
     </div>
 
-    <nav class="tabbar" aria-label="Sezioni">
-      <button class="tab" data-tab="cerca" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Cerca</button>
-      <button class="tab" data-tab="generi" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg>Generi</button>
-      <button class="tab" data-tab="playlist" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h12M4 11h12M4 16h7"/><circle cx="17" cy="18" r="2"/><path d="M19 18V10"/></svg>Playlist</button>
-      <button class="tab" data-tab="riproduzione" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg>Suona</button>
-      <button class="tab" data-tab="impostazioni" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Altro</button>
-    </nav>
+    <!-- ---- Mini lettore (telefono, fuori da Suona): il display piccolo apre Suona ---- -->
+    <div id="mini-lettore" class="hf-mini" hidden>
+      <div class="hf-mini-zona">
+        <div id="mini-display"></div>
+        <button id="mini-apri" class="hf-mini-apri" type="button" aria-label="Apri la schermata Suona"></button>
+      </div>
+      <button id="mini-pausa" class="hf-tasto hf-piccolo" type="button" data-stato="pausa" aria-label="Pausa" hidden>
+        <svg class="hf-icona-suona" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg>
+        <svg class="hf-icona-pausa" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="6.5" y="5" width="3.8" height="14" fill="currentColor"/><rect x="13.7" y="5" width="3.8" height="14" fill="currentColor"/></svg>
+      </button>
+    </div>
+
+  </main>
+
+  <!-- ================= FINESTRE (il contenuto lo scrivono le viste) ================= -->
+  <div id="foglio-overlay" class="hf-velo" hidden>
+    <div id="foglio-brano" class="hf-finestra" role="dialog" aria-modal="true" aria-labelledby="foglio-titolo"></div>
+  </div>
+  <div id="aggiungi-overlay" class="hf-velo" hidden>
+    <div id="aggiungi-a-playlist" class="hf-finestra" role="dialog" aria-modal="true" aria-labelledby="agg-titolo"></div>
+  </div>
+  <div id="costruttore-overlay" class="hf-velo" hidden>
+    <div id="costruttore" class="hf-finestra" role="dialog" aria-modal="true" aria-labelledby="cost-titolo"></div>
+  </div>
+  <div id="filtri-overlay" class="hf-velo" hidden>
+    <div id="filtri-pannello" class="hf-finestra" role="dialog" aria-modal="true" aria-labelledby="filt-titolo"></div>
+  </div>
+  <!-- Le domande e i riepiloghi, al posto di prompt/confirm: sopra gli altri fogli. -->
+  <div id="dialogo-overlay" class="hf-velo hf-velo-dialogo" data-dialogo hidden>
+    <div id="dialogo" class="hf-finestra" role="dialog" aria-modal="true" aria-labelledby="dialogo-titolo"></div>
   </div>
 
-  <!-- ================= FOGLIO BRANO ================= -->
-  <div id="foglio-overlay" class="overlay" hidden>
-    <div id="foglio-brano" class="foglio" role="dialog" aria-modal="true"></div>
-  </div>
-
-  <!-- ================= AGGIUNGI A PLAYLIST ================= -->
-  <div id="aggiungi-overlay" class="overlay" hidden>
-    <div id="aggiungi-a-playlist" class="foglio" role="dialog" aria-modal="true"></div>
-  </div>
-
-  <!-- ================= COSTRUTTORE PLAYLIST ================= -->
-  <div id="costruttore-overlay" class="overlay" hidden>
-    <div id="costruttore" class="foglio foglio-grande" role="dialog" aria-modal="true"></div>
-  </div>
-
-  <!-- ================= PANNELLO FILTRI (Cerca) ================= -->
-  <div id="filtri-overlay" class="overlay" hidden>
-    <div id="filtri-pannello" class="foglio" role="dialog" aria-modal="true"></div>
-  </div>
-
-  <!-- ================= FINESTRA DI DIALOGO (domande e riepiloghi: al posto di prompt/confirm) ================= -->
-  <div id="dialogo-overlay" class="overlay overlay-dialogo" data-dialogo hidden>
-    <div id="dialogo" class="foglio" role="dialog" aria-modal="true" aria-labelledby="dialogo-titolo"></div>
-  </div>
-
-  <div id="toast" class="toast" hidden></div>
-  <div id="spinner" class="spinner" hidden></div>
+  <!-- Gli avvisi li sente anche chi legge lo schermo: due aree sempre nella pagina (una cortese, una per gli
+       errori), fuori vista. Il riquadro in basso è solo da guardare (e ha il tasto, se c'è qualcosa da fare). -->
+  <div id="annuncio" class="hf-sr" role="status"></div>
+  <div id="annuncio-errore" class="hf-sr" role="alert"></div>
+  <div id="toast" class="hf-avviso" hidden></div>
+  <div id="spinner" class="hf-attesa" hidden></div>
 
   <script type="module" src="js/main.js"></script>
 </body>

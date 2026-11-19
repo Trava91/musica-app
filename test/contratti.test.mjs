@@ -56,6 +56,8 @@ const CHIAVI_LOCALSTORAGE = [
   "jukebox.file.indice",
   "jukebox.playlist.cache",
   "jukebox.playlist.sha",
+  // Aggiunta col restauro (Fase 8): la posizione della manopola del volume. Le chiavi di prima non cambiano.
+  "jukebox.volume",
 ];
 
 test("localStorage: le chiavi sono esattamente quelle di sempre", () => {

@@ -10,6 +10,7 @@
     "formatta": "biome format --write . && python -m ruff format strumenti test/browser",
     "tipi": "tsc --noEmit -p tsconfig.json",
     "prova": "python test/browser/prova.py",
+    "prova:componenti": "python test/browser/componenti.py",
     "verifica": "npm run lint && npm run tipi && npm run test && npm run test:py"
   },
   "devDependencies": {

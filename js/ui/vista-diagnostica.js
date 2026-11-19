@@ -23,10 +23,10 @@ export function disegnaDiagnostica() {
     .filter(Boolean)
     .map((riga) => `<li>${esc(riga)}</li>`);
   $("#imp-diagnostica").innerHTML =
-    (righeMisure.length ? `<ul class="elenco-diagnostica">${righeMisure.join("")}</ul>` : "") +
+    (righeMisure.length ? `<ul>${righeMisure.join("")}</ul>` : "") +
     (voci.length
-      ? `<ul class="elenco-diagnostica">${voci.map((v) => `<li>${esc(rigaVoce(v))}</li>`).join("")}</ul>`
-      : `<p class="muted">Nessun errore registrato.</p>`);
+      ? `<ul>${voci.map((v) => `<li>${esc(rigaVoce(v))}</li>`).join("")}</ul>`
+      : `<p>Nessun errore registrato.</p>`);
   $("#imp-diagnostica-copia").hidden = voci.length === 0 && righeMisure.length === 0;
 }
 

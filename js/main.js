@@ -9,7 +9,9 @@ import {
   leggiPreferenzaMotori,
   leggiPreferenzaNewPipe,
   leggiPreferenzaSoloJukebox,
+  leggiPreferenzaVolume,
   salvaConfig,
+  salvaPreferenzaVolume,
 } from "./config.js";
 import * as dati from "./dati/catalogo.js";
 import * as file from "./dati/file-audio.js";
@@ -21,7 +23,10 @@ import { Sessione } from "./nucleo/sessione.js";
 import { Stato } from "./nucleo/stato.js";
 import { dataBreve } from "./nucleo/testo.js";
 import { registraServiceWorker } from "./ui/aggiornamento.js";
-import { apriLink, collegaFinestre, collegaSchede, mostraAvviso, vaiA } from "./ui/base.js";
+import { apriLink, collegaFinestre, collegaSchede, debounce, mostraAvviso, vaiA } from "./ui/base.js";
+import { collegaNavigazione } from "./ui/navigazione.js";
+import { collegaTastiera } from "./ui/tastiera.js";
+import { collegaArtisti } from "./ui/vista-artisti.js";
 import { collegaAvvio, mostra, mostraAvvio, mostraOnboarding } from "./ui/vista-avvio.js";
 import { collegaCerca } from "./ui/vista-cerca.js";
 import { collegaGeneri } from "./ui/vista-generi.js";
@@ -46,9 +51,14 @@ const sessione = new Sessione({
   // Sul telefono Android i link aprono NewPipe e Spotify; sul PC (anteprima) il web.
   android: /Android/i.test(navigator.userAgent),
   icona: new URL("../icons/icon-512.png", import.meta.url).href, // per la schermata di blocco
+  volume: leggiPreferenzaVolume(),
 });
+// Il volume della manopola si ricorda tra un avvio e l'altro: un salvataggio a manopola ferma,
+// non uno per ogni grado mentre la si gira.
+const salvaVolume = debounce(salvaPreferenzaVolume, 400);
 sessione.ascolta((e) => {
   if (e.tipo === "avviso") mostraAvviso(e.testo, e.gravita);
+  else if (e.tipo === "volume") salvaVolume(e.volume);
 });
 
 const app = { stato, sessione, android: sessione.android, avvia: avviaApp, aggiornaDati };
@@ -62,6 +72,10 @@ collegaGeneri(app);
 collegaPlaylist(app);
 collegaSuona(app);
 collegaImpostazioni(app);
+collegaArtisti(app);
+// Per ultimi: ascoltano tutto il resto (le schede e le finestre) e le scorciatoie da tastiera.
+collegaNavigazione(app);
+collegaTastiera(app);
 
 // --- i dati ------------------------------------------------------------------------
 // Un catalogo nuovo: se degli id sono cambiati, i file sul telefono li seguono.

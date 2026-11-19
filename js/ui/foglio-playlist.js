@@ -4,7 +4,7 @@
 import { RIGHE_MAX_PLAYLIST } from "../config.js";
 import * as file from "../dati/file-audio.js";
 import * as playlist from "../dati/playlist.js";
-import { $, apriFinestra, chiudiFinestra, esc, mostraAvviso, NOMI_MOTORE, vaiA } from "./base.js";
+import { $, apriFinestra, chiudiFinestra, esc, mostraAvviso, NOMI_MOTORE, testaFinestra, vaiA } from "./base.js";
 import { chiediConferma } from "./dialoghi.js";
 import { eliminaPlaylist, salvaPlaylist } from "./azioni-playlist.js";
 import { apriCostruttore } from "./costruttore-playlist.js";
@@ -33,23 +33,25 @@ export function apriFoglioPlaylist(app, pScelta) {
     .map((g) => `${esc(NOMI_MOTORE[g.motore] || g.motore)}: ${g.n}${g.continuo ? " (schermo spento)" : ""}`)
     .join(" · ");
   const pronti = elenco.filter((b) => ctx.fileIds.has(b.id)).length;
-  el.innerHTML = `
-      <div class="foglio-intestazione"><h2>${esc(p.nome)}</h2><button class="foglio-chiudi" id="foglio-chiudi">✕</button></div>
-      <p class="muted small">${elenco.length} brani. ${righePiano || "Nessuna fonte disponibile"}${piano.esclusi.length ? ` · esclusi: ${piano.esclusi.length}` : ""}</p>
-      <div class="riquadro">
-        <label class="switch"><input id="pl-telefono" type="checkbox" ${p.telefono ? "checked" : ""}> Tieni questa playlist sul telefono</label>
-        <p class="muted small">${pronti} di ${elenco.length} brani già sul telefono (${(file.byte(elenco.map((b) => b.id)) / MB).toFixed(0)} MB).
-          ${p.telefono && pronti < elenco.length ? "Gli altri li prepara il PC: chiedi a Claude di preparare le playlist per il telefono." : ""}</p>
-        ${pronti ? `<button class="btn-secondary" id="pl-libera">Libera spazio</button>` : ""}
+  el.innerHTML = `<div class="hf-frontale">
+      ${testaFinestra("foglio-titolo", p.nome, "foglio-chiudi")}
+      <div class="hf-finestra-corpo">
+        <p class="hf-nota">${elenco.length} brani. ${righePiano || "Nessuna fonte disponibile"}${piano.esclusi.length ? ` · esclusi: ${piano.esclusi.length}` : ""}</p>
+        <div class="hf-azioni hf-spazio">
+          <button class="hf-tasto hf-principale" type="button" id="pl-avvia">▶ Avvia${piano.consigliato ? ` con ${esc(NOMI_MOTORE[piano.consigliato] || piano.consigliato)}` : ""}</button>
+          ${p.tipo === "intelligente" ? `<button class="hf-tasto" type="button" id="pl-modifica">Modifica</button><button class="hf-tasto" type="button" id="pl-congela">Congela</button>` : ""}
+          <button class="hf-tasto" type="button" id="pl-duplica">Duplica</button>
+          <button class="hf-tasto hf-pericolo" type="button" id="pl-elimina">Elimina</button>
+        </div>
+        <div class="hf-parte">
+          <label class="hf-interruttore"><input id="pl-telefono" type="checkbox" ${p.telefono ? "checked" : ""}><span class="hf-levetta" aria-hidden="true"></span><span>Tieni questa playlist sul telefono</span></label>
+          <p class="hf-nota">${pronti} di ${elenco.length} brani già sul telefono (${(file.byte(elenco.map((b) => b.id)) / MB).toFixed(0)} MB).
+            ${p.telefono && pronti < elenco.length ? "Gli altri li prepara il PC: chiedi a Claude di preparare le playlist per il telefono." : ""}</p>
+          ${pronti ? `<div class="hf-azioni hf-spazio"><button class="hf-tasto" type="button" id="pl-libera">Libera spazio</button></div>` : ""}
+        </div>
+        <div class="hf-parte"><h3 class="hf-titoletto">Brani</h3><ol class="hf-cassetto" id="pl-elenco"></ol></div>
       </div>
-      <div class="azioni-riga">
-        <button class="btn-primary" id="pl-avvia">▶ Avvia${piano.consigliato ? ` con ${esc(NOMI_MOTORE[piano.consigliato] || piano.consigliato)}` : ""}</button>
-        ${p.tipo === "intelligente" ? `<button class="btn-secondary" id="pl-modifica">Modifica</button><button class="btn-secondary" id="pl-congela">Congela</button>` : ""}
-        <button class="btn-secondary" id="pl-duplica">Duplica</button>
-        <button class="btn-danger" id="pl-elimina">Elimina</button>
-      </div>
-      <div class="foglio-sezione"><h3>Brani</h3><div class="lista" id="pl-elenco"></div></div>
-    `;
+    </div>`;
   $("#foglio-chiudi").addEventListener("click", chiudi);
   $("#pl-avvia").addEventListener("click", () => {
     chiudi();
